@@ -18,23 +18,29 @@ import { useCart } from "../context/CartContext";
 import { useAnimation } from "../context/AnimationContext";
 import Header from "../components/Header";
 import Carousel from "../components/Carousel";
-import Carousel3D from "../components/Carousel3D";
+import SimpleCarousel3D from "../components/SimpleCarousel3D";
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const { addItem } = useCart();
   const { triggerAnimation } = useAnimation();
 
-  // Main Categories
+  // Main Categories - Updated with Sbitany categories and high-quality images
   const mainCategories = [
-    { name: "أجهزة المطبخ", icon: "🍳", href: "/kitchen", color: "bg-blue-500" },
-    { name: "التكييف والتبريد", icon: "❄️", href: "/cooling", color: "bg-cyan-500" },
-    { name: "الأجهزة الصغيرة", icon: "🔌", href: "/small-appliances", color: "bg-purple-500" },
-    { name: "أجهزة الغسيل", icon: "🧺", href: "/washing", color: "bg-green-500" },
-    { name: "أجهزة التنظيف", icon: "🧹", href: "/cleaning", color: "bg-orange-500" },
-    { name: "الإلكترونيات", icon: "📱", href: "/electronics", color: "bg-indigo-500" },
-    { name: "الإضاءة", icon: "💡", href: "/lighting", color: "bg-yellow-500" },
-    { name: "أدوات كهربائية", icon: "🔧", href: "/tools", color: "bg-red-500" },
+    { name: "الأجهزة المنزلية", image: "https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?w=400&h=400&fit=crop&auto=format&q=80", href: "/home-appliances", color: "bg-blue-500" },
+    { name: "التلفزيونات", image: "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=400&h=400&fit=crop&auto=format&q=80", href: "/television", color: "bg-cyan-500" },
+    { name: "الحاسوب والأجهزة اللوحية", image: "https://images.unsplash.com/photo-1484788984921-03950022c9ef?w=400&h=400&fit=crop&auto=format&q=80", href: "/computers-tablets", color: "bg-purple-500" },
+    { name: "الهواتف المحمولة", image: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&h=400&fit=crop&auto=format&q=80", href: "/mobiles", color: "bg-green-500" },
+    { name: "الأجهزة الصغيرة", image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=400&fit=crop&auto=format&q=80", href: "/small-appliances", color: "bg-orange-500" },
+    { name: "العناية الشخصية والجمال", image: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=400&fit=crop&auto=format&q=80", href: "/personal-beauty-care", color: "bg-indigo-500" },
+    { name: "مستلزمات المكتب والمدرسة", image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=400&h=400&fit=crop&auto=format&q=80", href: "/office-school-supplies", color: "bg-yellow-500" },
+    { name: "الألعاب", image: "https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=400&h=400&fit=crop&auto=format&q=80", href: "/gaming", color: "bg-red-500" },
+    { name: "الصوتيات", image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop&auto=format&q=80", href: "/audio", color: "bg-pink-500" },
+    { name: "التدفئة والتبريد", image: "https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400&h=400&fit=crop&auto=format&q=80", href: "/heating-cooling", color: "bg-teal-500" },
+    { name: "الرياضة واللياقة والصحة", image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=400&fit=crop&auto=format&q=80", href: "/sport-fitness-health", color: "bg-emerald-500" },
+    { name: "المنزل والحديقة", image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400&h=400&fit=crop&auto=format&q=80", href: "/home-garden", color: "bg-lime-500" },
+    { name: "حلول الطاقة", image: "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=400&h=400&fit=crop&auto=format&q=80", href: "/power-solutions", color: "bg-amber-500" },
+    { name: "العروض الشهرية", image: "https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?w=400&h=400&fit=crop&auto=format&q=80", href: "/monthly-offers", color: "bg-rose-500" },
   ];
 
   // Brand Categories
@@ -56,7 +62,7 @@ const Index = () => {
       name: "ثلاجة Samsung الذكية 21 قدم",
       price: 3299,
       originalPrice: 4299,
-      image: "https://images.samsung.com/is/image/samsung/p6pim/levant/rt50k6000s8-sg/gallery/levant-side-by-side-rt50k6000s8-sg-rt50k6000s8-sg-frontsilver-205395803?$650_519_PNG$",
+      image: "https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?w=300&h=300&fit=crop",
       rating: 4.8,
       reviews: 156,
       discount: 23,
@@ -111,7 +117,7 @@ const Index = () => {
       id: 5,
       name: "مكنسة Dyson اللاسلكية V15",
       price: 1299,
-      image: "https://dyson-h.assetsadobe2.com/is/image/content/dam/dyson/products/vacuum-cleaners/stick-vacuums/dyson-v15-detect/dyson-v15-detect-absolute/gallery/dyson-v15-detect-absolute-nickel-yellow-gallery-01.png",
+      image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300&h=300&fit=crop",
       rating: 4.8,
       reviews: 67,
       category: "أجهزة التنظيف",
@@ -121,7 +127,7 @@ const Index = () => {
       id: 6,
       name: "آيفون 15 برو ماكس 256 جيجا",
       price: 5299,
-      image: "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-15-pro-max-naturaltitanium-pdp-image-position-1a?wid=640&hei=640&fmt=p-jpg&qlt=95&.v=1693086369781",
+      image: "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=300&h=300&fit=crop",
       rating: 4.9,
       reviews: 234,
       category: "الإلكترونيات",
@@ -169,36 +175,36 @@ const Index = () => {
             rtl={true}
           >
             {/* Slide 1 */}
-            <div className="relative bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 text-white py-6 sm:py-8 lg:py-12 overflow-hidden min-h-[250px] sm:min-h-[300px] lg:min-h-[350px]">
+            <div className="relative bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-6 sm:py-8 lg:py-12 overflow-hidden min-h-[250px] sm:min-h-[300px] lg:min-h-[350px]">
               <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute top-4 left-4 sm:top-6 sm:left-6 lg:top-10 lg:left-10 text-xl sm:text-3xl lg:text-6xl opacity-10 animate-pulse">⚡</div>
-                <div className="absolute top-8 right-8 sm:top-12 sm:right-12 lg:top-20 lg:right-20 text-lg sm:text-2xl lg:text-4xl opacity-10 animate-bounce">🔌</div>
-                <div className="absolute bottom-4 left-1/4 text-xl sm:text-3xl lg:text-5xl opacity-10">💡</div>
-                <div className="absolute bottom-8 right-1/3 text-sm sm:text-xl lg:text-3xl opacity-10">📱</div>
+                <div className="absolute top-4 left-4 sm:top-6 sm:left-6 lg:top-10 lg:left-10 text-xl sm:text-3xl lg:text-6xl opacity-20 animate-pulse text-blue-400">⚡</div>
+                <div className="absolute top-8 right-8 sm:top-12 sm:right-12 lg:top-20 lg:right-20 text-lg sm:text-2xl lg:text-4xl opacity-20 animate-bounce text-indigo-400">🔌</div>
+                <div className="absolute bottom-4 left-1/4 text-xl sm:text-3xl lg:text-5xl opacity-20 text-purple-400">💡</div>
+                <div className="absolute bottom-8 right-1/3 text-sm sm:text-xl lg:text-3xl opacity-20 text-blue-500">📱</div>
               </div>
               
               <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 h-full flex items-center">
-                <div className="max-w-4xl w-full">
-                  <h1 className="text-2xl sm:text-4xl lg:text-6xl font-bold mb-3 sm:mb-4 lg:mb-6 leading-tight">
+                <div className="max-w-4xl w-full bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 sm:p-8 lg:p-10 border border-white/50">
+                  <h1 className="text-2xl sm:text-4xl lg:text-6xl font-bold mb-3 sm:mb-4 lg:mb-6 leading-tight text-gray-800">
                     مرحباً بكم في
-                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-cyan-200">
+                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
                       أبو زينة للتقنيات
                     </span>
                   </h1>
-                  <p className="text-xs sm:text-sm lg:text-xl mb-4 sm:mb-6 lg:mb-8 text-blue-100 leading-relaxed max-w-2xl">
+                  <p className="text-xs sm:text-sm lg:text-xl mb-4 sm:mb-6 lg:mb-8 text-gray-600 leading-relaxed max-w-2xl">
                     وجهتكم الأولى للأجهزة الكهربائية والإلكترونية الحديثة. نوفر لكم أحدث التقنيات بأفضل الأسعار مع ضمان الجودة والخدمة المتميزة.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 lg:gap-4 max-w-md">
                     <Link
                       to="/products"
-                      className="bg-white text-blue-900 px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 shadow-lg text-xs sm:text-sm lg:text-base"
+                      className="bg-blue-600 text-white px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-lg text-xs sm:text-sm lg:text-base"
                     >
                       تسوق الآن
                       <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
                     </Link>
                     <Link
                       to="/offers"
-                      className="border-2 border-white text-white px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-white hover:text-blue-900 transition-colors text-center text-xs sm:text-sm lg:text-base"
+                      className="border-2 border-blue-600 text-blue-600 px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-blue-600 hover:text-white transition-colors text-center text-xs sm:text-sm lg:text-base"
                     >
                       العروض الخاصة
                     </Link>
@@ -208,36 +214,36 @@ const Index = () => {
             </div>
 
             {/* Slide 2 */}
-            <div className="relative bg-gradient-to-r from-purple-900 via-purple-800 to-pink-900 text-white py-6 sm:py-8 lg:py-12 overflow-hidden min-h-[250px] sm:min-h-[300px] lg:min-h-[350px]">
+            <div className="relative bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 py-6 sm:py-8 lg:py-12 overflow-hidden min-h-[250px] sm:min-h-[300px] lg:min-h-[350px]">
               <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute top-4 right-4 sm:top-6 sm:right-6 lg:top-10 lg:right-10 text-xl sm:text-3xl lg:text-6xl opacity-10 animate-spin-slow">🏠</div>
-                <div className="absolute top-10 left-10 sm:top-16 sm:left-16 lg:top-24 lg:left-24 text-lg sm:text-2xl lg:text-4xl opacity-10 animate-pulse">❄️</div>
-                <div className="absolute bottom-4 right-1/4 text-xl sm:text-3xl lg:text-5xl opacity-10">🧺</div>
-                <div className="absolute bottom-10 left-1/3 text-sm sm:text-xl lg:text-3xl opacity-10">🍳</div>
+                <div className="absolute top-4 right-4 sm:top-6 sm:right-6 lg:top-10 lg:right-10 text-xl sm:text-3xl lg:text-6xl opacity-20 animate-spin-slow text-purple-400">🏠</div>
+                <div className="absolute top-10 left-10 sm:top-16 sm:left-16 lg:top-24 lg:left-24 text-lg sm:text-2xl lg:text-4xl opacity-20 animate-pulse text-pink-400">❄️</div>
+                <div className="absolute bottom-4 right-1/4 text-xl sm:text-3xl lg:text-5xl opacity-20 text-rose-400">🧺</div>
+                <div className="absolute bottom-10 left-1/3 text-sm sm:text-xl lg:text-3xl opacity-20 text-purple-500">🍳</div>
               </div>
               
               <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 h-full flex items-center">
-                <div className="max-w-4xl w-full">
-                  <h1 className="text-2xl sm:text-4xl lg:text-6xl font-bold mb-3 sm:mb-4 lg:mb-6 leading-tight">
+                <div className="max-w-4xl w-full bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 sm:p-8 lg:p-10 border border-white/50">
+                  <h1 className="text-2xl sm:text-4xl lg:text-6xl font-bold mb-3 sm:mb-4 lg:mb-6 leading-tight text-gray-800">
                     أجهزة منزلية
-                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-pink-200">
+                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
                       عصرية وذكية
                     </span>
                   </h1>
-                  <p className="text-xs sm:text-sm lg:text-xl mb-4 sm:mb-6 lg:mb-8 text-purple-100 leading-relaxed max-w-2xl">
+                  <p className="text-xs sm:text-sm lg:text-xl mb-4 sm:mb-6 lg:mb-8 text-gray-600 leading-relaxed max-w-2xl">
                     اكتشف مجموعتنا الواسعة من الأجهزة المنزلية الذكية التي تجعل حياتك أسهل وأكثر راحة. من المطبخ إلى غرفة المعيشة.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 lg:gap-4 max-w-md">
                     <Link
                       to="/kitchen"
-                      className="bg-white text-purple-900 px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-purple-50 transition-colors flex items-center justify-center gap-2 shadow-lg text-xs sm:text-sm lg:text-base"
+                      className="bg-purple-600 text-white px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2 shadow-lg text-xs sm:text-sm lg:text-base"
                     >
                       أجهزة المطبخ
                       <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
                     </Link>
                     <Link
                       to="/cooling"
-                      className="border-2 border-white text-white px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-white hover:text-purple-900 transition-colors text-center text-xs sm:text-sm lg:text-base"
+                      className="border-2 border-purple-600 text-purple-600 px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-purple-600 hover:text-white transition-colors text-center text-xs sm:text-sm lg:text-base"
                     >
                       التكييف والتبريد
                     </Link>
@@ -247,36 +253,36 @@ const Index = () => {
             </div>
 
             {/* Slide 3 */}
-            <div className="relative bg-gradient-to-r from-green-900 via-green-800 to-teal-900 text-white py-6 sm:py-8 lg:py-12 overflow-hidden min-h-[250px] sm:min-h-[300px] lg:min-h-[350px]">
+            <div className="relative bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 py-6 sm:py-8 lg:py-12 overflow-hidden min-h-[250px] sm:min-h-[300px] lg:min-h-[350px]">
               <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute top-6 left-6 sm:top-8 sm:left-8 lg:top-12 lg:left-12 text-xl sm:text-3xl lg:text-6xl opacity-10 animate-bounce">🎯</div>
-                <div className="absolute top-12 right-12 sm:top-20 sm:right-20 lg:top-32 lg:right-32 text-lg sm:text-2xl lg:text-4xl opacity-10 animate-pulse">💰</div>
-                <div className="absolute bottom-6 left-1/3 text-xl sm:text-3xl lg:text-5xl opacity-10">🏷️</div>
-                <div className="absolute bottom-12 right-1/4 text-sm sm:text-xl lg:text-3xl opacity-10">✨</div>
+                <div className="absolute top-6 left-6 sm:top-8 sm:left-8 lg:top-12 lg:left-12 text-xl sm:text-3xl lg:text-6xl opacity-20 animate-bounce text-green-400">🎯</div>
+                <div className="absolute top-12 right-12 sm:top-20 sm:right-20 lg:top-32 lg:right-32 text-lg sm:text-2xl lg:text-4xl opacity-20 animate-pulse text-emerald-400">💰</div>
+                <div className="absolute bottom-6 left-1/3 text-xl sm:text-3xl lg:text-5xl opacity-20 text-teal-400">🏷️</div>
+                <div className="absolute bottom-12 right-1/4 text-sm sm:text-xl lg:text-3xl opacity-20 text-green-500">✨</div>
               </div>
               
               <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 h-full flex items-center">
-                <div className="max-w-4xl w-full">
-                  <h1 className="text-2xl sm:text-4xl lg:text-6xl font-bold mb-3 sm:mb-4 lg:mb-6 leading-tight">
+                <div className="max-w-4xl w-full bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 sm:p-8 lg:p-10 border border-white/50">
+                  <h1 className="text-2xl sm:text-4xl lg:text-6xl font-bold mb-3 sm:mb-4 lg:mb-6 leading-tight text-gray-800">
                     عروض حصرية
-                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-green-200 to-teal-200">
+                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-teal-600">
                       وخصومات مذهلة
                     </span>
                   </h1>
-                  <p className="text-xs sm:text-sm lg:text-xl mb-4 sm:mb-6 lg:mb-8 text-green-100 leading-relaxed max-w-2xl">
+                  <p className="text-xs sm:text-sm lg:text-xl mb-4 sm:mb-6 lg:mb-8 text-gray-600 leading-relaxed max-w-2xl">
                     لا تفوت فرصة الحصول على أفضل الأجهزة بأسعار لا تُقاوم. عروض محدودة الوقت على أشهر العلامات التجارية العالمية.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 lg:gap-4 max-w-md">
                     <Link
                       to="/offers"
-                      className="bg-white text-green-900 px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-green-50 transition-colors flex items-center justify-center gap-2 shadow-lg text-xs sm:text-sm lg:text-base"
+                      className="bg-green-600 text-white px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2 shadow-lg text-xs sm:text-sm lg:text-base"
                     >
                       تصفح العروض
                       <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
                     </Link>
                     <Link
                       to="/products"
-                      className="border-2 border-white text-white px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-white hover:text-green-900 transition-colors text-center text-xs sm:text-sm lg:text-base"
+                      className="border-2 border-green-600 text-green-600 px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-green-600 hover:text-white transition-colors text-center text-xs sm:text-sm lg:text-base"
                     >
                       جميع المنتجات
                     </Link>
@@ -296,30 +302,34 @@ const Index = () => {
             <p className="text-lg text-gray-600">اختر من بين مجموعة واسعة من الفئات المتخصصة</p>
           </div>
 
-          <Carousel3D
-            slidesToShow={5}
-            showDots={true}
-            showArrows={true}
-            rtl={true}
+          <SimpleCarousel3D
             autoplay={true}
+            rtl={true}
+            showNavigation={true}
+            showPagination={false}
           >
             {mainCategories.map((category, index) => (
               <Link
                 key={index}
                 to={category.href}
-                className="group p-6 bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-white/50 hover:border-blue-300 block h-full flex flex-col items-center justify-center"
+                className="group block bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-white/50 hover:border-blue-300"
               >
-                <div className="flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform duration-300">
-                  <div className="p-4 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 group-hover:from-blue-200 group-hover:to-indigo-200 transition-all duration-300">
-                    <span className="text-3xl md:text-4xl">{category.icon}</span>
-                  </div>
+                <div className="relative h-48 overflow-hidden">
+                  <img
+                    src={category.image}
+                    alt={category.name}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
                 </div>
-                <h3 className="text-base md:text-lg font-bold text-gray-800 text-center group-hover:text-blue-600 transition-colors leading-tight">
-                  {category.name}
-                </h3>
+                <div className="p-4">
+                  <h3 className="text-sm font-semibold text-gray-800 text-center group-hover:text-blue-600 transition-colors leading-tight">
+                    {category.name}
+                  </h3>
+                </div>
               </Link>
             ))}
-          </Carousel3D>
+          </SimpleCarousel3D>
         </div>
       </section>
 
