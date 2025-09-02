@@ -39,6 +39,7 @@ const Carousel: React.FC<CarouselProps> = ({
   const [scrollSnaps, setScrollSnaps] = useState<number[]>([])
   const [canScrollPrev, setCanScrollPrev] = useState(false)
   const [canScrollNext, setCanScrollNext] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
 
   const scrollPrev = useCallback(() => {
     if (emblaApi) emblaApi.scrollPrev()
@@ -73,7 +74,7 @@ const Carousel: React.FC<CarouselProps> = ({
 
   // Autoplay functionality
   useEffect(() => {
-    if (!emblaApi || !autoplay) return
+    if (!emblaApi || !autoplay || isHovered) return
 
     const autoplayInterval = setInterval(() => {
       if (emblaApi.canScrollNext()) {
@@ -84,7 +85,7 @@ const Carousel: React.FC<CarouselProps> = ({
     }, 4000)
 
     return () => clearInterval(autoplayInterval)
-  }, [emblaApi, autoplay])
+  }, [emblaApi, autoplay, isHovered])
 
   // Calculate slide width based on screen size
   const getSlideWidth = () => {
@@ -98,7 +99,11 @@ const Carousel: React.FC<CarouselProps> = ({
   }
 
   return (
-    <div className="relative">
+    <div 
+      className="relative"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       {/* Navigation Arrows */}
       {showArrows && (
         <>
