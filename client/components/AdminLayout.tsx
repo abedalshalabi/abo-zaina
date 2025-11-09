@@ -1,0 +1,320 @@
+import { useState, ReactNode, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  Users,
+  FolderTree,
+  Tag,
+  Star,
+  LogOut,
+  Menu,
+  X,
+  Settings,
+  ChevronDown,
+  ChevronRight,
+  Gift
+} from 'lucide-react';
+
+interface AdminLayoutProps {
+  children: ReactNode;
+}
+
+function AdminLayout({ children }: AdminLayoutProps) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const handleLogout = () => {
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_user');
+    navigate('/admin/login');
+  };
+
+  const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
+
+  const menuItems = [
+    {
+      title: 'لوحة التحكم',
+      icon: LayoutDashboard,
+      path: '/admin/dashboard',
+    },
+    {
+      title: 'المنتجات',
+      icon: Package,
+      path: '/admin/products',
+    },
+    {
+      title: 'الفئات',
+      icon: FolderTree,
+      path: '/admin/categories',
+    },
+    {
+      title: 'العلامات التجارية',
+      icon: Tag,
+      path: '/admin/brands',
+    },
+    {
+      title: 'الطلبات',
+      icon: ShoppingCart,
+      path: '/admin/orders',
+    },
+    {
+      title: 'المستخدمين',
+      icon: Users,
+      path: '/admin/users',
+    },
+    {
+      title: 'المراجعات',
+      icon: Star,
+      path: '/admin/reviews',
+    },
+    {
+      title: 'العروض',
+      icon: Gift,
+      path: '/admin/offers',
+    },
+  ];
+
+  const settingsSubMenu = [
+    { title: 'Header', tab: 'header' },
+    { title: 'من نحن', tab: 'about' },
+    { title: 'اتصل بنا', tab: 'contact' },
+    { title: 'الشحن والتوصيل', tab: 'shipping' },
+    { title: 'الإرجاع والاستبدال', tab: 'returns' },
+    { title: 'الضمان', tab: 'warranty' },
+  ];
+
+  const isActive = (path: string) => {
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
+
+  // Auto-open settings menu if on settings page and update active state
+  useEffect(() => {
+    if (location.pathname === '/admin/site-settings') {
+      setSettingsMenuOpen(true);
+    }
+  }, [location.pathname, location.hash]);
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex" dir="rtl">
+      {/* Sidebar - Desktop */}
+      <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-white border-l border-gray-200 shadow-sm">
+        {/* Logo/Brand */}
+        <div className="h-16 flex items-center justify-center border-b border-gray-200 bg-gradient-to-r from-blue-600 to-blue-700">
+          <Link to="/admin/dashboard" className="text-white text-xl font-bold">
+            أبو زينة - الإدارة
+          </Link>
+        </div>
+
+            {/* Navigation */}
+            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+              {menuItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    isActive(item.path)
+                      ? 'bg-blue-50 text-blue-600 font-medium'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <item.icon className="w-5 h-5" />
+                  <span>{item.title}</span>
+                </Link>
+              ))}
+              
+              {/* Settings Dropdown */}
+              <div>
+                <button
+                  onClick={() => setSettingsMenuOpen(!settingsMenuOpen)}
+                  className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    location.pathname === '/admin/site-settings'
+                      ? 'bg-blue-50 text-blue-600 font-medium'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Settings className="w-5 h-5" />
+                    <span>إعدادات الموقع</span>
+                  </div>
+                  {settingsMenuOpen ? (
+                    <ChevronDown className="w-4 h-4" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4" />
+                  )}
+                </button>
+                
+                {settingsMenuOpen && (
+                  <div className="mr-4 mt-1 space-y-1">
+                    {settingsSubMenu.map((subItem) => (
+                      <Link
+                        key={subItem.tab}
+                        to={`/admin/site-settings#${subItem.tab}`}
+                        className={`block px-4 py-2 rounded-lg text-sm transition-colors ${
+                          location.hash === `#${subItem.tab}`
+                            ? 'bg-blue-100 text-blue-700 font-medium'
+                            : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        {subItem.title}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </nav>
+
+        {/* Logout Button */}
+        <div className="p-4 border-t border-gray-200">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          >
+            <LogOut className="w-5 h-5" />
+            <span>تسجيل الخروج</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* Mobile Sidebar */}
+      {sidebarOpen && (
+        <>
+          {/* Overlay */}
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+
+          {/* Sidebar */}
+          <aside className="fixed inset-y-0 right-0 w-64 bg-white shadow-lg z-50 lg:hidden">
+            {/* Header */}
+            <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-blue-700">
+              <Link to="/admin/dashboard" className="text-white text-xl font-bold">
+                أبو زينة - الإدارة
+              </Link>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="text-white hover:bg-blue-800 p-2 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Navigation */}
+            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+              {menuItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    isActive(item.path)
+                      ? 'bg-blue-50 text-blue-600 font-medium'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <item.icon className="w-5 h-5" />
+                  <span>{item.title}</span>
+                </Link>
+              ))}
+              
+              {/* Settings Dropdown */}
+              <div>
+                <button
+                  onClick={() => setSettingsMenuOpen(!settingsMenuOpen)}
+                  className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    location.pathname === '/admin/site-settings'
+                      ? 'bg-blue-50 text-blue-600 font-medium'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Settings className="w-5 h-5" />
+                    <span>إعدادات الموقع</span>
+                  </div>
+                  {settingsMenuOpen ? (
+                    <ChevronDown className="w-4 h-4" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4" />
+                  )}
+                </button>
+                
+                {settingsMenuOpen && (
+                  <div className="mr-4 mt-1 space-y-1">
+                    {settingsSubMenu.map((subItem) => (
+                      <Link
+                        key={subItem.tab}
+                        to={`/admin/site-settings#${subItem.tab}`}
+                        onClick={() => setSidebarOpen(false)}
+                        className={`block px-4 py-2 rounded-lg text-sm transition-colors ${
+                          location.hash === `#${subItem.tab}`
+                            ? 'bg-blue-100 text-blue-700 font-medium'
+                            : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        {subItem.title}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </nav>
+
+            {/* Logout Button */}
+            <div className="p-4 border-t border-gray-200">
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                <LogOut className="w-5 h-5" />
+                <span>تسجيل الخروج</span>
+              </button>
+            </div>
+          </aside>
+        </>
+      )}
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Bar */}
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-6">
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden text-gray-600 hover:text-gray-900 p-2"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+
+          {/* Page Title */}
+          <div className="flex-1 lg:flex-none">
+            <h1 className="text-lg font-semibold text-gray-800">
+              {menuItems.find(item => isActive(item.path))?.title || 'لوحة التحكم'}
+            </h1>
+          </div>
+
+          {/* User Info */}
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:block text-left">
+              <p className="text-sm font-medium text-gray-800">المسؤول</p>
+              <p className="text-xs text-gray-600">admin@abozaina.com</p>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
+              A
+            </div>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+export default AdminLayout;
+

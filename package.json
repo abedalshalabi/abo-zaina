@@ -21,8 +21,10 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "axios": "^1.12.2",
     "dotenv": "^17.2.0",
     "express": "^4.18.2",
+    "sweetalert2": "^11.26.3",
     "swiper": "^11.2.10",
     "zod": "^3.23.8"
   },

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import {
   Star,
@@ -16,11 +16,13 @@ import {
   ChevronRight,
   Zap,
   Award,
-  Clock
+  Clock,
+  X
 } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useAnimation } from "../context/AnimationContext";
 import Header from "../components/Header";
+import { productsAPI, categoriesAPI } from "../services/api";
 
 interface ProductDetail {
   id: number;
@@ -42,109 +44,199 @@ interface ProductDetail {
   deliveryTime: string;
 }
 
+interface BreadcrumbCategory {
+  id: number;
+  name: string;
+  parent_id: number | null;
+  slug?: string;
+}
+
+interface BreadcrumbItem {
+  label: string;
+  href?: string;
+}
+
+const deriveBreadcrumbCategories = (
+  apiProduct: any,
+  categoriesMap: Map<number, BreadcrumbCategory>
+): { main?: BreadcrumbCategory; sub?: BreadcrumbCategory } => {
+  const result: { main?: BreadcrumbCategory; sub?: BreadcrumbCategory } = {};
+
+  if (!apiProduct || categoriesMap.size === 0) {
+    return result;
+  }
+
+  const productCategories: BreadcrumbCategory[] = Array.isArray(apiProduct.categories)
+    ? apiProduct.categories
+        .map((cat: any) => categoriesMap.get(Number(cat.id)))
+        .filter((cat): cat is BreadcrumbCategory => Boolean(cat))
+    : [];
+
+  let mainCategory: BreadcrumbCategory | undefined;
+  let subCategory: BreadcrumbCategory | undefined;
+
+  subCategory = productCategories.find((cat) => cat.parent_id !== null);
+
+  if (subCategory && subCategory.parent_id !== null) {
+    const parent = categoriesMap.get(subCategory.parent_id);
+    if (parent) {
+      mainCategory = parent;
+    }
+  }
+
+  if (!mainCategory) {
+    const primaryCategoryId = apiProduct.category?.id ?? apiProduct.category_id;
+    if (primaryCategoryId) {
+      const candidate = categoriesMap.get(Number(primaryCategoryId));
+      if (candidate) {
+        if (candidate.parent_id) {
+          subCategory = subCategory || candidate;
+          const parent = categoriesMap.get(candidate.parent_id);
+          mainCategory = parent || candidate;
+        } else {
+          mainCategory = candidate;
+        }
+      }
+    }
+  }
+
+  if (!mainCategory) {
+    mainCategory = productCategories.find((cat) => cat.parent_id === null);
+  }
+
+  if (!subCategory && mainCategory) {
+    subCategory = productCategories.find((cat) => cat.parent_id === mainCategory.id);
+  }
+
+  if (mainCategory) {
+    result.main = mainCategory;
+  }
+  if (subCategory && (!mainCategory || subCategory.id !== mainCategory.id)) {
+    result.sub = subCategory;
+  }
+
+  return result;
+};
+
 const Product = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { addItem } = useCart();
+  const { addItem, updateQuantity } = useCart();
   const { triggerAnimation } = useAnimation();
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [activeTab, setActiveTab] = useState<'description' | 'specifications' | 'reviews'>('description');
-
-  // Sample product data - in a real app, this would come from an API
-  const sampleProducts: ProductDetail[] = [
-    {
-      id: 1,
-      name: "ثلاجة LG 18 قدم مع فريزر علوي",
-      price: 2500,
-      originalPrice: 3000,
-      images: [
-      "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjZjNmNGY2Ii8+CjxyZWN0IHg9IjUwIiB5PSI1MCIgd2lkdGg9IjMwMCIgaGVpZ2h0PSIzMDAiIHJ4PSIxMCIgZmlsbD0iI2ZmZmZmZiIgc3Ryb2tlPSIjZTVlN2ViIiBzdHJva2Utd2lkdGg9IjIiLz4KPHN2ZyB4PSIxNzUiIHk9IjE1MCIgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiPgo8cGF0aCBkPSJNMyA3VjE3QTIgMiAwIDAgMCA1IDE5SDE5QTIgMiAwIDAgMCAyMSAxN1Y3QTIgMiAwIDAgMCAxOSA1SDVBMiAyIDAgMCAwIDMgN1oiIHN0cm9rZT0iIzk0YTNiOCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPHN2ZyB4PSI4IiB5PSI5IiB3aWR0aD0iOCIgaGVpZ2h0PSI2IiB2aWV3Qm94PSIwIDAgOCA2IiBmaWxsPSJub25lIj4KPHN2ZyB3aWR0aD0iOCIgaGVpZ2h0PSI2IiB2aWV3Qm94PSIwIDAgOCA2IiBmaWxsPSJub25lIj4KPHBhdGggZD0iTTEgNUw0IDJMNyA1IiBzdHJva2U9IiM5NGEzYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo8L3N2Zz4KPC9zdmc+Cjx0ZXh0IHg9IjIwMCIgeT0iMjMwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjNjM3MzgxIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiPtir2YTYp9is2KkgTEc8L3RleHQ+Cjwvc3ZnPg==",
-      "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjZjlmYWZiIi8+CjxyZWN0IHg9IjUwIiB5PSI1MCIgd2lkdGg9IjMwMCIgaGVpZ2h0PSIzMDAiIHJ4PSIxMCIgZmlsbD0iI2ZmZmZmZiIgc3Ryb2tlPSIjZTVlN2ViIiBzdHJva2Utd2lkdGg9IjIiLz4KPHN2ZyB4PSIxNzUiIHk9IjE1MCIgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiPgo8cGF0aCBkPSJNMyA3VjE3QTIgMiAwIDAgMCA1IDE5SDE5QTIgMiAwIDAgMCAyMSAxN1Y3QTIgMiAwIDAgMCAxOSA1SDVBMiAyIDAgMCAwIDMgN1oiIHN0cm9rZT0iIzk0YTNiOCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPHN2ZyB4PSI4IiB5PSI5IiB3aWR0aD0iOCIgaGVpZ2h0PSI2IiB2aWV3Qm94PSIwIDAgOCA2IiBmaWxsPSJub25lIj4KPHN2ZyB3aWR0aD0iOCIgaGVpZ2h0PSI2IiB2aWV3Qm94PSIwIDAgOCA2IiBmaWxsPSJub25lIj4KPHBhdGggZD0iTTEgNUw0IDJMNyA1IiBzdHJva2U9IiM5NGEzYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo8L3N2Zz4KPC9zdmc+Cjx0ZXh0IHg9IjIwMCIgeT0iMjMwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjNjM3MzgxIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiPtir2YTYp9is2KkgTEc8L3RleHQ+Cjwvc3ZnPg==",
-      "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjZjNmNGY2Ii8+CjxyZWN0IHg9IjUwIiB5PSI1MCIgd2lkdGg9IjMwMCIgaGVpZ2h0PSIzMDAiIHJ4PSIxMCIgZmlsbD0iI2ZmZmZmZiIgc3Ryb2tlPSIjZTVlN2ViIiBzdHJva2Utd2lkdGg9IjIiLz4KPHN2ZyB4PSIxNzUiIHk9IjE1MCIgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiPgo8cGF0aCBkPSJNMyA3VjE3QTIgMiAwIDAgMCA1IDE5SDE5QTIgMiAwIDAgMCAyMSAxN1Y3QTIgMiAwIDAgMCAxOSA1SDVBMiAyIDAgMCAwIDMgN1oiIHN0cm9rZT0iIzk0YTNiOCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPHN2ZyB4PSI4IiB5PSI5IiB3aWR0aD0iOCIgaGVpZ2h0PSI2IiB2aWV3Qm94PSIwIDAgOCA2IiBmaWxsPSJub25lIj4KPHN2ZyB3aWR0aD0iOCIgaGVpZ2h0PSI2IiB2aWV3Qm94PSIwIDAgOCA2IiBmaWxsPSJub25lIj4KPHBhdGggZD0iTTEgNUw0IDJMNyA1IiBzdHJva2U9IiM5NGEzYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo8L3N2Zz4KPC9zdmc+Cjx0ZXh0IHg9IjIwMCIgeT0iMjMwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjNjM3MzgxIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiPtir2YTYp9is2KUgTEc8L3RleHQ+Cjwvc3ZnPg==",
-      "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjZjlmYWZiIi8+CjxyZWN0IHg9IjUwIiB5PSI1MCIgd2lkdGg9IjMwMCIgaGVpZ2h0PSIzMDAiIHJ4PSIxMCIgZmlsbD0iI2ZmZmZmZiIgc3Ryb2tlPSIjZTVlN2ViIiBzdHJva2Utd2lkdGg9IjIiLz4KPHN2ZyB4PSIxNzUiIHk9IjE1MCIgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiPgo8cGF0aCBkPSJNMyA3VjE3QTIgMiAwIDAgMCA1IDE5SDE5QTIgMiAwIDAgMCAyMSAxN1Y3QTIgMiAwIDAgMCAxOSA1SDVBMiAyIDAgMCAwIDMgN1oiIHN0cm9rZT0iIzk0YTNiOCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPHN2ZyB4PSI4IiB5PSI5IiB3aWR0aD0iOCIgaGVpZ2h0PSI2IiB2aWV3Qm94PSIwIDAgOCA2IiBmaWxsPSJub25lIj4KPHN2ZyB3aWR0aD0iOCIgaGVpZ2h0PSI2IiB2aWV3Qm94PSIwIDAgOCA2IiBmaWxsPSJub25lIj4KPHBhdGggZD0iTTEgNUw0IDJMNyA1IiBzdHJva2U9IiM5NGEzYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo8L3N2Zz4KPC9zdmc+Cjx0ZXh0IHg9IjIwMCIgeT0iMjMwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjNjM3MzgxIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiPtir2YTYp9is2KUgTEc8L3RleHQ+Cjwvc3ZnPg=="
-      ],
-      rating: 4.5,
-      reviews: 124,
-      category: "أجهزة المطبخ",
-      brand: "LG",
-      discount: 17,
-      inStock: true,
-      stockCount: 15,
-      description: "ثلاجة LG الحديثة بسعة 18 قدم مكعب مع تقنية التبريد المتقدمة وفريزر علوي واسع. تتميز بتصميم أنيق وكفاءة في استهلاك الطاقة مع ضمان شامل لمدة 5 سنوات.",
-      features: [
-        "تقنية التبريد الذكي",
-        "فريزر علوي واسع",
-        "رفوف قابلة للتعديل",
-        "إضاءة LED داخلية",
-        "باب قابل للعكس",
-        "كفاءة في الطاقة A++"
-      ],
-      specifications: {
-        "السعة الإجمالية": "18 قدم مكعب",
-        "نوع الفريزر": "علوي",
-        "استهلاك الطاقة": "150 واط/ساعة",
-        "الأبعاد": "70 × 60 × 170 سم",
-        "الوزن": "65 كيلو",
-        "اللون": "فضي",
-        "الضمان": "5 سنوات",
-        "بلد المنشأ": "كوريا الجنوبية"
-      },
-      warranty: "ضمان شامل لمدة 5 سنوات",
-      deliveryTime: "2-3 أيام عمل"
-    },
-    {
-      id: 2,
-      name: "غسالة Samsung أتوماتيك 8 كيلو",
-      price: 1800,
-      originalPrice: 2200,
-      images: [
-        "https://images.samsung.com/is/image/samsung/p6pim/levant/ww80j5555fx-fh/gallery/levant-front-loading-washer-ww80j5555fx-fh-ww80j5555fx-fh-frontinox-205395803?$650_519_PNG$",
-        "https://images.samsung.com/is/image/samsung/p6pim/levant/ww80j5555fx-fh/gallery/levant-front-loading-washer-ww80j5555fx-fh-ww80j5555fx-fh-leftinox-205395803?$650_519_PNG$",
-        "https://images.samsung.com/is/image/samsung/p6pim/levant/ww80j5555fx-fh/gallery/levant-front-loading-washer-ww80j5555fx-fh-ww80j5555fx-fh-rightinox-205395803?$650_519_PNG$"
-      ],
-      rating: 4.3,
-      reviews: 89,
-      category: "أجهزة الغسيل",
-      brand: "Samsung",
-      discount: 18,
-      inStock: true,
-      stockCount: 8,
-      description: "غسالة Samsung الأتوماتيكية بسعة 8 كيلو مع تقنية الغسيل الذكي وبرامج متعددة للعناية بالملابس المختلفة.",
-      features: [
-        "سعة 8 كيلو",
-        "12 برنامج غسيل",
-        "تقنية الفقاعات",
-        "توفير في الماء والطاقة",
-        "شاشة رقمية",
-        "حماية من التسريب"
-      ],
-      specifications: {
-        "السعة": "8 كيلو",
-        "النوع": "أتوماتيكية",
-        "عدد البرامج": "12 برنامج",
-        "استهلاك الماء": "45 لتر/دورة",
-        "الأبعاد": "60 × 60 × 85 سم",
-        "الوزن": "55 كيلو",
-        "اللون": "أبيض",
-        "الضمان": "سنتان"
-      },
-      warranty: "ضمان شامل لمدة سنتين",
-      deliveryTime: "1-2 أيام عمل"
-    }
-  ];
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [breadcrumbCategories, setBreadcrumbCategories] = useState<{ main?: BreadcrumbCategory; sub?: BreadcrumbCategory }>({});
 
   useEffect(() => {
-    if (id) {
-      const foundProduct = sampleProducts.find(p => p.id === parseInt(id));
-      if (foundProduct) {
-        setProduct(foundProduct);
-      } else {
-        navigate('/products');
+    const loadProduct = async () => {
+      if (id) {
+        try {
+          const [productResponse, categoriesResponse] = await Promise.all([
+            productsAPI.getProduct(Number(id)),
+            categoriesAPI.getCategories().catch((error) => {
+              console.error("Error loading categories for breadcrumb:", error);
+              return { data: [] };
+            }),
+          ]);
+
+          const apiProduct = productResponse.data;
+          const categoriesData = categoriesResponse?.data || [];
+
+          const categoriesMap = new Map<number, BreadcrumbCategory>();
+          if (Array.isArray(categoriesData)) {
+            const addCategoryToMap = (cat: any) => {
+              if (!cat) return;
+              const categoryId = Number(cat.id);
+              if (!Number.isNaN(categoryId)) {
+                categoriesMap.set(categoryId, {
+                  id: categoryId,
+                  name: cat.name,
+                  parent_id:
+                    cat.parent_id !== undefined && cat.parent_id !== null
+                      ? Number(cat.parent_id)
+                      : null,
+                  slug: cat.slug,
+                });
+              }
+
+              if (Array.isArray(cat.children)) {
+                cat.children.forEach(addCategoryToMap);
+              }
+            };
+
+            categoriesData.forEach(addCategoryToMap);
+          }
+          
+          console.log('Product from API:', apiProduct);
+          console.log('Images from API:', apiProduct.images);
+          
+          // Transform images array from objects to URLs
+          const transformedImages: string[] = [];
+          if (apiProduct.images && Array.isArray(apiProduct.images)) {
+            apiProduct.images.forEach((img: any) => {
+              if (typeof img === 'string') {
+                transformedImages.push(img);
+              } else if (img && typeof img === 'object') {
+                // Extract image_url from object
+                if (img.image_url) {
+                  transformedImages.push(img.image_url);
+                } else if (img.image_path) {
+                  // Build full URL if image_path exists
+                  const imageUrl = img.image_path.startsWith('http') 
+                    ? img.image_path 
+                    : `http://localhost:8000/storage/${img.image_path}`;
+                  transformedImages.push(imageUrl);
+                }
+              }
+            });
+          }
+          
+          console.log('Original images from API:', apiProduct.images);
+          console.log('Transformed images URLs:', transformedImages);
+          
+          // Transform API data to match ProductDetail interface
+          const transformedProduct: ProductDetail = {
+            id: apiProduct.id,
+            name: apiProduct.name,
+            price: apiProduct.price,
+            originalPrice: apiProduct.original_price,
+            images: transformedImages.length > 0 ? transformedImages : ['/placeholder.svg'],
+            rating: apiProduct.rating || 0,
+            reviews: apiProduct.reviews_count || 0,
+            category: apiProduct.category?.name || '',
+            brand: apiProduct.brand?.name || '',
+            discount: apiProduct.discount_percentage,
+            inStock: apiProduct.in_stock || apiProduct.stock_quantity > 0,
+            stockCount: apiProduct.stock_quantity || 0,
+            description: apiProduct.description || '',
+            features: apiProduct.features || [],
+            specifications: apiProduct.specifications || {},
+            warranty: apiProduct.warranty || 'ضمان شامل',
+            deliveryTime: apiProduct.delivery_time || '2-3 أيام عمل'
+          };
+          
+          console.log('Transformed product:', transformedProduct);
+          console.log('Transformed images count:', transformedProduct.images.length);
+          
+          if (categoriesMap.size > 0) {
+            setBreadcrumbCategories(deriveBreadcrumbCategories(apiProduct, categoriesMap));
+          } else {
+            setBreadcrumbCategories({});
+          }
+
+          setProduct(transformedProduct);
+        } catch (err) {
+          console.error('Error loading product from API:', err);
+          navigate('/products');
+        }
       }
-    }
+    };
+    
+    loadProduct();
   }, [id, navigate]);
 
   const handleAddToCart = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -153,7 +245,7 @@ const Product = () => {
       
       // Trigger animation
       triggerAnimation(buttonElement, {
-        image: product.images[0],
+        image: product.images && product.images[0] ? product.images[0] : '/placeholder.svg',
         name: product.name
       });
       
@@ -162,9 +254,13 @@ const Product = () => {
         id: product.id,
         name: product.name,
         price: product.price,
-        image: product.images[0],
-        quantity: quantity
+        image: product.images && product.images[0] ? product.images[0] : '/placeholder.svg',
+        brand: product.brand || ''
       });
+      // Update quantity after adding
+      if (quantity > 1) {
+        updateQuantity(product.id, quantity);
+      }
     }
   };
 
@@ -205,25 +301,53 @@ const Product = () => {
     );
   }
 
+  const breadcrumbItems: BreadcrumbItem[] = [
+    { label: "الرئيسية", href: "/" },
+    { label: "المنتجات", href: "/products" },
+  ];
+
+  if (breadcrumbCategories.main) {
+    breadcrumbItems.push({
+      label: breadcrumbCategories.main.name,
+      href: `/products?category_id=${breadcrumbCategories.main.id}`,
+    });
+  }
+
+  if (
+    breadcrumbCategories.sub &&
+    breadcrumbCategories.sub.id !== breadcrumbCategories.main?.id
+  ) {
+    breadcrumbItems.push({
+      label: breadcrumbCategories.sub.name,
+      href: `/products?category_id=${breadcrumbCategories.sub.id}`,
+    });
+  }
+
+  breadcrumbItems.push({ label: product.name });
+
   return (
     <div className="min-h-screen bg-gray-50 arabic">
       <Header 
-        showSearch={false}
-        showActions={false}
-        showBackButton={true}
-        backButtonText="العودة للمنتجات"
-        backButtonLink="/products"
+        showSearch={true}
+        showActions={true}
       />
 
       {/* Breadcrumb */}
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 py-3">
-          <nav className="flex items-center gap-2 text-sm text-gray-600">
-            <Link to="/" className="hover:text-blue-600">الرئيسية</Link>
-            <ChevronLeft className="w-4 h-4" />
-            <Link to="/products" className="hover:text-blue-600">المنتجات</Link>
-            <ChevronLeft className="w-4 h-4" />
-            <span className="text-gray-800">{product.name}</span>
+          <nav className="flex items-center gap-2 text-sm text-gray-600 flex-wrap">
+            {breadcrumbItems.map((item, index) => (
+              <Fragment key={`${item.label}-${index}`}>
+                {index > 0 && <ChevronLeft className="w-4 h-4" />}
+                {item.href ? (
+                  <Link to={item.href} className="hover:text-blue-600">
+                    {item.label}
+                  </Link>
+                ) : (
+                  <span className="text-gray-800">{item.label}</span>
+                )}
+              </Fragment>
+            ))}
           </nav>
         </div>
       </div>
@@ -235,9 +359,14 @@ const Product = () => {
             {/* Main Image */}
             <div className="relative bg-white rounded-2xl shadow-lg overflow-hidden">
               <img 
-                src={product.images[selectedImage]} 
+                src={product.images && product.images[selectedImage] ? product.images[selectedImage] : '/placeholder.svg'} 
                 alt={product.name}
-                className="w-full h-96 object-cover"
+                className="w-full h-96 object-contain bg-white cursor-pointer hover:opacity-90 transition-opacity"
+                onClick={() => setIsImageModalOpen(true)}
+                onError={(e) => {
+                  console.error('Image load error:', e.currentTarget.src);
+                  e.currentTarget.src = '/placeholder.svg';
+                }}
               />
               {product.discount && (
                 <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
@@ -274,8 +403,21 @@ const Product = () => {
                     className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
                       selectedImage === index ? 'border-blue-500' : 'border-gray-200 hover:border-gray-300'
                     }`}
+                    type="button"
                   >
-                    <img src={image} alt={`${product.name} ${index + 1}`} className="w-full h-full object-cover" />
+                    <img 
+                      src={image || '/placeholder.svg'} 
+                      alt={`${product.name} ${index + 1}`}
+                      className="w-full h-full object-contain bg-white cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => {
+                        setSelectedImage(index);
+                        setIsImageModalOpen(true);
+                      }}
+                      onError={(e) => {
+                        console.error('Thumbnail image load error:', e.currentTarget.src);
+                        e.currentTarget.src = '/placeholder.svg';
+                      }}
+                    />
                   </button>
                 ))}
               </div>
@@ -531,7 +673,7 @@ const Product = () => {
                         name: "محمد السعيد",
                         rating: 5,
                         date: "منذ شهر",
-                        comment: "أفضل منتج اشتريته هذا العام. يستحق كل ريال دفعته فيه."
+                        comment: "أفضل منتج اشتريته هذا العام. يستحق كل شيكل دفعته فيه."
                       }
                     ].map((review, index) => (
                       <div key={index} className="border border-gray-200 rounded-lg p-4">
@@ -594,6 +736,98 @@ const Product = () => {
           </div>
         </div>
       </div>
+
+      {/* Image Modal/Lightbox */}
+      {isImageModalOpen && product && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-4"
+          onClick={() => setIsImageModalOpen(false)}
+        >
+          <div className="relative max-w-7xl w-full h-full flex items-center justify-center">
+            {/* Close Button */}
+            <button
+              onClick={() => setIsImageModalOpen(false)}
+              className="absolute top-4 right-4 z-10 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-full p-2 transition-all"
+              aria-label="إغلاق"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            {/* Main Image */}
+            <img
+              src={product.images && product.images[selectedImage] ? product.images[selectedImage] : '/placeholder.svg'}
+              alt={product.name}
+              className="max-w-full max-h-full object-contain"
+              onClick={(e) => e.stopPropagation()}
+              onError={(e) => {
+                e.currentTarget.src = '/placeholder.svg';
+              }}
+            />
+
+            {/* Navigation Buttons */}
+            {product.images.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    prevImage();
+                  }}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-full p-3 transition-all z-10"
+                  aria-label="الصورة السابقة"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    nextImage();
+                  }}
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-full p-3 transition-all z-10"
+                  aria-label="الصورة التالية"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+              </>
+            )}
+
+            {/* Image Counter */}
+            {product.images.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 text-white px-4 py-2 rounded-full text-sm">
+                {selectedImage + 1} / {product.images.length}
+              </div>
+            )}
+
+            {/* Thumbnail Strip (optional - at bottom) */}
+            {product.images.length > 1 && product.images.length <= 10 && (
+              <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 flex gap-2 overflow-x-auto max-w-4xl px-4">
+                {product.images.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedImage(index);
+                    }}
+                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                      selectedImage === index 
+                        ? 'border-white border-opacity-100 scale-110' 
+                        : 'border-white border-opacity-30 hover:border-opacity-60'
+                    }`}
+                  >
+                    <img
+                      src={image || '/placeholder.svg'}
+                      alt={`${product.name} ${index + 1}`}
+                      className="w-full h-full object-contain bg-white"
+                      onError={(e) => {
+                        e.currentTarget.src = '/placeholder.svg';
+                      }}
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

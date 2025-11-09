@@ -134,9 +134,8 @@ const Shipping = () => {
   return (
     <div className="min-h-screen bg-gray-50 arabic">
       <Header 
-        showSearch={false}
-        showActions={false}
-        showBackButton={true}
+        showSearch={true}
+        showActions={true}
       />
 
       {/* Hero Section */}

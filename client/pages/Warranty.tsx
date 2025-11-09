@@ -1,166 +1,118 @@
 import { Link } from "react-router-dom";
 import { Shield, Clock, CheckCircle, Settings, Phone, FileText, AlertTriangle, Award, Wrench, Zap } from "lucide-react";
+import { useState, useEffect } from "react";
 import Header from "../components/Header";
+import { settingsAPI } from "../services/api";
+
+interface WarrantySettings {
+  warranty_hero_title?: string;
+  warranty_hero_description?: string;
+  warranty_types?: Array<{
+    title: string;
+    duration: string;
+    coverage: string;
+    description: string;
+    features?: string[];
+  }>;
+  warranty_periods?: Array<{
+    category: string;
+    items: string[];
+    period: string;
+  }>;
+  warranty_process?: Array<{
+    step: number;
+    title: string;
+    description: string;
+  }>;
+  warranty_conditions?: Array<{
+    title: string;
+    description: string;
+    important?: boolean;
+  }>;
+  warranty_excluded?: string[];
+  warranty_services?: Array<{
+    title: string;
+    description: string;
+    availability: string;
+  }>;
+  warranty_notes?: Array<{
+    title: string;
+    description: string;
+    type?: string;
+  }>;
+  warranty_cta_title?: string;
+  warranty_cta_description?: string;
+  warranty_cta_phone?: string;
+}
 
 const Warranty = () => {
-  const warrantyTypes = [
-    {
-      icon: <Shield className="w-8 h-8 text-blue-600" />,
-      title: "ضمان الشركة المصنعة",
-      duration: "حسب نوع المنتج",
-      coverage: "عيوب التصنيع والمواد",
-      description: "ضمان أصلي من الشركة المصنعة يغطي جميع عيوب التصنيع",
-      features: ["إصلاح مجاني", "استبدال القطع", "دعم فني متخصص"]
-    },
-    {
-      icon: <Award className="w-8 h-8 text-gold-600" />,
-      title: "ضمان أبو زينة الممتد",
-      duration: "سنة إضافية",
-      coverage: "تغطية شاملة",
-      description: "ضمان إضافي من أبو زينة للتقنيات يمتد لسنة كاملة",
-      features: ["خدمة منزلية", "صيانة دورية", "استشارة فنية"]
-    },
-    {
-      icon: <Wrench className="w-8 h-8 text-green-600" />,
-      title: "ضمان التركيب",
-      duration: "6 أشهر",
-      coverage: "أخطاء التركيب",
-      description: "ضمان خاص على خدمة التركيب والتشغيل الأولي",
-      features: ["إعادة تركيب", "ضبط الإعدادات", "تدريب الاستخدام"]
+  const [settings, setSettings] = useState<WarrantySettings>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      const response = await settingsAPI.getSettings('warranty');
+      if (response && response.data) {
+        setSettings(response.data);
+      }
+    } catch (error) {
+      console.error("Error loading warranty settings:", error);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 arabic">
+        <Header showSearch={true} showActions={true} />
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    );
+  }
+  const warrantyTypes = settings.warranty_types || [];
+  const warrantyIcons = [Shield, Award, Wrench];
+
+  const warrantyPeriods = settings.warranty_periods || [];
+  const periodColors = [
+    "bg-blue-100 text-blue-800",
+    "bg-green-100 text-green-800",
+    "bg-purple-100 text-purple-800",
+    "bg-yellow-100 text-yellow-800"
   ];
 
-  const warrantyPeriods = [
-    {
-      category: "الأجهزة الكبيرة",
-      items: ["الثلاجات", "الغسالات", "المكيفات", "الأفران"],
-      period: "2-5 سنوات",
-      color: "bg-blue-100 text-blue-800"
-    },
-    {
-      category: "الأجهزة الصغيرة",
-      items: ["الخلاطات", "المكانس", "أجهزة القهوة", "المكاوي"],
-      period: "1-2 سنة",
-      color: "bg-green-100 text-green-800"
-    },
-    {
-      category: "الإلكترونيات",
-      items: ["التلفزيونات", "أجهزة الصوت", "الحاسوب", "الهواتف"],
-      period: "1-3 سنوات",
-      color: "bg-purple-100 text-purple-800"
-    },
-    {
-      category: "الإكسسوارات",
-      items: ["الكابلات", "الشواحن", "السماعات", "الحقائب"],
-      period: "6 أشهر - 1 سنة",
-      color: "bg-yellow-100 text-yellow-800"
-    }
-  ];
+  const warrantyProcess = settings.warranty_process || [];
+  const processIcons = [Phone, Settings, Clock, CheckCircle];
 
-  const warrantyProcess = [
-    {
-      step: 1,
-      title: "الإبلاغ عن المشكلة",
-      description: "تواصل معنا عبر الهاتف أو الموقع الإلكتروني",
-      icon: <Phone className="w-6 h-6" />
-    },
-    {
-      step: 2,
-      title: "التشخيص الأولي",
-      description: "نقوم بتشخيص المشكلة وتحديد نوع الخدمة المطلوبة",
-      icon: <Settings className="w-6 h-6" />
-    },
-    {
-      step: 3,
-      title: "جدولة الخدمة",
-      description: "نحدد موعد مناسب للصيانة أو الاستبدال",
-      icon: <Clock className="w-6 h-6" />
-    },
-    {
-      step: 4,
-      title: "تنفيذ الخدمة",
-      description: "نقوم بالإصلاح أو الاستبدال حسب شروط الضمان",
-      icon: <CheckCircle className="w-6 h-6" />
-    }
-  ];
+  const warrantyConditions = settings.warranty_conditions || [];
+  const conditionIcons = [FileText, Shield, Zap, Clock];
+  const conditionIconColors = ["text-blue-600", "text-green-600", "text-yellow-600", "text-purple-600"];
 
-  const warrantyConditions = [
-    {
-      icon: <FileText className="w-6 h-6 text-blue-600" />,
-      title: "الاحتفاظ بالفاتورة",
-      description: "يجب الاحتفاظ بالفاتورة الأصلية كإثبات للشراء",
-      important: true
-    },
-    {
-      icon: <Shield className="w-6 h-6 text-green-600" />,
-      title: "الاستخدام الصحيح",
-      description: "يجب استخدام المنتج وفقاً لتعليمات الشركة المصنعة",
-      important: true
-    },
-    {
-      icon: <Zap className="w-6 h-6 text-yellow-600" />,
-      title: "عدم التلاعب",
-      description: "عدم فتح أو إصلاح المنتج من قبل أشخاص غير مخولين",
-      important: true
-    },
-    {
-      icon: <Clock className="w-6 h-6 text-purple-600" />,
-      title: "الإبلاغ المبكر",
-      description: "الإبلاغ عن المشاكل فور اكتشافها وعدم التأخير",
-      important: false
-    }
-  ];
+  const excludedItems = settings.warranty_excluded || [];
 
-  const excludedItems = [
-    "الأضرار الناتجة عن سوء الاستخدام أو الإهمال",
-    "الأضرار الناتجة عن الكوارث الطبيعية",
-    "البلى الطبيعي والاستهلاك العادي",
-    "الأضرار الناتجة عن التيار الكهربائي غير المستقر",
-    "الخدش أو الكسر الناتج عن الحوادث",
-    "الأضرار الناتجة عن استخدام قطع غيار غير أصلية"
-  ];
-
-  const services = [
-    {
-      icon: <Wrench className="w-8 h-8 text-blue-600" />,
-      title: "صيانة منزلية",
-      description: "نأتي إلى منزلك لإصلاح الأجهزة الكبيرة",
-      availability: "متاح في المدن الرئيسية"
-    },
-    {
-      icon: <Settings className="w-8 h-8 text-green-600" />,
-      title: "مركز الصيانة",
-      description: "أحضر جهازك إلى مركز الصيانة المعتمد",
-      availability: "متاح في جميع الفروع"
-    },
-    {
-      icon: <Phone className="w-8 h-8 text-purple-600" />,
-      title: "دعم فني هاتفي",
-      description: "احصل على مساعدة فنية عبر الهاتف",
-      availability: "24/7 متاح"
-    },
-    {
-      icon: <CheckCircle className="w-8 h-8 text-red-600" />,
-      title: "استبدال فوري",
-      description: "استبدال المنتج في حالة العيوب الجوهرية",
-      availability: "حسب توفر المخزون"
-    }
-  ];
+  const services = settings.warranty_services || [];
+  const serviceIcons = [Wrench, Settings, Phone, CheckCircle];
+  const serviceIconColors = ["text-blue-600", "text-green-600", "text-purple-600", "text-red-600"];
 
   return (
     <div className="min-h-screen bg-gray-50 arabic">
       <Header 
-        showSearch={false}
-        showActions={false}
-        showBackButton={true}
+        showSearch={true}
+        showActions={true}
       />
 
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white py-20">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-5xl font-bold mb-6">سياسة الضمان</h1>
+          <h1 className="text-5xl font-bold mb-6">{settings.warranty_hero_title || "سياسة الضمان"}</h1>
           <p className="text-xl text-blue-200 max-w-3xl mx-auto leading-relaxed">
-            نقدم ضمان شامل على جميع منتجاتنا لضمان راحة بالكم وثقتكم في مشترياتكم
+            {settings.warranty_hero_description || "نقدم ضمان شامل على جميع منتجاتنا لضمان راحة بالكم وثقتكم في مشترياتكم"}
           </p>
         </div>
       </section>
@@ -174,29 +126,36 @@ const Warranty = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {warrantyTypes.map((warranty, index) => (
-              <div key={index} className="bg-gray-50 p-8 rounded-2xl hover:shadow-lg transition-all duration-300 border-2 border-transparent hover:border-blue-200">
-                <div className="text-center mb-6">
-                  <div className="flex justify-center mb-4">
-                    {warranty.icon}
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-800 mb-2">{warranty.title}</h3>
-                  <div className="text-lg text-blue-600 font-semibold mb-1">{warranty.duration}</div>
-                  <div className="text-sm text-green-600">{warranty.coverage}</div>
-                </div>
-                
-                <p className="text-gray-600 text-center mb-6">{warranty.description}</p>
-                
-                <div className="space-y-3">
-                  {warranty.features.map((feature, idx) => (
-                    <div key={idx} className="flex items-center gap-3">
-                      <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                      <span className="text-gray-700">{feature}</span>
+            {warrantyTypes.map((warranty, index) => {
+              const IconComponent = warrantyIcons[index % warrantyIcons.length];
+              const iconColors = ["text-blue-600", "text-yellow-600", "text-green-600"];
+              
+              return (
+                <div key={index} className="bg-gray-50 p-8 rounded-2xl hover:shadow-lg transition-all duration-300 border-2 border-transparent hover:border-blue-200">
+                  <div className="text-center mb-6">
+                    <div className="flex justify-center mb-4">
+                      <IconComponent className={`w-8 h-8 ${iconColors[index % iconColors.length]}`} />
                     </div>
-                  ))}
+                    <h3 className="text-2xl font-bold text-gray-800 mb-2">{warranty.title}</h3>
+                    <div className="text-lg text-blue-600 font-semibold mb-1">{warranty.duration}</div>
+                    <div className="text-sm text-green-600">{warranty.coverage}</div>
+                  </div>
+                  
+                  <p className="text-gray-600 text-center mb-6">{warranty.description}</p>
+                  
+                  {warranty.features && warranty.features.length > 0 && (
+                    <div className="space-y-3">
+                      {warranty.features.map((feature, idx) => (
+                        <div key={idx} className="flex items-center gap-3">
+                          <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                          <span className="text-gray-700">{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -212,18 +171,20 @@ const Warranty = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {warrantyPeriods.map((period, index) => (
               <div key={index} className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
-                <div className={`inline-block px-3 py-1 rounded-full text-sm font-semibold mb-4 ${period.color}`}>
+                <div className={`inline-block px-3 py-1 rounded-full text-sm font-semibold mb-4 ${periodColors[index % periodColors.length]}`}>
                   {period.period}
                 </div>
                 <h3 className="text-xl font-bold text-gray-800 mb-4">{period.category}</h3>
-                <div className="space-y-2">
-                  {period.items.map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                      <span className="text-gray-600 text-sm">{item}</span>
-                    </div>
-                  ))}
-                </div>
+                {period.items && period.items.length > 0 && (
+                  <div className="space-y-2">
+                    {period.items.map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                        <span className="text-gray-600 text-sm">{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -239,23 +200,27 @@ const Warranty = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {warrantyProcess.map((step, index) => (
-              <div key={index} className="text-center">
-                <div className="relative mb-6">
-                  <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-4">
-                    {step.icon}
+            {warrantyProcess.map((step, index) => {
+              const IconComponent = processIcons[index % processIcons.length];
+              
+              return (
+                <div key={index} className="text-center">
+                  <div className="relative mb-6">
+                    <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-4">
+                      <IconComponent className="w-6 h-6" />
+                    </div>
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 text-gray-800 rounded-full flex items-center justify-center text-sm font-bold">
+                      {step.step || index + 1}
+                    </div>
+                    {index < warrantyProcess.length - 1 && (
+                      <div className="hidden md:block absolute top-8 left-full w-full h-0.5 bg-gray-300 transform translate-x-4"></div>
+                    )}
                   </div>
-                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 text-gray-800 rounded-full flex items-center justify-center text-sm font-bold">
-                    {step.step}
-                  </div>
-                  {index < warrantyProcess.length - 1 && (
-                    <div className="hidden md:block absolute top-8 left-full w-full h-0.5 bg-gray-300 transform translate-x-4"></div>
-                  )}
+                  <h3 className="text-xl font-bold text-gray-800 mb-3">{step.title}</h3>
+                  <p className="text-gray-600">{step.description}</p>
                 </div>
-                <h3 className="text-xl font-bold text-gray-800 mb-3">{step.title}</h3>
-                <p className="text-gray-600">{step.description}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -269,25 +234,30 @@ const Warranty = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {warrantyConditions.map((condition, index) => (
-              <div key={index} className={`p-8 rounded-2xl ${condition.important ? 'bg-red-50 border-2 border-red-200' : 'bg-white'} hover:shadow-lg transition-all duration-300`}>
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0">
-                    {condition.icon}
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-3">{condition.title}</h3>
-                    <p className="text-gray-600 leading-relaxed">{condition.description}</p>
-                    {condition.important && (
-                      <div className="mt-3 flex items-center gap-2">
-                        <AlertTriangle className="w-5 h-5 text-red-500" />
-                        <span className="text-red-600 font-semibold text-sm">شرط إجباري</span>
-                      </div>
-                    )}
+            {warrantyConditions.map((condition, index) => {
+              const IconComponent = conditionIcons[index % conditionIcons.length];
+              const iconColor = conditionIconColors[index % conditionIconColors.length];
+              
+              return (
+                <div key={index} className={`p-8 rounded-2xl ${condition.important !== false ? 'bg-red-50 border-2 border-red-200' : 'bg-white'} hover:shadow-lg transition-all duration-300`}>
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0">
+                      <IconComponent className={`w-6 h-6 ${iconColor}`} />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-800 mb-3">{condition.title}</h3>
+                      <p className="text-gray-600 leading-relaxed">{condition.description}</p>
+                      {(condition.important !== false) && (
+                        <div className="mt-3 flex items-center gap-2">
+                          <AlertTriangle className="w-5 h-5 text-red-500" />
+                          <span className="text-red-600 font-semibold text-sm">شرط إجباري</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -301,22 +271,29 @@ const Warranty = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {services.map((service, index) => (
-              <div key={index} className="bg-gray-50 p-6 rounded-xl hover:shadow-lg transition-all duration-300">
-                <div className="text-center mb-4">
-                  <div className="flex justify-center mb-3">
-                    {service.icon}
+            {services.map((service, index) => {
+              const IconComponent = serviceIcons[index % serviceIcons.length];
+              const iconColor = serviceIconColors[index % serviceIconColors.length];
+              
+              return (
+                <div key={index} className="bg-gray-50 p-6 rounded-xl hover:shadow-lg transition-all duration-300">
+                  <div className="text-center mb-4">
+                    <div className="flex justify-center mb-3">
+                      <IconComponent className={`w-8 h-8 ${iconColor}`} />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-800 mb-2">{service.title}</h3>
                   </div>
-                  <h3 className="text-lg font-bold text-gray-800 mb-2">{service.title}</h3>
+                  <p className="text-gray-600 text-sm mb-3 text-center">{service.description}</p>
+                  {service.availability && (
+                    <div className="text-center">
+                      <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-semibold">
+                        {service.availability}
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <p className="text-gray-600 text-sm mb-3 text-center">{service.description}</p>
-                <div className="text-center">
-                  <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-semibold">
-                    {service.availability}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -345,52 +322,48 @@ const Warranty = () => {
       </section>
 
       {/* Important Notes */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-800 mb-4">ملاحظات مهمة</h2>
-          </div>
-          
-          <div className="max-w-4xl mx-auto space-y-6">
-            <div className="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg">
-              <div className="flex items-start gap-3">
-                <Shield className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
-                <div>
-                  <h3 className="font-bold text-blue-800 mb-2">تسجيل الضمان</h3>
-                  <p className="text-blue-700">يُنصح بتسجيل المنتج لدى الشركة المصنعة لضمان أفضل خدمة.</p>
-                </div>
-              </div>
+      {settings.warranty_notes && settings.warranty_notes.length > 0 && (
+        <section className="py-20 bg-white">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-bold text-gray-800 mb-4">ملاحظات مهمة</h2>
             </div>
             
-            <div className="bg-green-50 border-l-4 border-green-500 p-6 rounded-lg">
-              <div className="flex items-start gap-3">
-                <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
-                <div>
-                  <h3 className="font-bold text-green-800 mb-2">الصيانة الدورية</h3>
-                  <p className="text-green-700">الصيانة الدورية تساعد في الحفاظ على الضمان وإطالة عمر المنتج.</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-yellow-50 border-l-4 border-yellow-500 p-6 rounded-lg">
-              <div className="flex items-start gap-3">
-                <Clock className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-1" />
-                <div>
-                  <h3 className="font-bold text-yellow-800 mb-2">انتهاء الضمان</h3>
-                  <p className="text-yellow-700">بعد انتهاء الضمان، نقدم خدمات الصيانة بأسعار تفضيلية لعملائنا.</p>
-                </div>
-              </div>
+            <div className="max-w-4xl mx-auto space-y-6">
+              {settings.warranty_notes.map((note, index) => {
+                const typeColors: { [key: string]: { bg: string; border: string; icon: string; title: string; text: string } } = {
+                  blue: { bg: 'bg-blue-50', border: 'border-blue-500', icon: 'text-blue-600', title: 'text-blue-800', text: 'text-blue-700' },
+                  green: { bg: 'bg-green-50', border: 'border-green-500', icon: 'text-green-600', title: 'text-green-800', text: 'text-green-700' },
+                  yellow: { bg: 'bg-yellow-50', border: 'border-yellow-500', icon: 'text-yellow-600', title: 'text-yellow-800', text: 'text-yellow-700' },
+                  purple: { bg: 'bg-purple-50', border: 'border-purple-500', icon: 'text-purple-600', title: 'text-purple-800', text: 'text-purple-700' },
+                };
+                const colors = typeColors[note.type || 'blue'] || typeColors.blue;
+                const icons = [Shield, CheckCircle, Clock];
+                const IconComponent = icons[index % icons.length];
+                
+                return (
+                  <div key={index} className={`${colors.bg} border-l-4 ${colors.border} p-6 rounded-lg`}>
+                    <div className="flex items-start gap-3">
+                      <IconComponent className={`w-6 h-6 ${colors.icon} flex-shrink-0 mt-1`} />
+                      <div>
+                        <h3 className={`font-bold ${colors.title} mb-2`}>{note.title}</h3>
+                        <p className={colors.text}>{note.description}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Contact Section */}
       <section className="py-16 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-4">تحتاج خدمة ضمان؟</h2>
+          <h2 className="text-3xl font-bold mb-4">{settings.warranty_cta_title || "تحتاج خدمة ضمان؟"}</h2>
           <p className="text-xl text-blue-200 mb-8">
-            تواصل معنا الآن للحصول على خدمة الضمان
+            {settings.warranty_cta_description || "تواصل معنا الآن للحصول على خدمة الضمان"}
           </p>
           <div className="flex gap-4 justify-center">
             <Link
@@ -399,12 +372,14 @@ const Warranty = () => {
             >
               تواصل معنا
             </Link>
-            <a
-              href="tel:+966111234567"
-              className="border-2 border-white text-white px-8 py-4 rounded-full hover:bg-white hover:text-blue-600 transition-colors font-semibold"
-            >
-              اتصل الآن
-            </a>
+            {settings.warranty_cta_phone && (
+              <a
+                href={`tel:${settings.warranty_cta_phone}`}
+                className="border-2 border-white text-white px-8 py-4 rounded-full hover:bg-white hover:text-blue-600 transition-colors font-semibold"
+              >
+                اتصل الآن
+              </a>
+            )}
           </div>
         </div>
       </section>

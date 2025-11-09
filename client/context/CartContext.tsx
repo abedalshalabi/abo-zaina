@@ -1,4 +1,5 @@
-import { createContext, useContext, useReducer, ReactNode } from "react";
+import { createContext, useContext, useReducer, ReactNode, useEffect } from "react";
+import { cartAPI } from "../services/api";
 
 interface CartItem {
   id: number;

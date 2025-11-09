@@ -1,9 +1,36 @@
 import { Link } from "react-router-dom";
 import { Phone, Mail, MapPin, Clock, Send, MessageCircle, Headphones, Shield } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "../components/Header";
+import { settingsAPI } from "../services/api";
+
+interface ContactSettings {
+  contact_hero_title?: string;
+  contact_hero_description?: string;
+  contact_phone?: string;
+  contact_email?: string;
+  contact_address?: string;
+  contact_working_hours?: string;
+  contact_services?: Array<{
+    title: string;
+    description: string;
+    icon?: string;
+  }>;
+  contact_subjects?: string[];
+  contact_map_address?: string;
+  contact_cta_title?: string;
+  contact_cta_description?: string;
+  contact_cta_phone?: string;
+  contact_cta_whatsapp?: string;
+  contact_faq?: Array<{
+    question: string;
+    answer: string;
+  }>;
+}
 
 const Contact = () => {
+  const [settings, setSettings] = useState<ContactSettings>({});
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -13,6 +40,23 @@ const Contact = () => {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      const response = await settingsAPI.getSettings('contact');
+      if (response && response.data) {
+        setSettings(response.data);
+      }
+    } catch (error) {
+      console.error("Error loading contact settings:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -40,34 +84,107 @@ const Contact = () => {
     }, 2000);
   };
 
-  const contactInfo = [
-    {
-      icon: <Phone className="w-6 h-6" />,
-      title: "الهاتف",
-      details: ["+966 11 123 4567", "+966 50 123 4567"],
-      color: "text-green-600"
-    },
-    {
-      icon: <Mail className="w-6 h-6" />,
-      title: "البريد الإلكتروني",
-      details: ["info@abuzaina.com", "support@abuzaina.com"],
-      color: "text-blue-600"
-    },
-    {
-      icon: <MapPin className="w-6 h-6" />,
-      title: "العنوان",
-      details: ["شارع الحرية، جنين", "فلسطين"],
-      color: "text-red-600"
-    },
-    {
-      icon: <Clock className="w-6 h-6" />,
-      title: "ساعات العمل",
-      details: ["السبت - الخميس: 9:00 ص - 10:00 م", "الجمعة: 2:00 م - 10:00 م"],
-      color: "text-purple-600"
-    }
-  ];
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 arabic">
+        <Header showSearch={true} showActions={true} />
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    );
+  }
 
-  const services = [
+  // Parse contact_info from JSON or use individual fields
+  let contactInfo: Array<{
+    icon: JSX.Element;
+    title: string;
+    details: string[];
+    color: string;
+  }> = [];
+
+  if (settings.contact_info && Array.isArray(settings.contact_info)) {
+    // Use contact_info from API
+    contactInfo = settings.contact_info.map((item: ContactInfoItem) => {
+      let icon: JSX.Element;
+      let color: string;
+      
+      switch (item.type) {
+        case 'phone':
+          icon = <Phone className="w-6 h-6" />;
+          color = "text-green-600";
+          break;
+        case 'email':
+          icon = <Mail className="w-6 h-6" />;
+          color = "text-blue-600";
+          break;
+        case 'address':
+          icon = <MapPin className="w-6 h-6" />;
+          color = "text-red-600";
+          break;
+        case 'hours':
+          icon = <Clock className="w-6 h-6" />;
+          color = "text-purple-600";
+          break;
+        default:
+          icon = <Phone className="w-6 h-6" />;
+          color = "text-gray-600";
+      }
+      
+      return {
+        icon,
+        title: item.title,
+        details: Array.isArray(item.details) ? item.details : (item.details ? [item.details] : []),
+        color
+      };
+    });
+  } else {
+    // Fallback to individual fields or defaults
+    const phoneNumbers = settings.contact_phone 
+      ? (Array.isArray(settings.contact_phone) ? settings.contact_phone : [settings.contact_phone])
+      : [];
+
+    const emailAddresses = settings.contact_email 
+      ? (Array.isArray(settings.contact_email) ? settings.contact_email : [settings.contact_email])
+      : [];
+
+    const addressLines = settings.contact_address 
+      ? (Array.isArray(settings.contact_address) ? settings.contact_address : [settings.contact_address])
+      : [];
+
+    const workingHours = settings.contact_working_hours 
+      ? (Array.isArray(settings.contact_working_hours) ? settings.contact_working_hours : [settings.contact_working_hours])
+      : [];
+
+    contactInfo = [
+      {
+        icon: <Phone className="w-6 h-6" />,
+        title: "الهاتف",
+        details: phoneNumbers.length > 0 ? phoneNumbers : ["+966 11 123 4567"],
+        color: "text-green-600"
+      },
+      {
+        icon: <Mail className="w-6 h-6" />,
+        title: "البريد الإلكتروني",
+        details: emailAddresses.length > 0 ? emailAddresses : ["info@abuzaina.com"],
+        color: "text-blue-600"
+      },
+      {
+        icon: <MapPin className="w-6 h-6" />,
+        title: "العنوان",
+        details: addressLines.length > 0 ? addressLines : ["شارع الحرية، جنين"],
+        color: "text-red-600"
+      },
+      {
+        icon: <Clock className="w-6 h-6" />,
+        title: "ساعات العمل",
+        details: workingHours.length > 0 ? workingHours : ["السبت - الخميس: 9:00 ص - 10:00 م"],
+        color: "text-purple-600"
+      }
+    ];
+  }
+
+  const services = settings.contact_services || [
     {
       icon: <Headphones className="w-8 h-8 text-blue-600" />,
       title: "دعم فني 24/7",
@@ -85,7 +202,14 @@ const Contact = () => {
     }
   ];
 
-  const subjects = [
+  // Map icon strings to components
+  const iconComponentMap: { [key: string]: any } = {
+    headphones: Headphones,
+    shield: Shield,
+    message: MessageCircle,
+  };
+
+  const subjects = settings.contact_subjects || [
     "استفسار عام",
     "شكوى أو اقتراح",
     "دعم فني",
@@ -105,9 +229,9 @@ const Contact = () => {
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white py-20">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-5xl font-bold mb-6">تواصل معنا</h1>
+          <h1 className="text-5xl font-bold mb-6">{settings.contact_hero_title || "تواصل معنا"}</h1>
           <p className="text-xl text-blue-200 max-w-3xl mx-auto leading-relaxed">
-            نحن هنا لمساعدتك! تواصل معنا في أي وقت وسنكون سعداء للإجابة على استفساراتك وتقديم أفضل الخدمات
+            {settings.contact_hero_description || "نحن هنا لمساعدتك! تواصل معنا في أي وقت وسنكون سعداء للإجابة على استفساراتك وتقديم أفضل الخدمات"}
           </p>
         </div>
       </section>
@@ -123,9 +247,13 @@ const Contact = () => {
                 </div>
                 <h3 className="text-lg font-bold text-gray-800 mb-3">{info.title}</h3>
                 <div className="space-y-1">
-                  {info.details.map((detail, idx) => (
-                    <p key={idx} className="text-gray-600 text-sm">{detail}</p>
-                  ))}
+                  {Array.isArray(info.details) && info.details.length > 0 ? (
+                    info.details.map((detail, idx) => (
+                      <p key={idx} className="text-gray-600 text-sm">{detail}</p>
+                    ))
+                  ) : (
+                    <p className="text-gray-600 text-sm">لا توجد معلومات متاحة</p>
+                  )}
                 </div>
               </div>
             ))}
@@ -250,11 +378,15 @@ const Contact = () => {
               {/* Map Placeholder */}
               <div className="bg-white p-6 rounded-2xl shadow-lg">
                 <h3 className="text-2xl font-bold text-gray-800 mb-4">موقعنا</h3>
-                <div className="bg-gray-200 h-64 rounded-lg flex items-center justify-center">
+                  <div className="bg-gray-200 h-64 rounded-lg flex items-center justify-center">
                   <div className="text-center text-gray-500">
                     <MapPin className="w-12 h-12 mx-auto mb-2" />
                     <p>خريطة الموقع</p>
-                    <p className="text-sm">شارع الحرية، جنين</p>
+                    <p className="text-sm">
+                      {settings.contact_map_address || 
+                       (settings.contact_info?.find((item: ContactInfoItem) => item.type === 'address')?.details?.join(", ")) ||
+                       "شارع الحرية، جنين"}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -263,17 +395,26 @@ const Contact = () => {
               <div className="bg-white p-6 rounded-2xl shadow-lg">
                 <h3 className="text-2xl font-bold text-gray-800 mb-6">خدماتنا</h3>
                 <div className="space-y-4">
-                  {services.map((service, index) => (
-                    <div key={index} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-                      <div className="flex-shrink-0">
-                        {service.icon}
+                  {services.map((service, index) => {
+                    const IconComponent = service.icon 
+                      ? (typeof service.icon === 'string' && iconComponentMap[service.icon.toLowerCase()] 
+                          ? iconComponentMap[service.icon.toLowerCase()] 
+                          : Headphones)
+                      : Headphones;
+                    const iconElement = <IconComponent className="w-8 h-8 text-blue-600" />;
+                    
+                    return (
+                      <div key={index} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                        <div className="flex-shrink-0">
+                          {iconElement}
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-800 mb-1">{service.title}</h4>
+                          <p className="text-gray-600 text-sm">{service.description}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-semibold text-gray-800 mb-1">{service.title}</h4>
-                        <p className="text-gray-600 text-sm">{service.description}</p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -282,70 +423,54 @@ const Contact = () => {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-800 mb-4">الأسئلة الشائعة</h2>
-            <p className="text-xl text-gray-600">إجابات على أكثر الأسئلة شيوعاً</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <div className="space-y-6">
-              <div className="bg-gray-50 p-6 rounded-lg">
-                <h3 className="font-bold text-gray-800 mb-2">ما هي مدة الضمان على المنتجات؟</h3>
-                <p className="text-gray-600 text-sm">نقدم ضمان لمدة سنتين على جميع الأجهزة الكهربائية وسنة واحدة على الإلكترونيات.</p>
-              </div>
-              <div className="bg-gray-50 p-6 rounded-lg">
-                <h3 className="font-bold text-gray-800 mb-2">هل تقدمون خدمة التوصيل؟</h3>
-                <p className="text-gray-600 text-sm">نعم، نقدم خدمة التوصيل المجاني داخل جنين والمدن الرئيسية في فلسطين.</p>
-              </div>
-              <div className="bg-gray-50 p-6 rounded-lg">
-                <h3 className="font-bold text-gray-800 mb-2">كيف يمكنني إرجاع المنتج؟</h3>
-                <p className="text-gray-600 text-sm">يمكنك إرجاع المنتج خلال 14 يوم من تاريخ الشراء مع الاحتفاظ بالفاتورة والعبوة الأصلية.</p>
-              </div>
+      {settings.contact_faq && settings.contact_faq.length > 0 && (
+        <section className="py-20 bg-white">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold text-gray-800 mb-4">الأسئلة الشائعة</h2>
+              <p className="text-xl text-gray-600">إجابات على أكثر الأسئلة شيوعاً</p>
             </div>
-            <div className="space-y-6">
-              <div className="bg-gray-50 p-6 rounded-lg">
-                <h3 className="font-bold text-gray-800 mb-2">هل تقدمون خدمة التركيب؟</h3>
-                <p className="text-gray-600 text-sm">نعم، نقدم خدمة التركيب المجاني للأجهزة الكبيرة مثل المكيفات والثلاجات.</p>
-              </div>
-              <div className="bg-gray-50 p-6 rounded-lg">
-                <h3 className="font-bold text-gray-800 mb-2">ما هي طرق الدفع المتاحة؟</h3>
-                <p className="text-gray-600 text-sm">نقبل الدفع نقداً، بالبطاقات الائتمانية، التحويل البنكي، وخدمات الدفع الإلكتروني.</p>
-              </div>
-              <div className="bg-gray-50 p-6 rounded-lg">
-                <h3 className="font-bold text-gray-800 mb-2">هل يمكنني الحصول على خصم للكميات؟</h3>
-                <p className="text-gray-600 text-sm">نعم، نقدم خصومات خاصة للمشتريات بالجملة والعملاء المؤسسيين.</p>
-              </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+              {settings.contact_faq.map((faq, index) => (
+                <div key={index} className="bg-gray-50 p-6 rounded-lg">
+                  <h3 className="font-bold text-gray-800 mb-2">{faq.question}</h3>
+                  <p className="text-gray-600 text-sm">{faq.answer}</p>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* CTA Section */}
       <section className="py-16 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-4">هل تحتاج مساعدة فورية؟</h2>
+          <h2 className="text-3xl font-bold mb-4">{settings.contact_cta_title || "هل تحتاج مساعدة فورية؟"}</h2>
           <p className="text-xl text-blue-200 mb-8">
-            تواصل معنا الآن عبر الهاتف أو الواتساب للحصول على مساعدة فورية
+            {settings.contact_cta_description || "تواصل معنا الآن عبر الهاتف أو الواتساب للحصول على مساعدة فورية"}
           </p>
           <div className="flex gap-4 justify-center">
-            <a
-              href="tel:+966111234567"
-              className="bg-white text-blue-600 px-8 py-4 rounded-full hover:bg-gray-100 transition-colors font-semibold flex items-center gap-2"
-            >
-              <Phone className="w-5 h-5" />
-              اتصل الآن
-            </a>
-            <a
-              href="https://wa.me/966501234567"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="border-2 border-white text-white px-8 py-4 rounded-full hover:bg-white hover:text-blue-600 transition-colors font-semibold flex items-center gap-2"
-            >
-              <MessageCircle className="w-5 h-5" />
-              واتساب
-            </a>
+            {settings.contact_cta_phone && (
+              <a
+                href={`tel:${settings.contact_cta_phone}`}
+                className="bg-white text-blue-600 px-8 py-4 rounded-full hover:bg-gray-100 transition-colors font-semibold flex items-center gap-2"
+              >
+                <Phone className="w-5 h-5" />
+                اتصل الآن
+              </a>
+            )}
+            {settings.contact_cta_whatsapp && (
+              <a
+                href={`https://wa.me/${settings.contact_cta_whatsapp.replace(/[^0-9]/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="border-2 border-white text-white px-8 py-4 rounded-full hover:bg-white hover:text-blue-600 transition-colors font-semibold flex items-center gap-2"
+              >
+                <MessageCircle className="w-5 h-5" />
+                واتساب
+              </a>
+            )}
           </div>
         </div>
       </section>

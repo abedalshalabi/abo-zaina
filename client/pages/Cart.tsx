@@ -13,9 +13,8 @@ const Cart = () => {
     return (
       <div className="min-h-screen bg-gray-50 arabic">
         <Header 
-          showSearch={false}
-          showActions={false}
-          showBackButton={true}
+          showSearch={true}
+          showActions={true}
         />
 
         {/* Empty Cart */}
@@ -40,9 +39,8 @@ const Cart = () => {
   return (
     <div className="min-h-screen bg-gray-50 arabic">
       <Header 
-        showSearch={false}
-        showActions={false}
-        showBackButton={true}
+        showSearch={true}
+        showActions={true}
       />
 
       <div className="container mx-auto px-4 py-8">
@@ -125,22 +123,22 @@ const Cart = () => {
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between">
                   <span>المجموع الفرعي</span>
-                  <span>{state.total} ر.س</span>
+                  <span>{state.total} شيكل</span>
                 </div>
                 <div className="flex justify-between">
                   <span>الشحن</span>
                   <span className={shippingCost === 0 ? "text-brand-green" : ""}>
-                    {shippingCost === 0 ? "مجاني" : `${shippingCost} ر.س`}
+                    {shippingCost === 0 ? "مجاني" : `${shippingCost} شيكل`}
                   </span>
                 </div>
                 {state.total <= 500 && (
                   <p className="text-sm text-brand-orange">
-                    أضف {500 - state.total} ر.س أكثر للحصول على شحن مجاني
+                    أضف {500 - state.total} شيكل أكثر للحصول على شحن مجاني
                   </p>
                 )}
                 <div className="border-t pt-3 font-bold text-lg flex justify-between">
                   <span>المجموع الكلي</span>
-                  <span className="text-brand-green">{finalTotal} ر.س</span>
+                  <span className="text-brand-green">{finalTotal} شيكل</span>
                 </div>
               </div>
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   Star,
@@ -12,206 +12,195 @@ import {
   Heart,
   MapPin,
   Phone,
-  Mail
+  Mail,
+  ArrowRight
 } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useAnimation } from "../context/AnimationContext";
 import Header from "../components/Header";
 import Carousel from "../components/Carousel";
 import SimpleCarousel3D from "../components/SimpleCarousel3D";
+import { productsAPI, categoriesAPI, brandsAPI } from "../services/api";
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const { addItem } = useCart();
   const { triggerAnimation } = useAnimation();
 
-  // Main Categories - Updated with Sbitany categories and high-quality images
-  const mainCategories = [
+  // API State
+  const [featuredProducts, setFeaturedProducts] = useState<any[]>([]);
+  const [latestProducts, setLatestProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [brands, setBrands] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  // Load data from API
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        setError("");
+        
+        // Load featured and latest products
+        const [featuredResponse, latestResponse, categoriesResponse, brandsResponse] = await Promise.all([
+          productsAPI.getFeaturedProducts(),
+          productsAPI.getLatestProducts(),
+          categoriesAPI.getCategories(),
+          brandsAPI.getBrands()
+        ]);
+        
+        setFeaturedProducts(featuredResponse.data || []);
+        setLatestProducts(latestResponse.data || []);
+        setCategories(categoriesResponse.data || []);
+        setBrands(brandsResponse.data || []);
+        
+        // Debug: Log categories to check show_in_slider
+        console.log('Categories loaded:', categoriesResponse.data);
+        console.log('Categories with show_in_slider:', categoriesResponse.data?.filter((cat: any) => cat.show_in_slider));
+      } catch (err) {
+        setError("حدث خطأ في تحميل البيانات");
+        console.error("Error loading data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+  }, []);
+
+    // Use categories from API or fallback to static data
+    // Filter categories to show only those with show_in_slider = true
+  const mainCategories = categories.length > 0 ? (() => {
+    const filtered = categories.filter(cat => {
+      // Handle both boolean true and string "true" or "1"
+      const showInSlider = cat.show_in_slider;
+      const shouldShow = showInSlider === true || showInSlider === 1 || showInSlider === "true" || showInSlider === "1";
+      console.log(`Category "${cat.name}": show_in_slider = ${showInSlider} (${typeof showInSlider}), shouldShow = ${shouldShow}`);
+      return shouldShow;
+    });
+    console.log('Filtered categories for slider:', filtered);
+    return filtered.map(cat => ({
+      id: cat.id,
+      name: cat.name,
+      image: cat.image || "https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?w=400&h=400&fit=crop&auto=format&q=80",
+      href: `/products?category_id=${cat.id}`,
+      color: cat.color || "bg-blue-500"
+    }));
+  })() : [
     { name: "الأجهزة المنزلية", image: "https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?w=400&h=400&fit=crop&auto=format&q=80", href: "/home-appliances", color: "bg-blue-500" },
     { name: "التلفزيونات", image: "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=400&h=400&fit=crop&auto=format&q=80", href: "/television", color: "bg-cyan-500" },
     { name: "الحاسوب والأجهزة اللوحية", image: "https://images.unsplash.com/photo-1484788984921-03950022c9ef?w=400&h=400&fit=crop&auto=format&q=80", href: "/computers-tablets", color: "bg-purple-500" },
     { name: "الهواتف المحمولة", image: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&h=400&fit=crop&auto=format&q=80", href: "/mobiles", color: "bg-green-500" },
     { name: "الأجهزة الصغيرة", image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=400&fit=crop&auto=format&q=80", href: "/small-appliances", color: "bg-orange-500" },
-    { name: "العناية الشخصية والجمال", image: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=400&fit=crop&auto=format&q=80", href: "/personal-beauty-care", color: "bg-indigo-500" },
-    { name: "مستلزمات المكتب والمدرسة", image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=400&h=400&fit=crop&auto=format&q=80", href: "/office-school-supplies", color: "bg-yellow-500" },
-    { name: "الألعاب", image: "https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=400&h=400&fit=crop&auto=format&q=80", href: "/gaming", color: "bg-red-500" },
-    { name: "الصوتيات", image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop&auto=format&q=80", href: "/audio", color: "bg-pink-500" },
-    { name: "التدفئة والتبريد", image: "https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400&h=400&fit=crop&auto=format&q=80", href: "/heating-cooling", color: "bg-teal-500" },
-    { name: "الرياضة واللياقة والصحة", image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=400&fit=crop&auto=format&q=80", href: "/sport-fitness-health", color: "bg-emerald-500" },
-    { name: "المنزل والحديقة", image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400&h=400&fit=crop&auto=format&q=80", href: "/home-garden", color: "bg-lime-500" },
-    { name: "حلول الطاقة", image: "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=400&h=400&fit=crop&auto=format&q=80", href: "/power-solutions", color: "bg-amber-500" },
-    { name: "العروض الشهرية", image: "https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?w=400&h=400&fit=crop&auto=format&q=80", href: "/monthly-offers", color: "bg-rose-500" },
   ];
 
-  // Brand Categories
-  const brandCategories = [
-    { 
-      name: "Samsung", 
-      logo: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjQwIiB2aWV3Qm94PSIwIDAgMTAwIDQwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8dGV4dCB4PSI1MCIgeT0iMjUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiMxNDI4NTciIHRleHQtYW5jaG9yPSJtaWRkbGUiPlNBTVNVTkc8L3RleHQ+Cjwvc3ZnPgo=", 
-      productCount: 245 
-    },
-    { 
-      name: "LG", 
-      logo: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjQwIiB2aWV3Qm94PSIwIDAgMTAwIDQwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8Y2lyY2xlIGN4PSI1MCIgY3k9IjIwIiByPSIxNSIgZmlsbD0iI0E1MEUzNSIvPgo8dGV4dCB4PSI1MCIgeT0iMjYiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5MRzwvdGV4dD4KPC9zdmc+Cg==", 
-      productCount: 189 
-    },
-    { 
-      name: "Apple", 
-      logo: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjQwIiB2aWV3Qm94PSIwIDAgMTAwIDQwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNNTUgOGMtMi41IDAtNC41IDItNC41IDQuNXMxLjUgNC41IDQgNC41YzIuNSAwIDQuNS0yIDQuNS00LjVTNTcuNSA4IDU1IDh6bS0zIDEwYy0xIDAtMiAxLTIgMnY4YzAgMSAxIDIgMiAyaDZjMSAwIDItMSAyLTJ2LThjMC0xLTEtMi0yLTJoLTZ6IiBmaWxsPSIjMDAwIi8+Cjx0ZXh0IHg9IjUwIiB5PSIzNSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iIzAwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QXBwbGU8L3RleHQ+Cjwvc3ZnPgo=", 
-      productCount: 156 
-    },
-    { 
-      name: "Sony", 
-      logo: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjQwIiB2aWV3Qm94PSIwIDAgMTAwIDQwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8dGV4dCB4PSI1MCIgeT0iMjUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyMCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiMwMDAwMDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlNPTlk8L3RleHQ+Cjwvc3ZnPgo=", 
-      productCount: 134 
-    },
-    { 
-      name: "Panasonic", 
-      logo: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjQwIiB2aWV3Qm94PSIwIDAgMTAwIDQwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8dGV4dCB4PSI1MCIgeT0iMjUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiMwMDU1QUEiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlBhbmFzb25pYzwvdGV4dD4KPC9zdmc+Cg==", 
-      productCount: 98 
-    },
-    { 
-      name: "Philips", 
-      logo: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjQwIiB2aWV3Qm94PSIwIDAgMTAwIDQwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8dGV4dCB4PSI1MCIgeT0iMjUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNiIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiMwMDY2Q0MiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlBISUxJUFM8L3RleHQ+Cjwvc3ZnPgo=", 
-      productCount: 87 
-    },
-    { 
-      name: "Bosch", 
-      logo: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjQwIiB2aWV3Qm94PSIwIDAgMTAwIDQwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8dGV4dCB4PSI1MCIgeT0iMjUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiNFNjAwMDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkJPU0NIPC90ZXh0Pgo8L3N2Zz4K", 
-      productCount: 76 
-    },
-    { 
-      name: "Whirlpool", 
-      logo: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjQwIiB2aWV3Qm94PSIwIDAgMTAwIDQwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8dGV4dCB4PSI1MCIgeT0iMjUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMyIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiMwMDY2OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPldoaXJscG9vbDwvdGV4dD4KPC9zdmc+Cg==", 
-      productCount: 65 
-    },
-    { 
-      name: "Siemens", 
-      logo: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjQwIiB2aWV3Qm94PSIwIDAgMTAwIDQwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8dGV4dCB4PSI1MCIgeT0iMjUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNiIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiMwMDk5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlNJRU1FTlM8L3RleHQ+Cjwvc3ZnPgo=", 
-      productCount: 54 
-    },
-    { 
-      name: "Electrolux", 
-      logo: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjQwIiB2aWV3Qm94PSIwIDAgMTAwIDQwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8dGV4dCB4PSI1MCIgeT0iMjUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMyIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiM2NjY2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkVsZWN0cm9sdXg8L3RleHQ+Cjwvc3ZnPgo=", 
-      productCount: 43 
-    },
-    { 
-      name: "Haier", 
-      logo: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjQwIiB2aWV3Qm94PSIwIDAgMTAwIDQwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8dGV4dCB4PSI1MCIgeT0iMjUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiMwMDc3QkUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkhBSUVSPC90ZXh0Pgo8L3N2Zz4K", 
-      productCount: 38 
-    },
-    { 
-      name: "Toshiba", 
-      logo: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjQwIiB2aWV3Qm94PSIwIDAgMTAwIDQwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8dGV4dCB4PSI1MCIgeT0iMjUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNiIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiNEQzE0M0MiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlRPU0hJQkE8L3RleHQ+Cjwvc3ZnPgo=", 
-      productCount: 32 
-    },
-  ];
+  // Brand Categories - Load from API (only brands with products)
+  const brandCategories = brands.length > 0 ? brands
+    .filter(brand => (brand.products_count || 0) > 0) // Only show brands with products
+    .map(brand => ({
+      id: brand.id,
+      name: brand.name,
+      logo: brand.logo || '',
+      productCount: brand.products_count || 0,
+      slug: brand.slug || brand.name.toLowerCase(),
+    })) : [];
 
-  // Featured Offers
-  const featuredOffers = [
-    {
-      id: 1,
-      name: "ثلاجة Samsung الذكية 21 قدم",
-      price: 3299,
-      originalPrice: 4299,
-      image: "https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?w=300&h=300&fit=crop",
-      rating: 4.8,
-      reviews: 156,
-      discount: 23,
-      category: "أجهزة المطبخ",
-      isNew: false,
-      isBestSeller: true,
-    },
-    {
-      id: 2,
-      name: "مكيف LG انفيرتر 24 وحدة",
-      price: 2199,
-      originalPrice: 2899,
-      image: "https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=300&h=300&fit=crop",
-      rating: 4.6,
-      reviews: 89,
-      discount: 24,
-      category: "التكييف والتبريد",
-      isNew: true,
-      isBestSeller: false,
-    },
-    {
-      id: 3,
-      name: "غسالة أطباق Bosch الذكية",
-      price: 1899,
-      originalPrice: 2499,
-      image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=300&h=300&fit=crop",
-      rating: 4.7,
-      reviews: 124,
-      discount: 24,
-      category: "أجهزة المطبخ",
-      isNew: false,
-      isBestSeller: true,
-    },
-    {
-      id: 4,
-      name: "تلفزيون Sony 65 بوصة 4K",
-      price: 4499,
-      originalPrice: 5999,
-      image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&h=300&fit=crop",
-      rating: 4.9,
-      reviews: 203,
-      discount: 25,
-      category: "الإلكترونيات",
-      isNew: true,
-      isBestSeller: true,
-    },
-  ];
+  // Use featured products from API or fallback to static data
+  const featuredOffers = featuredProducts.map((product) => {
+    const firstImage = product.images?.[0] ?? {};
+    const imageUrl =
+      firstImage.image_url ||
+      firstImage.image_path ||
+      firstImage.url ||
+      product.image ||
+      "https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?w=300&h=300&fit=crop";
 
-  // Latest Products
-  const latestProducts = [
-    {
-      id: 5,
-      name: "مكنسة Dyson اللاسلكية V15",
-      price: 1299,
-      image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300&h=300&fit=crop",
-      rating: 4.8,
-      reviews: 67,
-      category: "أجهزة التنظيف",
-      isNew: true,
-    },
-    {
-      id: 6,
-      name: "آيفون 15 برو ماكس 256 جيجا",
-      price: 5299,
-      image: "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=300&h=300&fit=crop",
-      rating: 4.9,
-      reviews: 234,
-      category: "الإلكترونيات",
-      isNew: true,
-    },
-    {
-      id: 7,
-      name: "ماكينة قهوة DeLonghi الذكية",
-      price: 899,
-      image: "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=300&h=300&fit=crop",
-      rating: 4.5,
-      reviews: 45,
-      category: "أجهزة المطبخ",
-      isNew: true,
-    },
-    {
-      id: 8,
-      name: "سماعات Bose الذكية",
-      price: 699,
-      image: "https://images.unsplash.com/photo-1484704849700-f032a568e944?w=300&h=300&fit=crop",
-      rating: 4.7,
-      reviews: 89,
-      category: "الإلكترونيات",
-      isNew: true,
-    },
-  ];
+    return {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      originalPrice: product.original_price,
+      image: imageUrl,
+      rating: product.rating || 0,
+      reviews: product.reviews_count || 0,
+      category: product.category?.name || "عام",
+      discount: product.discount_percentage || 0,
+      isNew: product.is_new || false,
+      isBestSeller: Boolean(product.is_featured || product.is_best_seller),
+    };
+  });
+
+  // Latest products from API (no fallback)
+  const latestProductsData = latestProducts.map((product) => {
+    const firstImage = product.images?.[0] ?? {};
+    const imageUrl =
+      firstImage.image_url ||
+      firstImage.image_path ||
+      firstImage.url ||
+      product.image ||
+      "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=300&h=300&fit=crop";
+
+    return {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      originalPrice: product.original_price,
+      image: imageUrl,
+      rating: product.rating || 0,
+      reviews: product.reviews_count || 0,
+      brand: product.brand?.name || "",
+      discount: product.discount_percentage || 0,
+      isNew: product.is_new || true,
+      stockStatus: product.stock_status || (product.in_stock ? "متوفر" : "غير متوفر"),
+    };
+  });
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 arabic">
+        <Header 
+        showSearch={true}
+        showActions={true}
+      />
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-xl text-gray-600">جاري تحميل البيانات...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 arabic">
+        <Header 
+        showSearch={true}
+        showActions={true}
+      />
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="text-red-500 text-6xl mb-4">⚠️</div>
+            <p className="text-xl text-gray-600 mb-4">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              إعادة المحاولة
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 arabic">
       <Header 
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
         showSearch={true}
         showActions={true}
       />
@@ -237,13 +226,13 @@ const Index = () => {
               
               <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 h-full flex items-center">
                 <div className="max-w-4xl w-full">
-                  <h1 className="text-2xl sm:text-4xl lg:text-6xl font-bold mb-3 sm:mb-4 lg:mb-6 leading-tight">
+                  <h1 className="text-2xl sm:text-4xl lg:text-6xl font-bold mb-3 sm:mb-4 lg:mb-6 leading-loose py-4">
                     مرحباً بكم في
-                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-cyan-200">
+                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-cyan-200 mt-6 py-2">
                       أبو زينة للتقنيات
                     </span>
                   </h1>
-                  <p className="text-xs sm:text-sm lg:text-xl mb-4 sm:mb-6 lg:mb-8 text-blue-100 leading-relaxed max-w-2xl">
+                  <p className="text-xs sm:text-sm lg:text-xl mb-4 sm:mb-6 lg:mb-8 text-blue-100 leading-relaxed max-w-2xl mt-6">
                     وجهتكم الأولى للأجهزة الكهربائية والإلكترونية الحديثة. نوفر لكم أحدث التقنيات بأفضل الأسعار مع ضمان الجودة والخدمة المتميزة.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 lg:gap-4 max-w-md">
@@ -276,13 +265,13 @@ const Index = () => {
               
               <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 h-full flex items-center">
                 <div className="max-w-4xl w-full">
-                  <h1 className="text-2xl sm:text-4xl lg:text-6xl font-bold mb-3 sm:mb-4 lg:mb-6 leading-tight">
+                  <h1 className="text-2xl sm:text-4xl lg:text-6xl font-bold mb-3 sm:mb-4 lg:mb-6 leading-loose py-4">
                     أجهزة منزلية
-                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-pink-200">
+                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-pink-200 mt-6 py-2">
                       عصرية وذكية
                     </span>
                   </h1>
-                  <p className="text-xs sm:text-sm lg:text-xl mb-4 sm:mb-6 lg:mb-8 text-purple-100 leading-relaxed max-w-2xl">
+                  <p className="text-xs sm:text-sm lg:text-xl mb-4 sm:mb-6 lg:mb-8 text-purple-100 leading-relaxed max-w-2xl mt-6">
                     اكتشف مجموعتنا الواسعة من الأجهزة المنزلية الذكية التي تجعل حياتك أسهل وأكثر راحة. من المطبخ إلى غرفة المعيشة.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 lg:gap-4 max-w-md">
@@ -315,13 +304,13 @@ const Index = () => {
               
               <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 h-full flex items-center">
                 <div className="max-w-4xl w-full">
-                  <h1 className="text-2xl sm:text-4xl lg:text-6xl font-bold mb-3 sm:mb-4 lg:mb-6 leading-tight">
+                  <h1 className="text-2xl sm:text-4xl lg:text-6xl font-bold mb-3 sm:mb-4 lg:mb-6 leading-loose py-4">
                     عروض حصرية
-                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-green-200 to-teal-200">
+                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-green-200 to-teal-200 mt-6 py-2">
                       وخصومات مذهلة
                     </span>
                   </h1>
-                  <p className="text-xs sm:text-sm lg:text-xl mb-4 sm:mb-6 lg:mb-8 text-green-100 leading-relaxed max-w-2xl">
+                  <p className="text-xs sm:text-sm lg:text-xl mb-4 sm:mb-6 lg:mb-8 text-green-100 leading-relaxed max-w-2xl mt-6">
                     لا تفوت فرصة الحصول على أفضل الأجهزة بأسعار لا تُقاوم. عروض محدودة الوقت على أشهر العلامات التجارية العالمية.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 lg:gap-4 max-w-md">
@@ -347,7 +336,7 @@ const Index = () => {
       </section>
 
       {/* Section 1: Main Categories */}
-      <section className="py-12 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <section className="pt-12 pb-12 bg-transparent">
         <div className="container mx-auto px-4">
           <div className="text-center mb-10">
             <h2 className="text-4xl font-bold text-gray-800 mb-4">التصنيفات الرئيسية</h2>
@@ -360,28 +349,64 @@ const Index = () => {
             showNavigation={true}
             showPagination={false}
           >
-            {mainCategories.map((category, index) => (
-              <Link
-                key={index}
-                to={category.href}
-                className="group block bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-white/50 hover:border-blue-300"
-              >
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={category.image}
-                    alt={category.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                </div>
-                <div className="p-4">
-                  <h3 className="text-sm font-semibold text-gray-800 text-center group-hover:text-blue-600 transition-colors leading-tight">
-                    {category.name}
-                  </h3>
-                </div>
-              </Link>
-            ))}
+            {mainCategories.map((category, index) => {
+              // Get isActive prop from SimpleCarousel3D (it will be passed via cloneElement)
+              const CategorySlide = ({ isActive }: { isActive?: boolean }) => (
+                <Link
+                  to={category.href}
+                  className="group block bg-transparent transition-all duration-500"
+                  style={{
+                    perspective: '1000px',
+                    transformStyle: 'preserve-3d'
+                  }}
+                >
+                  <div 
+                    className={`relative h-48 bg-transparent overflow-hidden transition-all duration-500 transform ${
+                      isActive ? 'scale-110 -translate-y-3' : 'group-hover:scale-105 group-hover:-translate-y-3'
+                    }`}
+                    style={{
+                      transform: 'perspective(1000px) rotateY(0deg) rotateX(0deg)',
+                      transformStyle: 'preserve-3d'
+                    }}
+                  >
+                    <img
+                      src={category.image}
+                      alt={category.name}
+                      className={`w-full h-full object-contain transition-all duration-500 ${
+                        isActive ? 'scale-125' : 'group-hover:scale-110'
+                      }`}
+                      style={{
+                        transform: 'translateZ(30px)',
+                        transformStyle: 'preserve-3d',
+                        filter: isActive ? 'brightness(1.1) saturate(1.2)' : 'none'
+                      }}
+                    />
+                  </div>
+                  <div className="pt-1 px-2 pb-0 mt-1">
+                    <h3 className={`text-sm font-semibold text-center transition-all duration-500 leading-tight ${
+                      isActive 
+                        ? 'text-blue-600 scale-110 font-bold' 
+                        : 'text-gray-800 group-hover:text-blue-600'
+                    }`}>
+                      {category.name}
+                    </h3>
+                  </div>
+                </Link>
+              );
+              
+              return <CategorySlide key={index} />;
+            })}
           </SimpleCarousel3D>
+        </div>
+
+        <div className="mt-10 text-center">
+          <Link
+            to="/categories"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-lg hover:shadow-xl hover:from-blue-500 hover:to-indigo-500 transition-all duration-300"
+          >
+            عرض جميع التصنيفات
+            <ChevronRight className="w-4 h-4" />
+          </Link>
         </div>
       </section>
 
@@ -394,32 +419,42 @@ const Index = () => {
             <p className="text-sm text-gray-500">اختر من بين مجموعة متنوعة من العلامات التجارية الموثوقة</p>
           </div>
 
-          <Carousel
-            slidesToShow={{ mobile: 3, tablet: 5, desktop: 6 }}
-            showDots={false}
-            showArrows={true}
-            autoplay={true}
-            rtl={true}
-          >
-            {brandCategories.map((brand, index) => (
-              <Link
-                key={index}
-                to={`/brand/${brand.name.toLowerCase()}`}
-                className="group bg-white p-4 md:p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 block border border-gray-100 hover:border-blue-200"
-              >
-                <div className="text-center">
-                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 md:p-4 mb-3 md:mb-4 group-hover:from-blue-50 group-hover:to-indigo-50 transition-all duration-300">
-                    <img
-                      src={brand.logo}
-                      alt={brand.name}
-                      className="w-full h-10 md:h-12 object-contain group-hover:scale-110 transition-transform duration-300"
-                    />
+          {brandCategories.length > 0 ? (
+            <Carousel
+              slidesToShow={{ mobile: 3, tablet: 5, desktop: 6 }}
+              showDots={false}
+              showArrows={true}
+              autoplay={true}
+              rtl={true}
+            >
+              {brandCategories.map((brand, index) => (
+                <Link
+                  key={brand.id || index}
+                  to={`/products?brand_id=${brand.id || ''}`}
+                  className="group bg-white p-4 md:p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 block border border-gray-100 hover:border-blue-200"
+                >
+                  <div className="text-center">
+                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 md:p-4 mb-3 md:mb-4 group-hover:from-blue-50 group-hover:to-indigo-50 transition-all duration-300">
+                      {brand.logo ? (
+                        <img
+                          src={brand.logo}
+                          alt={brand.name}
+                          className="w-full h-10 md:h-12 object-contain group-hover:scale-110 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-10 md:h-12 flex items-center justify-center">
+                          <span className="text-gray-400 text-sm font-semibold">{brand.name}</span>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs md:text-sm text-gray-500">{brand.productCount || 0} منتج</p>
                   </div>
-                  <p className="text-xs md:text-sm text-gray-500">{brand.productCount} منتج</p>
-                </div>
-              </Link>
-            ))}
-          </Carousel>
+                </Link>
+              ))}
+            </Carousel>
+          ) : (
+            <div className="text-center py-8 text-gray-500">لا توجد علامات تجارية متاحة</div>
+          )}
         </div>
       </section>
 
@@ -431,92 +466,113 @@ const Index = () => {
             <p className="text-xl text-gray-600">اغتنم الفرصة واحصل على أفضل الصفقات</p>
           </div>
 
-          <div className="product-grid grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            {featuredOffers.map((product) => (
-              <div key={product.id} className="group bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
-                <div className="relative p-2 md:p-4">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-32 md:h-48 object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
-                  />
-                  
-                  {/* Badges */}
-                  <div className="absolute top-6 right-6 flex flex-col gap-2">
-                    {product.discount && (
-                      <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-                        خصم {product.discount}%
-                      </span>
-                    )}
-                    {product.isNew && (
-                      <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-                        جديد
-                      </span>
-                    )}
-                    {product.isBestSeller && (
-                      <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-                        الأكثر مبيعاً
-                      </span>
-                    )}
-                  </div>
+          {featuredOffers.length > 0 ? (
+            <div className="product-grid grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+              {featuredOffers.map((product) => (
+                <div
+                  key={product.id}
+                  className="group bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden"
+                >
+                  <Link to={`/product/${product.id}`} className="block">
+                    <div className="relative p-2 md:p-4">
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        className="w-full h-32 md:h-48 object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
+                      />
 
-                  <button className="absolute top-6 left-6 p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors">
-                    <Heart className="w-5 h-5 text-gray-600" />
-                  </button>
-                </div>
+                      {/* Badges */}
+                      <div className="absolute top-6 right-6 flex flex-col gap-2">
+                        {product.originalPrice && product.originalPrice > product.price ? (
+                          <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                            خصم {(product.originalPrice - product.price).toLocaleString()} ₪
+                          </span>
+                        ) : null}
+                        {product.isNew ? (
+                          <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                            جديد
+                          </span>
+                        ) : null}
+                        {product.isBestSeller ? (
+                          <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                            الأكثر مبيعاً
+                          </span>
+                        ) : null}
+                      </div>
 
-                <div className="p-6">
-                  <h3 className="font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors">
-                    {product.name}
-                  </h3>
-                  
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="flex items-center">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-4 h-4 ${
-                            i < Math.floor(product.rating)
-                              ? "text-yellow-400 fill-current"
-                              : "text-gray-300"
-                          }`}
-                        />
-                      ))}
+                      <button className="absolute top-6 left-6 p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors">
+                        <Heart className="w-5 h-5 text-gray-600" />
+                      </button>
                     </div>
-                    <span className="text-sm text-gray-600">({product.reviews})</span>
-                  </div>
+                  </Link>
 
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="text-2xl font-bold text-blue-600">{product.price} ₪</span>
-                {product.originalPrice && (
-                  <span className="text-gray-500 line-through">{product.originalPrice} ₪</span>
-                )}
-                  </div>
+                  <div className="p-6">
+                    <Link to={`/product/${product.id}`} className="block">
+                      <h3 className="font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors">
+                        {product.name}
+                      </h3>
+                    </Link>
 
-                  <button 
-                    onClick={(e) => {
-                      // Trigger animation
-                      triggerAnimation(e.currentTarget, {
-                        image: product.image,
-                        name: product.name
-                      });
-                      
-                      // Add to cart
-                      addItem({
-                        id: product.id,
-                        name: product.name,
-                        price: product.price,
-                        image: product.image,
-                        brand: "متنوع"
-                      });
-                    }}
-                    className="w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition-colors font-semibold"
-                  >
-                    أضف للسلة
-                  </button>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="flex items-center">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-4 h-4 ${
+                              i < Math.floor(product.rating)
+                                ? "text-yellow-400 fill-current"
+                                : "text-gray-300"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-sm text-gray-600">({product.reviews})</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="text-2xl font-bold text-blue-600">{product.price} ₪</span>
+                      {product.originalPrice && product.originalPrice > 0 ? (
+                        <span className="text-gray-500 line-through">{product.originalPrice} ₪</span>
+                      ) : null}
+                    </div>
+
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        triggerAnimation(e.currentTarget, {
+                          image: product.image,
+                          name: product.name,
+                        });
+                        addItem({
+                          id: product.id,
+                          name: product.name,
+                          price: product.price,
+                          image: product.image,
+                          brand: "متنوع",
+                        });
+                      }}
+                      className="w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition-colors font-semibold"
+                    >
+                      أضف للسلة
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-gray-500">
+              لا توجد عروض مميزة متاحة حالياً.
+            </div>
+          )}
+
+          <div className="text-center mt-10">
+            <Link
+              to="/products"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors"
+            >
+              تصفح جميع المنتجات
+              <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
         </div>
       </section>
@@ -529,77 +585,108 @@ const Index = () => {
             <p className="text-xl text-gray-600">اكتشف أحدث ما وصل إلى متجرنا</p>
           </div>
 
-          <div className="product-grid grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            {latestProducts.map((product) => (
-              <div key={product.id} className="group bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
-                <div className="relative p-4">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-40 object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
-                  />
-                  
-                  <span className="absolute top-6 right-6 bg-gradient-to-r from-green-400 to-green-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-                    جديد
-                  </span>
+          {latestProductsData.length > 0 ? (
+            <div className="product-grid grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+              {latestProductsData.map((product) => (
+                <div
+                  key={product.id}
+                  className="group bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden"
+                >
+                  <Link to={`/product/${product.id}`} className="block">
+                    <div className="relative p-4">
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        className="w-full h-40 object-contain bg-white rounded-xl group-hover:scale-105 transition-transform duration-300"
+                      />
+                      {product.isNew ? (
+                        <span className="absolute top-6 right-6 bg-gradient-to-r from-green-400 to-green-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                          جديد
+                        </span>
+                      ) : null}
+                      {product.originalPrice && product.originalPrice > product.price ? (
+                        <span className="absolute top-6 right-6 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                          خصم {(product.originalPrice - product.price).toLocaleString()} ₪
+                        </span>
+                      ) : null}
 
-                  <button className="absolute top-6 left-6 p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors">
-                    <Heart className="w-5 h-5 text-gray-600" />
-                  </button>
-                </div>
-
-                <div className="p-6">
-                  <h3 className="font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors">
-                    {product.name}
-                  </h3>
-                  
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="flex items-center">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-4 h-4 ${
-                            i < Math.floor(product.rating)
-                              ? "text-yellow-400 fill-current"
-                              : "text-gray-300"
-                          }`}
-                        />
-                      ))}
+                      <button className="absolute top-6 left-6 p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors">
+                        <Heart className="w-5 h-5 text-gray-600" />
+                      </button>
                     </div>
-                    <span className="text-sm text-gray-600">({product.reviews})</span>
-                  </div>
+                  </Link>
 
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-2xl font-bold text-blue-600">{product.price} ₪</span>
-                    <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                      {product.category}
-                    </span>
-                  </div>
+                  <div className="p-6">
+                    <Link to={`/product/${product.id}`} className="block">
+                      <h3 className="font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors">
+                        {product.name}
+                      </h3>
+                    </Link>
 
-                  <button 
-                    onClick={() => addItem({
-                      id: product.id,
-                      name: product.name,
-                      price: product.price,
-                      image: product.image,
-                      brand: "متنوع"
-                    })}
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all font-semibold"
-                  >
-                    أضف للسلة
-                  </button>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="flex items-center">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-4 h-4 ${
+                              i < Math.floor(product.rating)
+                                ? "text-yellow-400 fill-current"
+                                : "text-gray-300"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-sm text-gray-600">({product.reviews})</span>
+                    </div>
+
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-2xl font-bold text-blue-600">{product.price} ₪</span>
+                      <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                        {product.stockStatus}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          triggerAnimation(e.currentTarget, {
+                            image: product.image,
+                            name: product.name,
+                          });
+                          addItem({
+                            id: product.id,
+                            name: product.name,
+                            price: product.price,
+                            image: product.image,
+                            brand: product.brand,
+                          });
+                        }}
+                        className="flex-1 bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition-colors font-semibold"
+                      >
+                        أضف للسلة
+                      </button>
+                      <button className="p-3 bg-white text-blue-600 rounded-xl border border-blue-100 hover:border-blue-300 transition-colors">
+                        <Heart className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-gray-500">
+              لا توجد منتجات جديدة متاحة حالياً.
+            </div>
+          )}
 
-          <div className="text-center mt-8">
+          <div className="text-center mt-10">
             <Link
               to="/products"
-              className="inline-flex items-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-full font-semibold hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors"
             >
-              عرض جميع المنتجات
-              <ChevronRight className="w-5 h-5" />
+              استعرض المزيد من المنتجات
+              <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
@@ -694,7 +781,7 @@ const Index = () => {
                 <li><Link to="/about" className="hover:text-white transition-colors">من نحن</Link></li>
                 <li><Link to="/contact" className="hover:text-white transition-colors">اتصل بنا</Link></li>
                 <li><Link to="/shipping" className="hover:text-white transition-colors">الشحن والتوصيل</Link></li>
-                <li><Link to="/returns" className="hover:text-white transition-colors">ال��رجاع والاستبدال</Link></li>
+                <li><Link to="/returns" className="hover:text-white transition-colors">الإرجاع والاستبدال</Link></li>
                 <li><Link to="/warranty" className="hover:text-white transition-colors">الضمان</Link></li>
               </ul>
             </div>
@@ -732,7 +819,7 @@ const Index = () => {
           </div>
 
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 أبو زينة للتقنيات. جميع الحقوق محفوظة.</p>
+            <p>&copy; 2025 أبو زينة للتقنيات. جميع الحقوق محفوظة.</p>
           </div>
         </div>
       </footer>

@@ -165,8 +165,8 @@ const SimpleCarousel3D: React.FC<SimpleCarousel3DProps> = ({
 
   return (
     <div 
-      className="relative w-full h-96 overflow-hidden" 
-      style={{ perspective: '1200px', perspectiveOrigin: 'center center' }}
+      className="relative w-full h-96 overflow-hidden pb-0" 
+      style={{ perspective: '1200px', perspectiveOrigin: 'center center', paddingBottom: 0 }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -178,7 +178,8 @@ const SimpleCarousel3D: React.FC<SimpleCarousel3DProps> = ({
           const isSmallMobile = windowWidth <= 480;
           
           const slideWidth = isSmallMobile ? 200 : isMobile ? 250 : 280;
-          const slideHeight = isSmallMobile ? 240 : isMobile ? 300 : 320;
+          const slideHeight = isSmallMobile ? 240 : isMobile ? 300 : 280;
+          const isActive = index === currentIndex;
           
           return (
           <div
@@ -196,8 +197,14 @@ const SimpleCarousel3D: React.FC<SimpleCarousel3DProps> = ({
              }}
             onClick={() => goToSlide(index)}
           >
-            <div className="w-full h-full rounded-xl overflow-hidden shadow-lg transition-all duration-300" style={{ backfaceVisibility: 'hidden' }}>
-              {child}
+            <div 
+              className="w-full h-full rounded-xl overflow-hidden shadow-lg transition-all duration-300" 
+              style={{ 
+                backfaceVisibility: 'hidden',
+                background: isActive ? 'linear-gradient(135deg, #F9FAFB 0%, #EFF6FF 50%, #EEF2FF 100%)' : 'transparent'
+              }}
+            >
+              {React.cloneElement(child as React.ReactElement, { isActive })}
             </div>
           </div>
           );

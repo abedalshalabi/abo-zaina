@@ -1,25 +1,44 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
 import Header from "../components/Header";
+import { authAPI } from "../services/api";
 
 const Login = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: "",
     password: ""
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const response = await authAPI.login(formData.email, formData.password);
+      
+      if (response.token) {
+        // Store token in localStorage
+        localStorage.setItem('auth_token', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+        
+        // Redirect to home page
+        navigate('/');
+        window.location.reload(); // Refresh to update auth state
+      } else {
+        setError(response.message || 'حدث خطأ في تسجيل الدخول');
+      }
+    } catch (error) {
+      setError('حدث خطأ في الاتصال بالخادم');
+      console.error('Login error:', error);
+    } finally {
       setIsLoading(false);
-      alert("تم تسجيل الدخول بنجاح!");
-    }, 1500);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,9 +51,8 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 arabic">
       <Header 
-        showSearch={false}
-        showActions={false}
-        showBackButton={true}
+        showSearch={true}
+        showActions={true}
       />
 
       {/* Main Content */}

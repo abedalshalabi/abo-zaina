@@ -1,0 +1,294 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { adminDashboardAPI } from "../services/adminApi";
+import AdminLayout from "../components/AdminLayout";
+import {
+  Users,
+  Package,
+  ShoppingCart,
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  Eye,
+  Star,
+  BarChart3,
+  Settings,
+  LogOut,
+  Menu,
+  X,
+  Bell,
+  Search,
+  Boxes,
+  Tag
+} from "lucide-react";
+
+interface DashboardStats {
+  total_products: number;
+  active_products: number;
+  total_orders: number;
+  pending_orders: number;
+  completed_orders: number;
+  total_users: number;
+  total_categories: number;
+  total_brands: number;
+  total_admins: number;
+}
+
+interface RevenueStats {
+  total_revenue: number;
+  monthly_revenue: number;
+  daily_revenue: number;
+}
+
+interface TopProduct {
+  id: number;
+  name: string;
+  sales_count: number;
+  price: number;
+}
+
+interface DashboardData {
+  stats: DashboardStats;
+  revenue: RevenueStats;
+  recent_orders: any[];
+  top_products: TopProduct[];
+  message: string;
+}
+
+const AdminDashboard = () => {
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem("admin_token");
+    if (!token) {
+      navigate("/admin/login");
+      return;
+    }
+
+    fetchDashboardData();
+  }, [navigate]);
+
+  const fetchDashboardData = async () => {
+    try {
+      const data = await adminDashboardAPI.getDashboard();
+      setDashboardData(data);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "فشل في تحميل بيانات لوحة التحكم");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("admin_token");
+    localStorage.removeItem("admin_user");
+    navigate("/admin/login");
+  };
+
+  const StatCard = ({ title, value, icon: Icon, color, trend }: {
+    title: string;
+    value: number;
+    icon: any;
+    color: string;
+    trend?: { value: number; isPositive: boolean };
+  }) => (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-gray-600">{title}</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{value.toLocaleString()}</p>
+          {trend && (
+            <div className={`flex items-center mt-2 text-sm ${
+              trend.isPositive ? "text-green-600" : "text-red-600"
+            }`}>
+              {trend.isPositive ? (
+                <TrendingUp className="w-4 h-4 mr-1" />
+              ) : (
+                <TrendingDown className="w-4 h-4 mr-1" />
+              )}
+              {trend.value}%
+            </div>
+          )}
+        </div>
+        <div className={`p-3 rounded-lg ${color}`}>
+          <Icon className="w-6 h-6 text-white" />
+        </div>
+      </div>
+    </div>
+  );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-lg text-gray-600">جاري تحميل لوحة التحكم...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">حدث خطأ</h3>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={fetchDashboardData}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            إعادة المحاولة
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <AdminLayout>
+      <div className="p-6">
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <StatCard
+              title="إجمالي المنتجات"
+              value={dashboardData?.stats.total_products || 0}
+              icon={Package}
+              color="bg-blue-500"
+              trend={{ value: 12, isPositive: true }}
+            />
+            <StatCard
+              title="الطلبات"
+              value={dashboardData?.stats.total_orders || 0}
+              icon={ShoppingCart}
+              color="bg-green-500"
+              trend={{ value: 8, isPositive: true }}
+            />
+            <StatCard
+              title="المستخدمين"
+              value={dashboardData?.stats.total_users || 0}
+              icon={Users}
+              color="bg-purple-500"
+              trend={{ value: 15, isPositive: true }}
+            />
+            <StatCard
+              title="الإيرادات"
+              value={dashboardData?.revenue.total_revenue || 0}
+              icon={DollarSign}
+              color="bg-yellow-500"
+              trend={{ value: 5, isPositive: false }}
+            />
+          </div>
+
+          {/* Revenue Stats */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">الإيرادات</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">الإجمالي</span>
+                  <span className="text-xl font-bold text-gray-900">
+                    {dashboardData?.revenue.total_revenue?.toLocaleString() || 0} شيكل
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">هذا الشهر</span>
+                  <span className="text-lg font-semibold text-blue-600">
+                    {dashboardData?.revenue.monthly_revenue?.toLocaleString() || 0} شيكل
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">اليوم</span>
+                  <span className="text-lg font-semibold text-green-600">
+                    {dashboardData?.revenue.daily_revenue?.toLocaleString() || 0} شيكل
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">الطلبات</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">إجمالي الطلبات</span>
+                  <span className="text-xl font-bold text-gray-900">
+                    {dashboardData?.stats.total_orders || 0}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">معلقة</span>
+                  <span className="text-lg font-semibold text-yellow-600">
+                    {dashboardData?.stats.pending_orders || 0}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">مكتملة</span>
+                  <span className="text-lg font-semibold text-green-600">
+                    {dashboardData?.stats.completed_orders || 0}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">المنتجات</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">إجمالي المنتجات</span>
+                  <span className="text-xl font-bold text-gray-900">
+                    {dashboardData?.stats.total_products || 0}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">نشطة</span>
+                  <span className="text-lg font-semibold text-green-600">
+                    {dashboardData?.stats.active_products || 0}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">الفئات</span>
+                  <span className="text-lg font-semibold text-blue-600">
+                    {dashboardData?.stats.total_categories || 0}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Top Products */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-6">المنتجات الأكثر مبيعاً</h3>
+            <div className="space-y-4">
+              {dashboardData?.top_products?.map((product, index) => (
+                <div key={product.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-semibold mr-3">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900">{product.name}</h4>
+                      <p className="text-sm text-gray-600">{product.price.toLocaleString()} شيكل</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-gray-900">{product.sales_count} مبيع</p>
+                    <div className="flex items-center text-yellow-500">
+                      <Star className="w-4 h-4 fill-current" />
+                      <span className="text-sm text-gray-600 mr-1">4.5</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+      </div>
+    </AdminLayout>
+  );
+};
+
+export default AdminDashboard;

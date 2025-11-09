@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import CategoryPlaceholder from "./pages/CategoryPlaceholder";
@@ -6,7 +6,28 @@ import Products from "./pages/Products";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import OrderSuccess from "./pages/OrderSuccess";
-import Admin from "./pages/Admin";
+import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminProducts from "./pages/AdminProducts";
+import AdminOrders from "./pages/AdminOrders";
+import AdminUsers from "./pages/AdminUsers";
+import AdminCategories from "./pages/AdminCategories";
+import AdminBrands from "./pages/AdminBrands";
+import AdminReviews from "./pages/AdminReviews";
+import AdminCategoryEdit from "./pages/AdminCategoryEdit";
+import AdminCategoryCreate from "./pages/AdminCategoryCreate";
+import AdminCategoryFilters from "./pages/AdminCategoryFilters";
+import AdminBrandEdit from "./pages/AdminBrandEdit";
+import AdminBrandCreate from "./pages/AdminBrandCreate";
+import AdminBrandView from "./pages/AdminBrandView";
+import AdminProductEdit from "./pages/AdminProductEdit";
+import AdminProductCreate from "./pages/AdminProductCreate";
+import AdminProductView from "./pages/AdminProductView";
+import AdminUserEdit from "./pages/AdminUserEdit";
+import AdminUserCreate from "./pages/AdminUserCreate";
+import AdminUserView from "./pages/AdminUserView";
+import AdminSiteSettings from "./pages/AdminSiteSettings";
+import AdminOffers from "./pages/AdminOffers";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import About from "./pages/About";
@@ -15,15 +36,18 @@ import Shipping from "./pages/Shipping";
 import Returns from "./pages/Returns";
 import Warranty from "./pages/Warranty";
 import Offers from "./pages/Offers";
+import CategoriesPage from "./pages/Categories";
 import Product from "./pages/Product";
 import { CartProvider } from "./context/CartContext";
 import { AnimationProvider } from "./context/AnimationContext";
+import { AuthProvider } from "./context/AuthContext";
 
 function App() {
   return (
-    <CartProvider>
-      <AnimationProvider>
-        <BrowserRouter>
+    <AuthProvider>
+      <CartProvider>
+        <AnimationProvider>
+          <BrowserRouter>
       <Routes>
         <Route path="/" element={<Index />} />
         
@@ -75,6 +99,10 @@ function App() {
           element={<Offers />} 
         />
         <Route 
+          path="/categories" 
+          element={<CategoriesPage />} 
+        />
+        <Route 
           path="/login" 
           element={<Login />} 
         />
@@ -109,14 +137,37 @@ function App() {
         <Route path="/order-success" element={<OrderSuccess />} />
 
         {/* Admin */}
-        <Route path="/admin" element={<Admin />} />
+        <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/products" element={<AdminProducts />} />
+        <Route path="/admin/products/create" element={<AdminProductCreate />} />
+        <Route path="/admin/products/:id" element={<AdminProductView />} />
+        <Route path="/admin/products/:id/edit" element={<AdminProductEdit />} />
+        <Route path="/admin/orders" element={<AdminOrders />} />
+        <Route path="/admin/users" element={<AdminUsers />} />
+        <Route path="/admin/users/create" element={<AdminUserCreate />} />
+        <Route path="/admin/users/:id" element={<AdminUserView />} />
+        <Route path="/admin/users/:id/edit" element={<AdminUserEdit />} />
+        <Route path="/admin/categories" element={<AdminCategories />} />
+        <Route path="/admin/categories/create" element={<AdminCategoryCreate />} />
+        <Route path="/admin/categories/:id/edit" element={<AdminCategoryEdit />} />
+        <Route path="/admin/categories/:id/filters" element={<AdminCategoryFilters />} />
+        <Route path="/admin/brands" element={<AdminBrands />} />
+        <Route path="/admin/brands/create" element={<AdminBrandCreate />} />
+        <Route path="/admin/brands/:id" element={<AdminBrandView />} />
+        <Route path="/admin/brands/:id/edit" element={<AdminBrandEdit />} />
+        <Route path="/admin/reviews" element={<AdminReviews />} />
+        <Route path="/admin/site-settings" element={<AdminSiteSettings />} />
+        <Route path="/admin/offers" element={<AdminOffers />} />
 
         {/* Catch-all route */}
         <Route path="*" element={<NotFound />} />
       </Routes>
-        </BrowserRouter>
-      </AnimationProvider>
-    </CartProvider>
+          </BrowserRouter>
+        </AnimationProvider>
+      </CartProvider>
+    </AuthProvider>
   );
 }
 

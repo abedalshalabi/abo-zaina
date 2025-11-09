@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Search,
   Filter,
@@ -7,38 +7,63 @@ import {
   List,
   Star,
   Heart,
-  ShoppingCart,
   SlidersHorizontal
 } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useAnimation } from "../context/AnimationContext";
 import Header from "../components/Header";
+import { productsAPI, categoriesAPI, brandsAPI, wishlistAPI } from "../services/api";
 
 interface Product {
   id: number;
   name: string;
   price: number;
   originalPrice?: number;
-  image: string;
+  image?: string;
+  images?: string[];
   rating: number;
   reviews: number;
   category: string;
   brand: string;
   discount?: number;
   inStock: boolean;
+  categoryId?: number;
+  categoryIds?: number[];
+  filterValues?: Record<string, any>;
 }
 
 const Products = () => {
   const { addItem } = useCart();
   const { triggerAnimation } = useAnimation();
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("الكل");
   const [selectedBrand, setSelectedBrand] = useState("الكل");
-  const [priceRange, setPriceRange] = useState([0, 10000]);
+  const [priceRange, setPriceRange] = useState([0, 50000]);
   const [sortBy, setSortBy] = useState("default");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showFilters, setShowFilters] = useState(false);
+  
+  // API State
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [allCategoriesList, setAllCategoriesList] = useState<any[]>([]);
+  const [subcategories, setSubcategories] = useState<any[]>([]);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<any>(null);
+  const [categoryFilters, setCategoryFilters] = useState<any[]>([]);
+  const [selectedFilters, setSelectedFilters] = useState<{[key: string]: string}>({});
+  const [allBrands, setAllBrands] = useState<any[]>([]);
+  const [brands, setBrands] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [wishlistIds, setWishlistIds] = useState<number[]>([]);
+  const [wishlistProcessing, setWishlistProcessing] = useState<Record<number, boolean>>({});
+  
+  // Pagination state for infinity scroll
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // Map URL paths to category names
   const pathToCategoryMap: { [key: string]: string } = {
@@ -52,158 +77,602 @@ const Products = () => {
     "/tools": "الأجهزة الصغيرة" // Map tools to small appliances for now
   };
 
-  // Auto-select category based on current route
-  useEffect(() => {
-    const categoryFromPath = pathToCategoryMap[location.pathname];
-    if (categoryFromPath) {
-      setSelectedCategory(categoryFromPath);
-    } else {
-      setSelectedCategory("الكل");
+  // Load subcategories when category changes
+  const loadSubcategories = async (categoryId: number) => {
+    try {
+      const response = await categoriesAPI.getSubcategories(categoryId);
+      setSubcategories(response.data || []);
+    } catch (err) {
+      console.error("Error loading subcategories:", err);
+      setSubcategories([]);
     }
-  }, [location.pathname]);
+  };
 
-  const categories = [
-    "الكل",
-    "أجهزة المطبخ",
-    "التكييف والتبريد", 
-    "الأجهزة الصغيرة",
-    "أجهزة الغسيل",
-    "أجهزة التنظيف",
-    "الإلكترونيات"
-  ];
+  // Load filters when subcategory changes
+  const loadCategoryFilters = async (categoryId: number) => {
+    try {
+      const response = await categoriesAPI.getCategoryFilters(categoryId);
+      setCategoryFilters(response.data.filters || []);
+    } catch (err) {
+      console.error("Error loading filters:", err);
+      setCategoryFilters([]);
+    }
+  };
 
-  const brands = [
-    "الكل",
-    "LG",
-    "Samsung", 
-    "Whirlpool",
-    "Bosch",
-    "Panasonic",
-    "Philips",
-    "Siemens"
-  ];
+  // Load data from API
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        setError("");
+        
+        // Load main categories, all categories, and all brands
+        const [categoriesResponse, allCategoriesResponse, brandsResponse] = await Promise.all([
+          categoriesAPI.getMainCategories(),
+          categoriesAPI.getCategories(),
+          brandsAPI.getBrands()
+        ]);
+        
+        setCategories(categoriesResponse.data || []);
+        setAllCategoriesList(allCategoriesResponse.data || []);
+        const allBrandsData = brandsResponse.data || [];
+        setAllBrands(allBrandsData);
+        setBrands(allBrandsData);
+        
+        // Load products (will be triggered by the filters useEffect)
+      } catch (err) {
+        setError("حدث خطأ في تحميل البيانات");
+        console.error("Error loading data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+  }, []);
 
-  const allProducts: Product[] = [
-    {
-      id: 1,
-      name: "ثلاجة LG 18 قدم مع فريزر علوي",
-      price: 2500,
-      originalPrice: 3000,
-      image: "https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?w=300&h=300&fit=crop",
-      rating: 4.5,
-      reviews: 124,
-      category: "أجهزة المطبخ",
-      brand: "LG",
-      discount: 17,
-      inStock: true,
-    },
-    {
-      id: 2,
-      name: "غسالة Samsung أتوماتيك 8 كيلو",
-      price: 1800,
-      originalPrice: 2200,
-      image: "https://images.samsung.com/is/image/samsung/p6pim/levant/ww80j5555fx-sg/gallery/levant-front-loading-washer-ww80j5555fx-sg-ww80j5555fx-sg-frontinox-205395767?$650_519_PNG$",
-      rating: 4.3,
-      reviews: 89,
-      category: "أجهزة الغسيل",
-      brand: "Samsung",
-      discount: 18,
-      inStock: true,
-    },
-    {
-      id: 3,
-      name: "مكيف شارب 18 وحدة بارد حار",
-      price: 1200,
-      originalPrice: 1500,
-      image: "https://www.sharp-me.com/content/dam/sites/sharp-me/product/air-conditioner/split-ac/ah-ap18uhea/AH-AP18UHEA_001.png",
-      rating: 4.7,
-      reviews: 67,
-      category: "التكييف والتبريد",
-      brand: "Sharp",
-      discount: 20,
-      inStock: true,
-    },
-    {
-      id: 4,
-      name: "ميكروويف Panasonic 25 لتر",
-      price: 450,
-      originalPrice: 600,
-      image: "https://panasonic.net/cns/microwave/products/nn-st34h/img/nn-st34h_main.png",
-      rating: 4.2,
-      reviews: 156,
-      category: "الأجهزة الصغيرة",
-      brand: "Panasonic",
-      discount: 25,
-      inStock: true,
-    },
-    {
-      id: 5,
-      name: "مكنسة كهربائية Bosch بدون كيس",
-      price: 680,
-      originalPrice: 800,
-      image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=300&h=300&fit=crop",
-      rating: 4.4,
-      reviews: 93,
-      category: "أجهزة التنظيف",
-      brand: "Bosch",
-      discount: 15,
-      inStock: false,
-    },
-    {
-      id: 6,
-      name: "تلفزيون Samsung 55 بوصة 4K",
-      price: 2200,
-      originalPrice: 2800,
-      image: "https://images.samsung.com/is/image/samsung/p6pim/levant/ua55au7000uxzn/gallery/levant-uhd-4k-smart-tv-au7000-ua55au7000uxzn-531425220?$650_519_PNG$",
-      rating: 4.6,
-      reviews: 201,
-      category: "الإلكترونيات",
-      brand: "Samsung",
-      discount: 21,
-      inStock: true,
-    },
-  ];
+  // Load wishlist
+  useEffect(() => {
+    const loadWishlist = async () => {
+      try {
+        const response = await wishlistAPI.getWishlist();
+        const idsFromResponse = Array.isArray(response?.ids)
+          ? response.ids
+          : Array.isArray(response?.data)
+            ? response.data
+                .map((item: any) =>
+                  typeof item === "number"
+                    ? item
+                    : item?.id ?? item?.product_id ?? item?.product?.id ?? null
+                )
+                .filter((id: number | null) => typeof id === "number")
+            : [];
+        setWishlistIds(idsFromResponse.map((id: number) => Number(id)));
+      } catch (err) {
+        console.error("Error loading wishlist:", err);
+      }
+    };
 
-  const filteredProducts = useMemo(() => {
-    let filtered = allProducts.filter(product => {
-      const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = selectedCategory === "الكل" || product.category === selectedCategory;
-      const matchesBrand = selectedBrand === "الكل" || product.brand === selectedBrand;
-      const matchesPrice = product.price >= priceRange[0] && product.price <= priceRange[1];
+    loadWishlist();
+  }, []);
+  
+  // Load products on initial mount (after categories/brands are loaded)
+  useEffect(() => {
+    if (!loading && (categories.length > 0 || brands.length > 0)) {
+      loadProducts(1, false);
+    }
+  }, []);
+
+  // Read category_id and brand_id from URL and set selected values
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    
+    // Handle category_id from URL
+    const categoryIdFromUrl = params.get('category_id');
+    if (categoryIdFromUrl && (categories.length > 0 || allCategoriesList.length > 0)) {
+      // Search in main categories first, then in the full categories list
+      const category =
+        categories.find(cat => cat.id === Number(categoryIdFromUrl)) ||
+        allCategoriesList.find(cat => cat.id === Number(categoryIdFromUrl));
       
-      return matchesSearch && matchesCategory && matchesBrand && matchesPrice;
-    });
+      if (category) {
+        handleCategorySelection(category);
+      }
+    } else if (!categoryIdFromUrl) {
+      // Reset to "الكل" if no category_id in URL
+      setSelectedCategory("الكل");
+      setSelectedSubcategory(null);
+      setSubcategories([]);
+      setCategoryFilters([]);
+      setSelectedFilters({});
+    }
+    
+    // Handle brand_id from URL
+    const brandIdFromUrl = params.get('brand_id');
+    if (brandIdFromUrl && allBrands.length > 0) {
+      const brand = allBrands.find(b => b.id === Number(brandIdFromUrl));
+      if (brand) {
+        setSelectedBrand(brand.name);
+      }
+    }
+  }, [location.search, categories, allCategoriesList, allBrands]);
 
-    // Sort products
+  const resetAllFilters = useCallback(() => {
+    setSelectedFilters({});
+    setSelectedCategory("الكل");
+    setSelectedSubcategory(null);
+    setSubcategories([]);
+    setCategoryFilters([]);
+    setSelectedBrand("الكل");
+    setPriceRange([0, 50000]);
+    setSearchQuery("");
+    setSortBy("default");
+
+    const params = new URLSearchParams(location.search);
+    params.delete("category_id");
+    params.delete("brand_id");
+    const newUrl = params.toString() ? `${location.pathname}?${params.toString()}` : location.pathname;
+    navigate(newUrl, { replace: true });
+  }, [location.pathname, location.search, navigate]);
+
+  // Helper function to handle category selection
+  const handleCategorySelection = async (category: any) => {
+    // Check if category is a parent (parent_id is null) or child (parent_id is not null)
+    const isChildCategory = category.parent_id !== null && category.parent_id !== undefined;
+    
+    if (isChildCategory) {
+      // If it's a child category, find the parent category
+      const parentCategory =
+        categories.find(cat => cat.id === category.parent_id) ||
+        allCategoriesList.find(cat => cat.id === category.parent_id);
+      if (parentCategory) {
+        setSelectedCategory(parentCategory.name);
+        setSelectedSubcategory(category);
+        
+        // Load subcategories for the parent
+        await loadSubcategories(parentCategory.id);
+        
+        // Load filters for the child category
+        await loadCategoryFilters(category.id);
+      }
+    } else {
+      // If it's a parent category
+      setSelectedCategory(category.name);
+      setSelectedSubcategory(null);
+      setSubcategories([]);
+      setCategoryFilters([]);
+      setSelectedFilters({});
+      
+      // Load subcategories or filters if needed
+      if (category.has_children) {
+        await loadSubcategories(category.id);
+      } else {
+        await loadCategoryFilters(category.id);
+      }
+    }
+  };
+
+  // Load products function with pagination support
+  const loadProducts = async (page: number = 1, append: boolean = false) => {
+    try {
+      if (!append) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+      
+      // Build filters object
+      const filters: any = {
+        search: searchQuery || undefined,
+        // Send price_min only if it's greater than 0 (user has set a minimum)
+        price_min: priceRange[0] > 0 ? priceRange[0] : undefined,
+        // Send price_max only if it's less than 50000 (user has set a maximum)
+        price_max: priceRange[1] < 50000 ? priceRange[1] : undefined,
+        page: page,
+        per_page: 15, // Load 15 products per page
+      };
+      
+      // Map sortBy to API sort parameters
+      if (sortBy !== "default") {
     switch (sortBy) {
       case "price-low":
-        filtered.sort((a, b) => a.price - b.price);
+            filters.sort = 'price';
+            filters.order = 'asc';
         break;
       case "price-high":
-        filtered.sort((a, b) => b.price - a.price);
+            filters.sort = 'price';
+            filters.order = 'desc';
         break;
       case "rating":
-        filtered.sort((a, b) => b.rating - a.rating);
+            filters.sort = 'rating';
+            filters.order = 'desc';
         break;
       case "name":
-        filtered.sort((a, b) => a.name.localeCompare(b.name));
+            filters.sort = 'name';
+            filters.order = 'asc';
         break;
+          default:
+            filters.sort = 'created_at';
+            filters.order = 'desc';
+        }
+      } else {
+        filters.sort = 'created_at';
+        filters.order = 'desc';
+      }
+
+      // Handle category filter - check URL first, then selected values
+      const params = new URLSearchParams(location.search);
+      const categoryIdFromUrl = params.get('category_id');
+      
+      if (categoryIdFromUrl) {
+        // Prefer using the category ID from the URL directly (could be parent or child)
+        filters.category_id = Number(categoryIdFromUrl);
+      } else {
+        // Use subcategory if selected, otherwise use main category
+        if (selectedSubcategory) {
+          filters.category_id = selectedSubcategory.id;
+        } else if (selectedCategory !== "الكل") {
+          const category = categories.find(cat => cat.name === selectedCategory);
+          if (category) {
+            filters.category_id = category.id;
+          }
+        }
+      }
+
+      // Add brand filter - check URL first, then selected brand
+      const brandIdFromUrl = params.get('brand_id');
+      if (brandIdFromUrl) {
+        filters.brand_id = Number(brandIdFromUrl);
+      } else if (selectedBrand !== "الكل") {
+        const brand = brands.find(b => b.name === selectedBrand) || 
+                      allBrands.find(b => b.name === selectedBrand);
+        if (brand) {
+          filters.brand_id = brand.id;
+        }
+      }
+
+      console.log('Filters being sent to API:', filters);
+      
+      const response = await productsAPI.getProducts(filters);
+      
+      console.log('Raw API response:', response);
+      console.log('Response data:', response.data);
+      console.log('Response meta:', response.meta);
+      
+      // Handle paginated response structure
+      const productsData = response.data || [];
+      const meta = response.meta || {};
+      const currentPageNum = meta.current_page || page;
+      const lastPageNum = meta.last_page || 1;
+      
+      console.log('Number of products from API:', productsData.length);
+      console.log('Current page:', currentPageNum, 'Last page:', lastPageNum);
+      
+      // Transform API data to match Product interface
+      const transformedProducts = productsData.map((product: any) => {
+        // Extract image URL from images array
+        let imageUrl = '';
+        
+        console.log('Processing product:', {
+          id: product.id,
+          name: product.name,
+          images: product.images,
+          images_count: product.images?.length || 0,
+          images_type: typeof product.images,
+        });
+        
+        if (product.images && product.images.length > 0) {
+          const firstImage = product.images[0];
+          console.log('First image:', firstImage, 'Type:', typeof firstImage);
+          
+          if (typeof firstImage === 'string') {
+            imageUrl = firstImage;
+          } else if (firstImage && typeof firstImage === 'object') {
+            // Handle object with image_url or image_path
+            if (firstImage.image_url) {
+              imageUrl = firstImage.image_url;
+            } else if (firstImage.image_path) {
+              // Build full URL if image_path exists
+              imageUrl = firstImage.image_path.startsWith('http') 
+                ? firstImage.image_path 
+                : `http://localhost:8000/storage/${firstImage.image_path}`;
+            }
+          }
+        }
+        
+        console.log('Final image URL for product', product.id, ':', imageUrl);
+        
+        return {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          originalPrice: product.original_price,
+          images: product.images || [],
+          image: imageUrl || product.image || '/placeholder.svg',
+          rating: product.rating || 0,
+          reviews: product.reviews_count || 0,
+          category: product.category?.name || '',
+          brand: product.brand?.name || '',
+          discount: product.discount_percentage,
+          inStock: product.in_stock !== false, // Show all products, even if out of stock
+          categoryId: product.category_id ?? product.category?.id,
+          categoryIds: (product.categories || []).map((cat: any) => cat.id),
+          filterValues: product.filter_values || {}
+        };
+      });
+      
+      console.log('Transformed products count:', transformedProducts.length);
+      
+      // Extract unique brands from loaded products (use original product data)
+      const uniqueBrands = new Map<string, { id: number; name: string }>();
+      productsData.forEach((product: any) => {
+        if (product.brand && product.brand.id && product.brand.name) {
+          uniqueBrands.set(product.brand.name, {
+            id: product.brand.id,
+            name: product.brand.name
+          });
+        }
+      });
+      
+      // Also check existing products if appending
+      if (append) {
+        products.forEach((product: any) => {
+          if (product.brand && product.brand.trim() !== '') {
+            const existingBrand = brands.find(b => b.name === product.brand);
+            if (existingBrand) {
+              uniqueBrands.set(existingBrand.name, {
+                id: existingBrand.id || 0,
+                name: existingBrand.name
+              });
+            }
+          }
+        });
+      }
+      
+      const isMainCategorySelected = !selectedSubcategory && selectedCategory === "الكل";
+      const uniqueBrandsArray = Array.from(uniqueBrands.values());
+      const brandListForMainCategory = allBrands.length > 0 ? allBrands : uniqueBrandsArray;
+
+      // Update brands list with unique brands from filtered products
+      if (!append) {
+        if (isMainCategorySelected) {
+          setBrands(brandListForMainCategory);
+        } else {
+          setBrands(uniqueBrandsArray);
+        }
+      } else {
+        if (isMainCategorySelected) {
+          setBrands(brandListForMainCategory);
+        } else {
+          // For pagination, merge with existing brands
+          setBrands(prev => {
+            const merged = new Map<string, { id: number; name: string }>();
+            prev.forEach(b => merged.set(b.name, b));
+            uniqueBrands.forEach((brand, name) => {
+              if (!merged.has(name)) {
+                merged.set(name, brand);
+              }
+            });
+            return Array.from(merged.values());
+          });
+        }
+      }
+      
+      if (append) {
+        // Append new products to existing ones
+        setProducts(prev => [...prev, ...transformedProducts]);
+      } else {
+        // Replace products (new search/filter)
+        setProducts(transformedProducts);
+        setCurrentPage(1);
+      }
+      
+      // Check if there are more pages
+      setHasMore(currentPageNum < lastPageNum);
+      setCurrentPage(currentPageNum);
+      
+    } catch (err) {
+      setError("حدث خطأ في تحميل المنتجات");
+      console.error("Error loading products:", err);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+  
+  // Load more products (for infinity scroll)
+  const loadMoreProducts = () => {
+    if (!loadingMore && hasMore) {
+      loadProducts(currentPage + 1, true);
+    }
+  };
+
+  // Reload products when filters change (reset to page 1)
+  useEffect(() => {
+    // Debounce to avoid too many API calls
+    const timeoutId = setTimeout(() => {
+      setProducts([]);
+      setCurrentPage(1);
+      setHasMore(true);
+      loadProducts(1, false);
+    }, 300);
+    
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, selectedCategory, selectedSubcategory, selectedBrand, priceRange, sortBy, selectedFilters]);
+  
+  // Infinity scroll observer - تحميل تلقائي عند التمرير
+  useEffect(() => {
+    let observer: IntersectionObserver | null = null;
+    let loadMoreTrigger: HTMLElement | null = null;
+    
+    // Wait a bit for DOM to be ready
+    const timer = setTimeout(() => {
+      observer = new IntersectionObserver(
+        (entries) => {
+          const target = entries[0];
+          if (target.isIntersecting && hasMore && !loadingMore && !loading) {
+            console.log('Auto-loading more products...');
+            loadMoreProducts();
+          }
+        },
+        {
+          root: null,
+          rootMargin: '200px', // Start loading 200px before reaching the trigger
+          threshold: 0.01, // Trigger as soon as any part is visible
+        }
+      );
+
+      loadMoreTrigger = document.getElementById('load-more-trigger');
+      if (loadMoreTrigger) {
+        observer.observe(loadMoreTrigger);
+        console.log('Infinity scroll observer attached');
+      } else {
+        console.warn('load-more-trigger element not found');
+      }
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      if (observer && loadMoreTrigger) {
+        observer.unobserve(loadMoreTrigger);
+      }
+    };
+  }, [hasMore, loadingMore, loading, currentPage, products.length]);
+
+  // Use categories and brands from API
+  const categoriesList = categories.length > 0 ? ["الكل", ...categories.map(cat => cat.name)] : ["الكل"];
+  const brandsList = brands.length > 0 ? ["الكل", ...brands.map(brand => brand.name)] : ["الكل"];
+
+  // Apply additional client-side filtering to ensure subcategory selection is respected
+  const applyAttributeFilters = useCallback(
+    (list: Product[]) => {
+      const activeFilters = Object.entries(selectedFilters).filter(([, value]) => value && value.trim() !== "");
+      if (!activeFilters.length) {
+        return list;
+      }
+
+      return list.filter((product) => {
+        const productFilterValues = product.filterValues || {};
+
+        return activeFilters.some(([filterName, filterValue]) => {
+          const selectedValues = filterValue
+            .split(",")
+            .map((val) => val.trim())
+            .filter(Boolean);
+
+          if (!selectedValues.length) {
+            return true;
+          }
+
+          const productValue = productFilterValues[filterName];
+          if (productValue === undefined || productValue === null) {
+            return false;
+          }
+
+          const productValuesArray = Array.isArray(productValue)
+            ? productValue.map((val) => String(val).trim())
+            : [String(productValue).trim()];
+
+          return selectedValues.some((selectedVal) =>
+            productValuesArray.some((productVal) => productVal.toLowerCase() === selectedVal.toLowerCase())
+          );
+        });
+      });
+    },
+    [selectedFilters]
+  );
+
+  const productsToShow = useMemo(() => {
+    if (selectedSubcategory) {
+      const subcategoryId = Number(selectedSubcategory.id);
+      const subcategoryProducts = products.filter((product) => {
+        const matchesPrimary = product.categoryId === subcategoryId;
+        const matchesAdditional = Array.isArray(product.categoryIds)
+          ? product.categoryIds.includes(subcategoryId)
+          : false;
+        return matchesPrimary || matchesAdditional;
+      });
+
+      return applyAttributeFilters(subcategoryProducts);
     }
 
-    return filtered;
-  }, [searchQuery, selectedCategory, selectedBrand, priceRange, sortBy]);
+    if (selectedCategory !== "الكل") {
+      const selectedCategoryData = categories.find((cat) => cat.name === selectedCategory);
+      if (selectedCategoryData) {
+        const selectedCategoryId = Number(selectedCategoryData.id);
+        const relevantIds = new Set<number>();
 
-  const ProductCard = ({ product }: { product: Product }) => (
-    <Link to={`/product/${product.id}`} className="product-card p-4 group block hover:transform hover:scale-105 transition-all duration-300">
+        // Include selected category
+        relevantIds.add(selectedCategoryId);
+
+        // Include subcategories if they exist in the loaded list
+        subcategories
+          .filter((sub) => sub.parent_id === selectedCategoryId)
+          .forEach((sub) => relevantIds.add(Number(sub.id)));
+
+        const categoryFiltered = products.filter((product) => {
+          const primaryMatches = product.categoryId && relevantIds.has(product.categoryId);
+          const additionalMatches = Array.isArray(product.categoryIds)
+            ? product.categoryIds.some((id) => relevantIds.has(id))
+            : false;
+          return primaryMatches || additionalMatches;
+        });
+
+        return applyAttributeFilters(categoryFiltered);
+      }
+    }
+
+    return applyAttributeFilters(products);
+  }, [products, selectedSubcategory, selectedCategory, categories, subcategories, applyAttributeFilters]);
+
+  const toggleWishlist = useCallback(
+    async (product: Product) => {
+      const isInWishlist = wishlistIds.includes(product.id);
+
+      setWishlistProcessing((prev) => ({ ...prev, [product.id]: true }));
+      try {
+        if (isInWishlist) {
+          await wishlistAPI.removeFromWishlist(product.id);
+          setWishlistIds((prev) => prev.filter((id) => id !== product.id));
+        } else {
+          await wishlistAPI.addToWishlist(product.id);
+          setWishlistIds((prev) => (prev.includes(product.id) ? prev : [...prev, product.id]));
+        }
+      } catch (err) {
+        console.error("Error updating wishlist:", err);
+      } finally {
+        setWishlistProcessing((prev) => {
+          const updated = { ...prev };
+          delete updated[product.id];
+          return updated;
+        });
+      }
+    },
+    [wishlistIds]
+  );
+
+  const ProductCard = ({ product }: { product: Product }) => {
+    const isInWishlist = wishlistIds.includes(product.id);
+    const isProcessingWishlist = !!wishlistProcessing[product.id];
+
+    return (
+      <Link
+        to={`/product/${product.id}`}
+        className="product-card p-4 group block hover:transform hover:scale-105 transition-all duration-300"
+      >
       <div className="relative mb-4">
         <img
-          src={product.image}
+          src={product.image || product.images?.[0] || "/placeholder.svg"}
           alt={product.name}
-          className="w-full h-48 object-cover rounded-lg"
+          className="w-full h-48 object-contain bg-white rounded-lg"
+          onError={(e) => {
+            console.error("Image load error for product", product.id, ":", e.currentTarget.src);
+            e.currentTarget.src = "/placeholder.svg";
+          }}
         />
-        {product.discount && (
-          <span className="absolute top-2 right-2 bg-brand-orange text-white px-2 py-1 rounded-lg text-sm font-semibold">
-            خصم {product.discount}%
+        {product.originalPrice && product.originalPrice > product.price && (
+          <span className="absolute top-2 right-2 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+            خصم {(product.originalPrice - product.price).toLocaleString()} ₪
           </span>
         )}
         {!product.inStock && (
@@ -211,14 +680,25 @@ const Products = () => {
             <span className="text-white font-semibold">نفدت الكمية</span>
           </div>
         )}
-        <button 
+        <button
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
+            if (!isProcessingWishlist) {
+              toggleWishlist(product);
+            }
           }}
-          className="absolute top-2 left-2 p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors"
+          className={`absolute top-2 left-2 p-2 rounded-full shadow-md transition-colors ${
+            isInWishlist ? "bg-red-50 hover:bg-red-100" : "bg-white hover:bg-gray-50"
+          }`}
+          aria-pressed={isInWishlist}
+          aria-label={isInWishlist ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+          disabled={isProcessingWishlist}
         >
-          <Heart className="w-4 h-4 text-gray-600" />
+          <Heart
+            className={`w-4 h-4 ${isInWishlist ? "text-red-500" : "text-gray-600"}`}
+            fill={isInWishlist ? "currentColor" : "none"}
+          />
         </button>
       </div>
 
@@ -232,9 +712,7 @@ const Products = () => {
             <Star
               key={i}
               className={`w-4 h-4 ${
-                i < Math.floor(product.rating)
-                  ? "text-yellow-400 fill-current"
-                  : "text-gray-300"
+                i < Math.floor(product.rating) ? "text-yellow-400 fill-current" : "text-gray-300"
               }`}
             />
           ))}
@@ -244,43 +722,41 @@ const Products = () => {
 
       <div className="flex items-center gap-2 mb-4">
         <span className="text-xl font-bold text-brand-green">{product.price} ₪</span>
-                {product.originalPrice && (
-                  <span className="text-gray-500 line-through">{product.originalPrice} ₪</span>
-                )}
+        {product.originalPrice && product.originalPrice > 0 && (
+          <span className="text-gray-500 line-through">{product.originalPrice} ₪</span>
+        )}
       </div>
 
       <button
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          if (product.inStock) {
-            // Trigger animation
-            triggerAnimation(e.currentTarget, {
-              image: product.image,
-              name: product.name
-            });
-            
-            // Add to cart
-            addItem({
-              id: product.id,
-              name: product.name,
-              price: product.price,
-              image: product.image,
-              brand: product.brand
-            });
-          }
+          if (!product.inStock) return;
+
+          const imageForAnimation = product.image || product.images?.[0] || "/placeholder.svg";
+          triggerAnimation(e.currentTarget, {
+            image: imageForAnimation,
+            name: product.name
+          });
+
+          addItem({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            image: imageForAnimation,
+            brand: product.brand
+          });
         }}
         className={`w-full py-2 rounded-lg transition-colors ${
-          product.inStock
-            ? "bg-brand-blue text-white hover:bg-blue-700"
-            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+          product.inStock ? "bg-brand-blue text-white hover:bg-blue-700" : "bg-gray-300 text-gray-500 cursor-not-allowed"
         }`}
         disabled={!product.inStock}
       >
         {product.inStock ? "أضف للسلة" : "نفدت الكمية"}
       </button>
-    </Link>
-  );
+      </Link>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 arabic">
@@ -292,7 +768,7 @@ const Products = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
           {/* Filters Sidebar */}
-          <div className={`${showFilters ? 'block' : 'hidden'} lg:block w-full lg:w-80 space-y-6 ${showFilters ? 'mb-6' : ''}`}>
+          <div className={`${showFilters ? 'block' : 'hidden'} lg:block w-full lg:w-80 space-y-6 ${showFilters ? 'mb-6' : ''} lg:sticky lg:top-28 lg:self-start lg:max-h-[calc(100vh-9rem)] lg:overflow-y-auto lg:scrollbar-hide`}>
             <div className="bg-white p-6 rounded-lg shadow-sm">
               <h3 className="font-semibold text-lg mb-4">البحث والفلترة</h3>
               
@@ -313,27 +789,262 @@ const Products = () => {
 
               {/* Category Filter */}
               <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">الفئة</label>
+                <label className="block text-sm font-medium mb-2">الفئة الرئيسية</label>
                 <select
                   value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  onChange={async (e) => {
+                    const categoryName = e.target.value;
+                    
+                    // Reset all filters and selections
+                    setSelectedSubcategory(null);
+                    setSubcategories([]);
+                    setCategoryFilters([]);
+                    setSelectedFilters({});
+                    setSelectedBrand("الكل");
+                    setPriceRange([0, 50000]);
+                    setSearchQuery("");
+                    
+                    // Update URL based on selection
+                    const params = new URLSearchParams(location.search);
+                    if (categoryName !== "الكل") {
+                      const category = categories.find(cat => cat.name === categoryName);
+                      if (category) {
+                        setSelectedCategory(categoryName);
+                        params.set('category_id', category.id.toString());
+                        
+                        // Remove brand_id if exists (reset when category changes)
+                        params.delete('brand_id');
+                        
+                        // Load subcategories or filters
+                        if (category.has_children) {
+                          await loadSubcategories(category.id);
+                        } else {
+                          await loadCategoryFilters(category.id);
+                        }
+                      }
+                    } else {
+                      setSelectedCategory("الكل");
+                      params.delete('category_id');
+                      params.delete('brand_id');
+                    }
+                    
+                    // Update URL
+                    const newUrl = params.toString() 
+                      ? `${location.pathname}?${params.toString()}` 
+                      : location.pathname;
+                    navigate(newUrl, { replace: true });
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow"
                 >
+                  <option value="الكل">الكل</option>
                   {categories.map(category => (
-                    <option key={category} value={category}>{category}</option>
+                    <option key={category.id} value={category.name}>{category.name}</option>
                   ))}
                 </select>
               </div>
+
+              {/* Subcategory Filter */}
+              {subcategories.length > 0 && (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium mb-2">الفئة الفرعية</label>
+                  <select
+                    value={selectedSubcategory?.id || ''}
+                    onChange={async (e) => {
+                      const subcategoryId = e.target.value;
+                      if (subcategoryId) {
+                        const subcategory = subcategories.find(sub => sub.id.toString() === subcategoryId);
+                        if (subcategory) {
+                          setSelectedSubcategory(subcategory);
+                          setSelectedFilters({});
+                          // Load filters for this subcategory
+                          await loadCategoryFilters(subcategory.id);
+                          
+                          const params = new URLSearchParams(location.search);
+                          params.set('category_id', subcategory.id.toString());
+                          params.delete('brand_id');
+                          const newUrl = params.toString()
+                            ? `${location.pathname}?${params.toString()}`
+                            : location.pathname;
+                          navigate(newUrl, { replace: true });
+                        }
+                      } else {
+                        setSelectedSubcategory(null);
+                        setCategoryFilters([]);
+                        setSelectedFilters({});
+                        
+                         const params = new URLSearchParams(location.search);
+                         const parentCategory = categories.find(cat => cat.name === selectedCategory);
+                         if (parentCategory) {
+                           params.set('category_id', parentCategory.id.toString());
+                         } else {
+                           params.delete('category_id');
+                         }
+                         const newUrl = params.toString()
+                           ? `${location.pathname}?${params.toString()}`
+                           : location.pathname;
+                         navigate(newUrl, { replace: true });
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                  >
+                    <option value="">اختر الفئة الفرعية...</option>
+                    {subcategories.map(subcategory => (
+                      <option key={subcategory.id} value={subcategory.id}>{subcategory.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Dynamic Category Filters */}
+              {categoryFilters.length > 0 && (
+                <div className="mb-6 space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-md">فلاتر الفئة</h4>
+                    <p className="text-xs text-gray-500 mt-1">
+                      اختر القيم المناسبة لتضييق نتائج البحث
+                    </p>
+                  </div>
+                  {categoryFilters.map((filter, index) => (
+                    <div key={index} className="space-y-2">
+                      <label className="block text-sm font-medium">
+                        {filter.name}
+                        {filter.required && (
+                          <span className="text-red-500 mr-1">*</span>
+                        )}
+                      </label>
+                      {filter.type === 'select' && (
+                        <select
+                          value={selectedFilters[filter.name] || ''}
+                          onChange={(e) => {
+                            setSelectedFilters(prev => ({
+                              ...prev,
+                              [filter.name]: e.target.value
+                            }));
+                          }}
+                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow text-sm ${
+                            filter.required 
+                              ? 'border-red-300 focus:ring-red-500' 
+                              : 'border-gray-300'
+                          }`}
+                        >
+                          <option value="">
+                            {filter.required ? 'اختر...' : 'الكل'}
+                          </option>
+                          {filter.options.map((option: string) => (
+                            <option key={option} value={option}>{option}</option>
+                          ))}
+                        </select>
+                      )}
+                      {filter.type === 'checkbox' && filter.options && filter.options.length > 0 && (
+                        <div className="space-y-2">
+                          {filter.options.map((option: string, optionIndex: number) => (
+                            <label key={optionIndex} className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedFilters[filter.name]?.split(',').includes(option) || false}
+                                onChange={(e) => {
+                                  const currentValues = selectedFilters[filter.name]?.split(',').filter(v => v.trim()) || [];
+                                  let newValues;
+                                  if (e.target.checked) {
+                                    newValues = [...currentValues, option].filter(v => v.trim());
+                                  } else {
+                                    newValues = currentValues.filter(v => v !== option);
+                                  }
+                                  setSelectedFilters(prev => ({
+                                    ...prev,
+                                    [filter.name]: newValues.join(',')
+                                  }));
+                                }}
+                                className={`rounded text-brand-blue focus:ring-brand-yellow ${
+                                  filter.required 
+                                    ? 'border-red-300 focus:ring-red-500' 
+                                    : 'border-gray-300'
+                                }`}
+                              />
+                              <span className="text-sm text-gray-700">{option}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                      {filter.type === 'checkbox' && (!filter.options || filter.options.length === 0) && (
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedFilters[filter.name] === 'true'}
+                            onChange={(e) => {
+                              setSelectedFilters(prev => ({
+                                ...prev,
+                                [filter.name]: e.target.checked ? 'true' : ''
+                              }));
+                            }}
+                            className={`rounded text-brand-blue focus:ring-brand-yellow ${
+                              filter.required 
+                                ? 'border-red-300 focus:ring-red-500' 
+                                : 'border-gray-300'
+                            }`}
+                          />
+                          <span className="text-sm text-gray-700">نعم</span>
+                        </label>
+                      )}
+                      {filter.type === 'range' && (
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            value={selectedFilters[filter.name] || ''}
+                            onChange={(e) => {
+                              setSelectedFilters(prev => ({
+                                ...prev,
+                                [filter.name]: e.target.value
+                              }));
+                            }}
+                            placeholder="مثال: 10-15 قدم"
+                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 text-sm ${
+                              filter.required 
+                                ? 'border-red-300 focus:ring-red-500' 
+                                : 'border-gray-300 focus:ring-brand-yellow'
+                            }`}
+                          />
+                          {filter.required && (
+                            <p className="text-xs text-red-500">هذا الفلتر مطلوب</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  
+                  {/* Reset Filters Button */}
+                  <div className="pt-2">
+                    <button
+                      onClick={resetAllFilters}
+                      className="w-full text-sm text-gray-600 hover:text-gray-800 underline"
+                    >
+                      إعادة تعيين الفلاتر
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Brand Filter */}
               <div className="mb-6">
                 <label className="block text-sm font-medium mb-2">العلامة التجارية</label>
                 <select
                   value={selectedBrand}
-                  onChange={(e) => setSelectedBrand(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedBrand(e.target.value);
+                    
+                    // Remove brand_id from URL when brand filter changes
+                    const params = new URLSearchParams(location.search);
+                    if (params.has('brand_id')) {
+                      params.delete('brand_id');
+                      const newUrl = params.toString() 
+                        ? `${location.pathname}?${params.toString()}` 
+                        : location.pathname;
+                      navigate(newUrl, { replace: true });
+                    }
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow"
                 >
-                  {brands.map(brand => (
+                  {brandsList.map(brand => (
                     <option key={brand} value={brand}>{brand}</option>
                   ))}
                 </select>
@@ -342,19 +1053,46 @@ const Products = () => {
               {/* Price Range */}
               <div className="mb-6">
                 <label className="block text-sm font-medium mb-2">السعر</label>
-                <div className="space-y-2">
-                  <input
-                    type="range"
-                    min="0"
-                    max="10000"
-                    step="100"
-                    value={priceRange[1]}
-                    onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>0 ₪</span>
-                    <span>{priceRange[1]} ₪</span>
+                <div className="space-y-3">
+                  {/* Min and Max Price Inputs */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <label className="block text-xs text-gray-600 mb-1">من</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max={priceRange[1]}
+                        step="100"
+                        value={priceRange[0]}
+                        onChange={(e) => {
+                          const minValue = Math.max(0, Math.min(parseInt(e.target.value) || 0, priceRange[1]));
+                          setPriceRange([minValue, priceRange[1]]);
+                        }}
+                        placeholder="0"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow text-sm"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-xs text-gray-600 mb-1">إلى</label>
+                      <input
+                        type="number"
+                        min={priceRange[0]}
+                        max="50000"
+                        step="100"
+                        value={priceRange[1]}
+                        onChange={(e) => {
+                          const maxValue = Math.max(priceRange[0], Math.min(parseInt(e.target.value) || 50000, 50000));
+                          setPriceRange([priceRange[0], maxValue]);
+                        }}
+                        placeholder="50000"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow text-sm"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Currency Display */}
+                  <div className="text-center text-xs text-gray-500">
+                    <span>النطاق: {priceRange[0]} ₪ - {priceRange[1]} ₪</span>
                   </div>
                 </div>
               </div>
@@ -376,7 +1114,7 @@ const Products = () => {
                   </button>
                   
                   <span className="text-gray-600">
-                    {filteredProducts.length} منتج
+                    {productsToShow.length} منتج
                   </span>
                 </div>
 
@@ -414,28 +1152,63 @@ const Products = () => {
             </div>
 
             {/* Products Grid */}
-            {filteredProducts.length > 0 ? (
+            {loading ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-lg text-gray-600">جاري تحميل المنتجات...</p>
+                </div>
+              </div>
+            ) : error ? (
+              <div className="text-center py-16">
+                <div className="text-red-500 text-6xl mb-4">⚠️</div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">حدث خطأ في التحميل</h3>
+                <p className="text-gray-600 mb-4">{error}</p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  إعادة المحاولة
+                </button>
+              </div>
+            ) : productsToShow.length > 0 ? (
+              <>
               <div className={`grid gap-6 ${
                 viewMode === "grid" 
-                  ? "grid-cols-2 md:grid-cols-2 lg:grid-cols-3" 
+                  ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" 
                   : "grid-cols-1"
               }`}>
-                {filteredProducts.map(product => (
+                  {productsToShow.map(product => (
                   <ProductCard key={product.id} product={product} />
                 ))}
               </div>
+                
+                {/* Infinity Scroll Trigger - يتم التحميل تلقائياً عند الوصول لهذا العنصر */}
+                <div id="load-more-trigger" className="py-8 text-center min-h-[100px]">
+                  {loadingMore ? (
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      <span className="mr-2 text-gray-600">جاري تحميل المزيد...</span>
+                    </div>
+                  ) : hasMore ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="animate-pulse">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      </div>
+                      <p className="text-sm text-gray-500">جاري التحميل تلقائياً...</p>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500">تم عرض جميع المنتجات</p>
+                  )}
+                </div>
+              </>
             ) : (
               <div className="text-center py-16">
                 <div className="text-6xl mb-4">🔍</div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">لا توجد منتجات</h3>
                 <p className="text-gray-600 mb-4">لم يتم العثور على منتجات تطابق معايير البحث</p>
                 <button
-                  onClick={() => {
-                    setSearchQuery("");
-                    setSelectedCategory("الكل");
-                    setSelectedBrand("الكل");
-                    setPriceRange([0, 10000]);
-                  }}
+                  onClick={resetAllFilters}
                   className="bg-brand-blue text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   إعادة تعيين الفلاتر

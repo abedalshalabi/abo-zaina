@@ -67,11 +67,8 @@ const Checkout = () => {
   return (
     <div className="min-h-screen bg-gray-50 arabic">
       <Header 
-        showSearch={false}
-        showActions={false}
-        showBackButton={true}
-        backButtonText="العودة للسلة"
-        backButtonLink="/cart"
+        showSearch={true}
+        showActions={true}
       />
 
       <div className="container mx-auto px-4 py-8">
@@ -291,17 +288,17 @@ const Checkout = () => {
                 <div className="space-y-2 mb-6 border-t pt-4">
                   <div className="flex justify-between">
                     <span>المجموع الفرعي</span>
-                    <span>{state.total} ر.س</span>
+                    <span>{state.total} شيكل</span>
                   </div>
                   <div className="flex justify-between">
                     <span>الشحن</span>
                     <span className={shippingCost === 0 ? "text-brand-green" : ""}>
-                      {shippingCost === 0 ? "مجاني" : `${shippingCost} ر.س`}
+                      {shippingCost === 0 ? "مجاني" : `${shippingCost} شيكل`}
                     </span>
                   </div>
                   <div className="border-t pt-2 font-bold text-lg flex justify-between">
                     <span>المجموع الكلي</span>
-                    <span className="text-brand-green">{finalTotal} ر.س</span>
+                    <span className="text-brand-green">{finalTotal} شيكل</span>
                   </div>
                 </div>
 
