@@ -39,7 +39,7 @@ jobs:
         run: |
           npm install
           npm run build
-          cp -r build/* abo-zaina-backend/public/
+          cp -r dist/* abo-zaina-backend/public/
 
       # ========== رفع الملفات عبر FTP ==========
       - name: 📤 Deploy to cPanel (FTP)
