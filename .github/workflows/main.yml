@@ -49,7 +49,7 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: ./
-          local-dir: backend
+          local-dir: abo-zaina-backend
           exclude: |
             **/.git*
             **/.github*
