@@ -23,6 +23,7 @@ import { useCart } from "../context/CartContext";
 import { useAnimation } from "../context/AnimationContext";
 import Header from "../components/Header";
 import { productsAPI, categoriesAPI } from "../services/api";
+import { STORAGE_BASE_URL } from "../config/env";
 
 interface ProductDetail {
   id: number;
@@ -185,11 +186,9 @@ const Product = () => {
                 if (img.image_url) {
                   transformedImages.push(img.image_url);
                 } else if (img.image_path) {
-                  // Build full URL if image_path exists
-                  const storageBaseUrl = import.meta.env.VITE_STORAGE_BASE_URL || 'https://abozaina.ps/storage';
                   const imageUrl = img.image_path.startsWith('http') 
                     ? img.image_path 
-                    : `${storageBaseUrl.replace(/\/$/, '')}/${img.image_path}`;
+                    : `${STORAGE_BASE_URL}/${img.image_path}`;
                   transformedImages.push(imageUrl);
                 }
               }

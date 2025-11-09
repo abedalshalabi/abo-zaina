@@ -13,6 +13,7 @@ import { useCart } from "../context/CartContext";
 import { useAnimation } from "../context/AnimationContext";
 import Header from "../components/Header";
 import { productsAPI, categoriesAPI, brandsAPI, wishlistAPI } from "../services/api";
+import { STORAGE_BASE_URL } from "../config/env";
 
 interface Product {
   id: number;
@@ -368,10 +369,9 @@ const Products = () => {
           if (firstImage.image_url) {
             imageFromBackend = firstImage.image_url;
           } else if (firstImage.image_path) {
-            const storageBaseUrl = import.meta.env.VITE_STORAGE_BASE_URL || 'https://abozaina.ps/storage';
             imageFromBackend = firstImage.image_path.startsWith('http')
               ? firstImage.image_path
-              : `${storageBaseUrl.replace(/\/$/, '')}/${firstImage.image_path}`;
+              : `${STORAGE_BASE_URL}/${firstImage.image_path}`;
           }
         }
         

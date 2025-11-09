@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://abozaina.ps/api';
+import { API_BASE_URL } from "../config/env";
 
 const adminApi = axios.create({
   baseURL: API_BASE_URL,

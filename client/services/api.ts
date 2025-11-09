@@ -1,5 +1,7 @@
 // API Service for Abu Zaina Technologies
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://abozaina.ps/api/v1';
+import { API_V1_BASE_URL } from "../config/env";
+
+const API_BASE_URL = API_V1_BASE_URL;
 
 // Site Settings API (public)
 export const settingsAPI = {
