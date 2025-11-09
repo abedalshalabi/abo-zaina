@@ -23,7 +23,7 @@ jobs:
 
       - name: 📦 Install Composer dependencies
         run: |
-          cd abo-zaina-backend
+          cd abo-zaina-backend/
           php artisan config:cache
           php artisan route:cache
           php artisan view:cache
