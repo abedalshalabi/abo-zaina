@@ -361,22 +361,17 @@ const Products = () => {
           images_type: typeof product.images,
         });
         
-        if (product.images && product.images.length > 0) {
-          const firstImage = product.images[0];
-          console.log('First image:', firstImage, 'Type:', typeof firstImage);
-          
-          if (typeof firstImage === 'string') {
-            imageUrl = firstImage;
-          } else if (firstImage && typeof firstImage === 'object') {
-            // Handle object with image_url or image_path
-            if (firstImage.image_url) {
-              imageUrl = firstImage.image_url;
-            } else if (firstImage.image_path) {
-              // Build full URL if image_path exists
-              imageUrl = firstImage.image_path.startsWith('http') 
-                ? firstImage.image_path 
-                : `http://localhost:8000/storage/${firstImage.image_path}`;
-            }
+        const firstImage = product.rawImages?.[0] ?? product.images?.[0];
+        let imageFromBackend = product.image || product.images?.[0] || "/placeholder.svg";
+
+        if (firstImage && typeof firstImage === "object") {
+          if (firstImage.image_url) {
+            imageFromBackend = firstImage.image_url;
+          } else if (firstImage.image_path) {
+            const storageBaseUrl = import.meta.env.VITE_STORAGE_BASE_URL || 'https://abozaina.ps/storage';
+            imageFromBackend = firstImage.image_path.startsWith('http')
+              ? firstImage.image_path
+              : `${storageBaseUrl.replace(/\/$/, '')}/${firstImage.image_path}`;
           }
         }
         

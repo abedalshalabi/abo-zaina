@@ -186,9 +186,10 @@ const Product = () => {
                   transformedImages.push(img.image_url);
                 } else if (img.image_path) {
                   // Build full URL if image_path exists
+                  const storageBaseUrl = import.meta.env.VITE_STORAGE_BASE_URL || 'https://abozaina.ps/storage';
                   const imageUrl = img.image_path.startsWith('http') 
                     ? img.image_path 
-                    : `http://localhost:8000/storage/${img.image_path}`;
+                    : `${storageBaseUrl.replace(/\/$/, '')}/${img.image_path}`;
                   transformedImages.push(imageUrl);
                 }
               }
