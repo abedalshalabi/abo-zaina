@@ -24,7 +24,7 @@ jobs:
       - name: 📦 Install Composer dependencies
         run: |
           cd abo-zaina-backend
-          composer install --no-dev --optimize-autoloader
+          #composer install --no-dev --optimize-autoloader
           php artisan config:cache
           php artisan route:cache
           php artisan view:cache
@@ -48,7 +48,7 @@ jobs:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: ./
+          server-dir: ./abozaina
           local-dir: abo-zaina-backend/
           exclude: |
             **/.git*
