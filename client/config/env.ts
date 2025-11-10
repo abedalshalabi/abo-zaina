@@ -8,6 +8,6 @@ export const API_V1_BASE_URL = `${API_BASE_URL}/v1`;
 
 const DEFAULT_STORAGE_BASE_URL = import.meta.env.DEV
   ? 'http://localhost:8000/storage'
-  : 'http://abozaina.ps/abozaina/public/storage';
+  : 'https://abozaina.ps/abozaina/public/storage';
 
 export const STORAGE_BASE_URL = (import.meta.env.VITE_STORAGE_BASE_URL || DEFAULT_STORAGE_BASE_URL).replace(/\/$/, '');
