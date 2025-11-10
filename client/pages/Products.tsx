@@ -411,6 +411,25 @@ const Products = () => {
           imageUrl = '/placeholder.svg';
         }
 
+        const primaryCategoryIdRaw =
+          product.category_id !== undefined && product.category_id !== null
+            ? product.category_id
+            : product.category?.id;
+        const normalizedPrimaryCategoryId =
+          primaryCategoryIdRaw !== undefined && primaryCategoryIdRaw !== null
+            ? Number(primaryCategoryIdRaw)
+            : undefined;
+
+        const mappedCategoryIds = Array.isArray(product.categories)
+          ? product.categories
+              .map((cat: any) => {
+                const catId = cat?.id;
+                const numericId = catId !== undefined && catId !== null ? Number(catId) : NaN;
+                return Number.isNaN(numericId) ? null : numericId;
+              })
+              .filter((id: number | null): id is number => id !== null)
+          : [];
+
         return {
           id: product.id,
           name: product.name,
@@ -424,8 +443,11 @@ const Products = () => {
           brand: product.brand?.name || '',
           discount: product.discount_percentage,
           inStock: product.in_stock !== false,
-          categoryId: product.category_id ?? product.category?.id,
-          categoryIds: (product.categories || []).map((cat: any) => cat.id),
+          categoryId:
+            normalizedPrimaryCategoryId !== undefined && !Number.isNaN(normalizedPrimaryCategoryId)
+              ? normalizedPrimaryCategoryId
+              : undefined,
+          categoryIds: mappedCategoryIds,
           filterValues: product.filter_values || {}
         };
       });
