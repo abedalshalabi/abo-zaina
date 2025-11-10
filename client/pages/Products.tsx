@@ -359,8 +359,8 @@ const Products = () => {
           if (typeof firstImage === 'string') {
             imageUrl = firstImage;
           } else if (typeof firstImage === 'object') {
-            if (firstImage.image_url) {
-              imageUrl = firstImage.image_url;
+            if (firstImage.image_path) {
+              imageUrl = firstImage.image_path;
             } else if (firstImage.image_path) {
               const normalizedPath = String(firstImage.image_path)
                 .replace(/^\/?storage\//, '')
