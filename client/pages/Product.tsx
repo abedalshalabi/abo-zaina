@@ -180,15 +180,24 @@ const Product = () => {
           if (apiProduct.images && Array.isArray(apiProduct.images)) {
             apiProduct.images.forEach((img: any) => {
               if (typeof img === 'string') {
-                transformedImages.push(img);
+                const normalizedPath = String(img)
+                  .replace(/^\/?storage\//, '')
+                  .replace(/^\//, '');
+                transformedImages.push(
+                  img.startsWith('http')
+                    ? img
+                    : `${STORAGE_BASE_URL}/${normalizedPath}`
+                );
               } else if (img && typeof img === 'object') {
-                // Extract image_url from object
                 if (img.image_url) {
                   transformedImages.push(img.image_url);
                 } else if (img.image_path) {
+                  const normalizedPath = String(img.image_path)
+                    .replace(/^\/?storage\//, '')
+                    .replace(/^\//, '');
                   const imageUrl = img.image_path.startsWith('http') 
                     ? img.image_path 
-                    : `${STORAGE_BASE_URL}/${img.image_path}`;
+                    : `${STORAGE_BASE_URL}/${normalizedPath}`;
                   transformedImages.push(imageUrl);
                 }
               }

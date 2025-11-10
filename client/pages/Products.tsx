@@ -351,45 +351,52 @@ const Products = () => {
       
       // Transform API data to match Product interface
       const transformedProducts = productsData.map((product: any) => {
-        // Extract image URL from images array
         let imageUrl = '';
-        
-        console.log('Processing product:', {
-          id: product.id,
-          name: product.name,
-          images: product.images,
-          images_count: product.images?.length || 0,
-          images_type: typeof product.images,
-        });
-        
-        const firstImage = product.rawImages?.[0] ?? product.images?.[0];
-        let imageFromBackend = product.image || product.images?.[0] || "/placeholder.svg";
 
-        if (firstImage && typeof firstImage === "object") {
-          if (firstImage.image_url) {
-            imageFromBackend = firstImage.image_url;
-          } else if (firstImage.image_path) {
-            imageFromBackend = firstImage.image_path.startsWith('http')
-              ? firstImage.image_path
-              : `${STORAGE_BASE_URL}/${firstImage.image_path}`;
+        const firstImage = product.rawImages?.[0] ?? product.images?.[0];
+
+        if (firstImage) {
+          if (typeof firstImage === 'string') {
+            imageUrl = firstImage;
+          } else if (typeof firstImage === 'object') {
+            if (firstImage.image_url) {
+              imageUrl = firstImage.image_url;
+            } else if (firstImage.image_path) {
+              const normalizedPath = String(firstImage.image_path)
+                .replace(/^\/?storage\//, '')
+                .replace(/^\//, '');
+              imageUrl = firstImage.image_path.startsWith('http')
+                ? firstImage.image_path
+                : `${STORAGE_BASE_URL}/${normalizedPath}`;
+            }
           }
         }
-        
-        console.log('Final image URL for product', product.id, ':', imageUrl);
-        
+
+        if (!imageUrl && typeof product.image === 'string' && product.image.trim() !== '') {
+          imageUrl = product.image;
+        }
+
+        if (!imageUrl && Array.isArray(product.images) && typeof product.images[0] === 'string') {
+          imageUrl = product.images[0];
+        }
+
+        if (!imageUrl) {
+          imageUrl = '/placeholder.svg';
+        }
+
         return {
           id: product.id,
           name: product.name,
           price: product.price,
           originalPrice: product.original_price,
           images: product.images || [],
-          image: imageUrl || product.image || '/placeholder.svg',
+          image: imageUrl,
           rating: product.rating || 0,
           reviews: product.reviews_count || 0,
           category: product.category?.name || '',
           brand: product.brand?.name || '',
           discount: product.discount_percentage,
-          inStock: product.in_stock !== false, // Show all products, even if out of stock
+          inStock: product.in_stock !== false,
           categoryId: product.category_id ?? product.category?.id,
           categoryIds: (product.categories || []).map((cat: any) => cat.id),
           filterValues: product.filter_values || {}
