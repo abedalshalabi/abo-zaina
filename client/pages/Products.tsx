@@ -351,22 +351,49 @@ const Products = () => {
       
       // Transform API data to match Product interface
       const transformedProducts = productsData.map((product: any) => {
+        const collectedImages: string[] = Array.isArray(product.images)
+          ? product.images
+              .map((img: any) => {
+                if (!img) return '';
+                if (typeof img === 'string') {
+                  return img;
+                }
+                if (typeof img === 'object') {
+                  if (img.image_url) {
+                    return img.image_url;
+                  }
+                  if (img.image_path) {
+                    const normalizedPath = String(img.image_path)
+                      .replace(/^\/?storage\//, '')
+                      .replace(/^\//, '');
+                    return img.image_path.startsWith('http')
+                      ? img.image_path
+                      : `${STORAGE_BASE_URL}/${normalizedPath}`;
+                  }
+                }
+                return '';
+              })
+              .filter((url: string) => !!url)
+          : [];
+
         let imageUrl = '';
 
-        const firstImage = product.rawImages?.[0] ?? product.images?.[0];
+        const firstImageSource =
+          product.rawImages?.[0] ??
+          (Array.isArray(product.images) ? product.images[0] : undefined);
 
-        if (firstImage) {
-          if (typeof firstImage === 'string') {
-            imageUrl = firstImage;
-          } else if (typeof firstImage === 'object') {
-            if (firstImage.image_url) {
-              imageUrl = firstImage.image_url;
-            } else if (firstImage.image_path) {
-              const normalizedPath = String(firstImage.image_path)
+        if (firstImageSource) {
+          if (typeof firstImageSource === 'string') {
+            imageUrl = firstImageSource;
+          } else if (typeof firstImageSource === 'object') {
+            if (firstImageSource.image_url) {
+              imageUrl = firstImageSource.image_url;
+            } else if (firstImageSource.image_path) {
+              const normalizedPath = String(firstImageSource.image_path)
                 .replace(/^\/?storage\//, '')
                 .replace(/^\//, '');
-              imageUrl = firstImage.image_path.startsWith('http')
-                ? firstImage.image_path
+              imageUrl = firstImageSource.image_path.startsWith('http')
+                ? firstImageSource.image_path
                 : `${STORAGE_BASE_URL}/${normalizedPath}`;
             }
           }
@@ -376,8 +403,8 @@ const Products = () => {
           imageUrl = product.image;
         }
 
-        if (!imageUrl && Array.isArray(product.images) && typeof product.images[0] === 'string') {
-          imageUrl = product.images[0];
+        if (!imageUrl && collectedImages.length > 0) {
+          imageUrl = collectedImages[0];
         }
 
         if (!imageUrl) {
@@ -389,7 +416,7 @@ const Products = () => {
           name: product.name,
           price: product.price,
           originalPrice: product.original_price,
-          images: product.images || [],
+          images: collectedImages,
           image: imageUrl,
           rating: product.rating || 0,
           reviews: product.reviews_count || 0,
