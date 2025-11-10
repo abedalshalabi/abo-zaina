@@ -611,6 +611,34 @@ const Products = () => {
     [selectedFilters]
   );
 
+  const getDescendantCategoryIds = useCallback(
+    (rootCategoryId: number) => {
+      const result = new Set<number>();
+      const queue: number[] = [rootCategoryId];
+
+      while (queue.length > 0) {
+        const currentId = queue.shift()!;
+        if (result.has(currentId)) {
+          continue;
+        }
+
+        result.add(currentId);
+
+        allCategoriesList
+          .filter((cat) => Number(cat.parent_id) === currentId)
+          .forEach((child) => {
+            const childId = Number(child.id);
+            if (!Number.isNaN(childId) && !result.has(childId)) {
+              queue.push(childId);
+            }
+          });
+      }
+
+      return result;
+    },
+    [allCategoriesList]
+  );
+
   const productsToShow = useMemo(() => {
     if (selectedSubcategory) {
       const subcategoryId = Number(selectedSubcategory.id);
@@ -629,15 +657,7 @@ const Products = () => {
       const selectedCategoryData = categories.find((cat) => cat.name === selectedCategory);
       if (selectedCategoryData) {
         const selectedCategoryId = Number(selectedCategoryData.id);
-        const relevantIds = new Set<number>();
-
-        // Include selected category
-        relevantIds.add(selectedCategoryId);
-
-        // Include subcategories if they exist in the loaded list
-        subcategories
-          .filter((sub) => sub.parent_id === selectedCategoryId)
-          .forEach((sub) => relevantIds.add(Number(sub.id)));
+        const relevantIds = getDescendantCategoryIds(selectedCategoryId);
 
         const categoryFiltered = products.filter((product) => {
           const primaryMatches = product.categoryId && relevantIds.has(product.categoryId);
@@ -652,7 +672,7 @@ const Products = () => {
     }
 
     return applyAttributeFilters(products);
-  }, [products, selectedSubcategory, selectedCategory, categories, subcategories, applyAttributeFilters]);
+  }, [products, selectedSubcategory, selectedCategory, categories, getDescendantCategoryIds, applyAttributeFilters]);
 
   const toggleWishlist = useCallback(
     async (product: Product) => {
