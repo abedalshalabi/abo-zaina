@@ -87,6 +87,7 @@ const AdminProductEdit: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [imageUrlsText, setImageUrlsText] = useState('');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -183,6 +184,19 @@ const AdminProductEdit: React.FC = () => {
       };
       
       setFormData(formDataToSet);
+      
+      const existingImageUrls = (formDataToSet.images || [])
+        .map((img: any) => {
+          if (typeof img === 'string') {
+            return img;
+          }
+          if (img && typeof img === 'object' && 'image_url' in img) {
+            return img.image_url as string;
+          }
+          return null;
+        })
+        .filter((url): url is string => !!url && (url.startsWith('http://') || url.startsWith('https://')));
+      setImageUrlsText(existingImageUrls.join('\n'));
       
       // تحميل الفلاتر المتاحة للفئات المختارة
       // Merge filters from all selected categories
@@ -344,14 +358,37 @@ const AdminProductEdit: React.FC = () => {
       setImageFiles(prev => [...prev, ...files]);
       files.forEach(file => {
         const reader = new FileReader();
-        reader.onload = (e) => {
-          const result = e.target?.result as string;
+        reader.onload = (event) => {
+          const result = event.target?.result as string;
+          if (!result) {
+            return;
+          }
+
           setImagePreviews(prev => [...prev, result]);
-          // Add to formData.images as well (combine current images with new ones)
-          setFormData(prev => ({
-            ...prev,
-            images: [...prev.images, result]
-          }));
+
+          setFormData(prev => {
+            const existingImages = prev.images.filter(
+              (img): img is { image_url: string; alt_text?: string; is_primary?: boolean; sort_order?: number } =>
+                typeof img === 'object' && img !== null && !Array.isArray(img) && 'image_url' in img
+            );
+
+            const regularUrls = prev.images.filter(
+              (img): img is string => typeof img === 'string' && (img.startsWith('http://') || img.startsWith('https://'))
+            );
+
+            const dataUrls = prev.images.filter(
+              (img): img is string => typeof img === 'string' && img.startsWith('data:')
+            );
+
+            if (dataUrls.includes(result)) {
+              return prev;
+            }
+
+            return {
+              ...prev,
+              images: [...existingImages, ...regularUrls, ...dataUrls, result]
+            };
+          });
         };
         reader.readAsDataURL(file);
       });
@@ -359,22 +396,22 @@ const AdminProductEdit: React.FC = () => {
   };
 
   const handleRemoveImage = (index: number) => {
-    console.log('handleRemoveImage called with index:', index);
-    console.log('Current imagePreviews length:', imagePreviews.length);
-    console.log('Current formData.images length:', formData.images.length);
-    
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
     setImageFiles(prev => prev.filter((_, i) => i !== index));
-    // Remove from formData.images as well (only remove from new images, not current ones)
+    
+    // Remove from formData.images as well (only remove data URLs, not regular URLs or existing objects)
     setFormData(prev => {
-      const currentImagesCount = formData.images.length - imagePreviews.length;
-      const newImages = prev.images.slice(currentImagesCount);
-      const updatedNewImages = newImages.filter((_, i) => i !== index);
-      console.log('Removing image. Current images count:', currentImagesCount);
-      console.log('New images count after removal:', updatedNewImages.length);
+      const existingImages = prev.images.filter((img): img is { image_url: string; alt_text?: string; is_primary?: boolean; sort_order?: number } =>
+        typeof img === 'object' && img !== null && !Array.isArray(img) && 'image_url' in img
+      );
+      const dataUrls = prev.images.filter(img => typeof img === 'string' && img.startsWith('data:'));
+      const regularUrls = prev.images.filter(img => typeof img === 'string' && (img.startsWith('http://') || img.startsWith('https://')));
+      
+      const updatedDataUrls = dataUrls.filter((_, i) => i !== index);
+      
       return {
         ...prev,
-        images: [...prev.images.slice(0, currentImagesCount), ...updatedNewImages]
+        images: [...existingImages, ...updatedDataUrls, ...regularUrls]
       };
     });
   };
@@ -405,19 +442,24 @@ const AdminProductEdit: React.FC = () => {
     }
   };
 
-  const handleImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const parseImageUrls = (value: string): string[] =>
+    value
+      .split(/[\n,]/)
+      .map(img => img.trim())
+      .filter(img => img.length > 0 && (img.startsWith('http://') || img.startsWith('https://')));
+
+  const handleImagesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
-    const imageUrls = value.split(',').map(img => img.trim()).filter(img => img);
+    setImageUrlsText(value);
+    const imageUrls = parseImageUrls(value);
     
-    // Get existing images (objects) to keep them
-    const existingImages = formData.images.filter((img): img is Exclude<typeof img, string> => 
-      typeof img === 'object' && img !== null && !Array.isArray(img) && 'image_url' in img
-    ) as Array<{ image_url: string; alt_text?: string; is_primary?: boolean; sort_order?: number }>;
-    
-    // Combine existing images with new URLs
     setFormData(prev => ({
       ...prev,
-      images: [...existingImages, ...imageUrls]
+      images: [
+        ...prev.images.filter(img => typeof img === 'object' && img !== null && !Array.isArray(img) && 'image_url' in img),
+        ...imagePreviews,
+        ...imageUrls
+      ]
     }));
   };
 
@@ -1295,12 +1337,13 @@ const AdminProductEdit: React.FC = () => {
                       <Label htmlFor="images_url" className="text-sm text-gray-500">
                         أو أدخل روابط الصور مفصولة بفواصل:
                       </Label>
-                      <Input
+                      <Textarea
                         id="images_url"
-                        value={formData.images.map(img => typeof img === 'string' ? img : (img as { image_url: string }).image_url).join(', ')}
+                        value={imageUrlsText}
                         onChange={handleImagesChange}
-                        placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
-                        className="mt-1"
+                        placeholder={"https://example.com/image1.jpg\nhttps://example.com/image2.jpg"}
+                        rows={3}
+                        className="mt-1 resize-y"
                       />
                     </div>
                   </div>

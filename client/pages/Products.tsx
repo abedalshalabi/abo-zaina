@@ -39,7 +39,7 @@ const Products = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("الكل");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedBrand, setSelectedBrand] = useState("الكل");
   const [priceRange, setPriceRange] = useState([0, 50000]);
   const [sortBy, setSortBy] = useState("default");
@@ -61,6 +61,25 @@ const Products = () => {
   const [wishlistIds, setWishlistIds] = useState<number[]>([]);
   const [wishlistProcessing, setWishlistProcessing] = useState<Record<number, boolean>>({});
   
+  const selectedParentCategory = useMemo(() => {
+    if (selectedCategoryId === null) {
+      return null;
+    }
+    
+    const numericId = Number(selectedCategoryId);
+    if (Number.isNaN(numericId)) {
+      return null;
+    }
+    
+    const fromMain = categories.find((cat) => Number(cat.id) === numericId);
+    if (fromMain) {
+      return fromMain;
+    }
+    
+    const fromAll = allCategoriesList.find((cat) => Number(cat.id) === numericId);
+    return fromAll || null;
+  }, [selectedCategoryId, categories, allCategoriesList]);
+  
   // Pagination state for infinity scroll
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -77,6 +96,46 @@ const Products = () => {
     "/lighting": "الإلكترونيات", // Map lighting to electronics for now
     "/tools": "الأجهزة الصغيرة" // Map tools to small appliances for now
   };
+
+  const flattenCategories = useCallback((categoriesData: any[]): any[] => {
+    const result: any[] = [];
+
+    const traverse = (nodes: any[], parentId: number | null = null) => {
+      if (!Array.isArray(nodes)) {
+        return;
+      }
+
+      nodes.forEach((node) => {
+        if (!node) return;
+
+        const currentIdRaw = node.id;
+        const currentId = currentIdRaw !== undefined && currentIdRaw !== null ? Number(currentIdRaw) : NaN;
+        const normalizedCurrentId = Number.isNaN(currentId) ? null : currentId;
+
+        const parentIdRaw =
+          node.parent_id !== undefined && node.parent_id !== null ? node.parent_id : parentId;
+        const normalizedParentId =
+          parentIdRaw !== undefined && parentIdRaw !== null && !Number.isNaN(Number(parentIdRaw))
+            ? Number(parentIdRaw)
+            : null;
+
+        const normalizedNode = {
+          ...node,
+          id: normalizedCurrentId ?? node.id,
+          parent_id: normalizedParentId,
+        };
+
+        result.push(normalizedNode);
+
+        if (Array.isArray(node.children) && node.children.length > 0 && normalizedCurrentId !== null) {
+          traverse(node.children, normalizedCurrentId);
+        }
+      });
+    };
+
+    traverse(categoriesData);
+    return result;
+  }, []);
 
   // Load subcategories when category changes
   const loadSubcategories = async (categoryId: number) => {
@@ -114,8 +173,22 @@ const Products = () => {
           brandsAPI.getBrands()
         ]);
         
-        setCategories(categoriesResponse.data || []);
-        setAllCategoriesList(allCategoriesResponse.data || []);
+        const mainCategories = categoriesResponse.data || [];
+        const allCategoriesData = allCategoriesResponse.data || [];
+
+        setCategories(
+          Array.isArray(mainCategories)
+            ? mainCategories.map((category) => ({
+                ...category,
+                id: Number(category.id),
+                parent_id:
+                  category.parent_id !== undefined && category.parent_id !== null
+                    ? Number(category.parent_id)
+                    : null,
+              }))
+            : []
+        );
+        setAllCategoriesList(flattenCategories(allCategoriesData));
         const allBrandsData = brandsResponse.data || [];
         setAllBrands(allBrandsData);
         setBrands(allBrandsData);
@@ -181,7 +254,7 @@ const Products = () => {
       }
     } else if (!categoryIdFromUrl) {
       // Reset to "الكل" if no category_id in URL
-      setSelectedCategory("الكل");
+      setSelectedCategoryId(null);
       setSelectedSubcategory(null);
       setSubcategories([]);
       setCategoryFilters([]);
@@ -200,7 +273,7 @@ const Products = () => {
 
   const resetAllFilters = useCallback(() => {
     setSelectedFilters({});
-    setSelectedCategory("الكل");
+    setSelectedCategoryId(null);
     setSelectedSubcategory(null);
     setSubcategories([]);
     setCategoryFilters([]);
@@ -223,22 +296,23 @@ const Products = () => {
     
     if (isChildCategory) {
       // If it's a child category, find the parent category
+      const parentCategoryId = Number(category.parent_id);
       const parentCategory =
-        categories.find(cat => cat.id === category.parent_id) ||
-        allCategoriesList.find(cat => cat.id === category.parent_id);
+        categories.find(cat => Number(cat.id) === parentCategoryId) ||
+        allCategoriesList.find(cat => Number(cat.id) === parentCategoryId);
       if (parentCategory) {
-        setSelectedCategory(parentCategory.name);
+        setSelectedCategoryId(Number(parentCategory.id));
         setSelectedSubcategory(category);
         
         // Load subcategories for the parent
-        await loadSubcategories(parentCategory.id);
+        await loadSubcategories(Number(parentCategory.id));
         
         // Load filters for the child category
-        await loadCategoryFilters(category.id);
+        await loadCategoryFilters(Number(category.id));
       }
     } else {
       // If it's a parent category
-      setSelectedCategory(category.name);
+      setSelectedCategoryId(Number(category.id));
       setSelectedSubcategory(null);
       setSubcategories([]);
       setCategoryFilters([]);
@@ -246,9 +320,9 @@ const Products = () => {
       
       // Load subcategories or filters if needed
       if (category.has_children) {
-        await loadSubcategories(category.id);
+        await loadSubcategories(Number(category.id));
       } else {
-        await loadCategoryFilters(category.id);
+        await loadCategoryFilters(Number(category.id));
       }
     }
   };
@@ -311,12 +385,9 @@ const Products = () => {
       } else {
         // Use subcategory if selected, otherwise use main category
         if (selectedSubcategory) {
-          filters.category_id = selectedSubcategory.id;
-        } else if (selectedCategory !== "الكل") {
-          const category = categories.find(cat => cat.name === selectedCategory);
-          if (category) {
-            filters.category_id = category.id;
-          }
+          filters.category_id = Number(selectedSubcategory.id);
+        } else if (selectedCategoryId !== null) {
+          filters.category_id = selectedCategoryId;
         }
       }
 
@@ -480,7 +551,7 @@ const Products = () => {
         });
       }
       
-      const isMainCategorySelected = !selectedSubcategory && selectedCategory === "الكل";
+      const isMainCategorySelected = !selectedSubcategory && selectedCategoryId === null;
       const uniqueBrandsArray = Array.from(uniqueBrands.values());
       const brandListForMainCategory = allBrands.length > 0 ? allBrands : uniqueBrandsArray;
 
@@ -549,7 +620,7 @@ const Products = () => {
     }, 300);
     
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, selectedCategory, selectedSubcategory, selectedBrand, priceRange, sortBy, selectedFilters]);
+  }, [searchQuery, selectedCategoryId, selectedSubcategory, selectedBrand, priceRange, sortBy, selectedFilters]);
   
   // Infinity scroll observer - تحميل تلقائي عند التمرير
   useEffect(() => {
@@ -590,8 +661,6 @@ const Products = () => {
     };
   }, [hasMore, loadingMore, loading, currentPage, products.length]);
 
-  // Use categories and brands from API
-  const categoriesList = categories.length > 0 ? ["الكل", ...categories.map(cat => cat.name)] : ["الكل"];
   const brandsList = brands.length > 0 ? ["الكل", ...brands.map(brand => brand.name)] : ["الكل"];
 
   // Apply additional client-side filtering to ensure subcategory selection is respected
@@ -675,26 +744,25 @@ const Products = () => {
       return applyAttributeFilters(subcategoryProducts);
     }
 
-    if (selectedCategory !== "الكل") {
-      const selectedCategoryData = categories.find((cat) => cat.name === selectedCategory);
-      if (selectedCategoryData) {
-        const selectedCategoryId = Number(selectedCategoryData.id);
-        const relevantIds = getDescendantCategoryIds(selectedCategoryId);
+    if (selectedCategoryId !== null) {
+      const relevantIds = getDescendantCategoryIds(selectedCategoryId);
 
-        const categoryFiltered = products.filter((product) => {
-          const primaryMatches = product.categoryId && relevantIds.has(product.categoryId);
-          const additionalMatches = Array.isArray(product.categoryIds)
-            ? product.categoryIds.some((id) => relevantIds.has(id))
+      const categoryFiltered = products.filter((product) => {
+        const primaryMatches =
+          product.categoryId !== undefined && product.categoryId !== null
+            ? relevantIds.has(Number(product.categoryId))
             : false;
-          return primaryMatches || additionalMatches;
-        });
+        const additionalMatches = Array.isArray(product.categoryIds)
+          ? product.categoryIds.some((id) => relevantIds.has(Number(id)))
+          : false;
+        return primaryMatches || additionalMatches;
+      });
 
-        return applyAttributeFilters(categoryFiltered);
-      }
+      return applyAttributeFilters(categoryFiltered);
     }
 
     return applyAttributeFilters(products);
-  }, [products, selectedSubcategory, selectedCategory, categories, getDescendantCategoryIds, applyAttributeFilters]);
+  }, [products, selectedSubcategory, selectedCategoryId, getDescendantCategoryIds, applyAttributeFilters]);
 
   const toggleWishlist = useCallback(
     async (product: Product) => {
@@ -862,9 +930,9 @@ const Products = () => {
               <div className="mb-6">
                 <label className="block text-sm font-medium mb-2">الفئة الرئيسية</label>
                 <select
-                  value={selectedCategory}
+                  value={selectedCategoryId !== null ? selectedCategoryId.toString() : ""}
                   onChange={async (e) => {
-                    const categoryName = e.target.value;
+                    const categoryIdValue = e.target.value;
                     
                     // Reset all filters and selections
                     setSelectedSubcategory(null);
@@ -877,24 +945,25 @@ const Products = () => {
                     
                     // Update URL based on selection
                     const params = new URLSearchParams(location.search);
-                    if (categoryName !== "الكل") {
-                      const category = categories.find(cat => cat.name === categoryName);
+                    if (categoryIdValue) {
+                      const category = categories.find(cat => cat.id.toString() === categoryIdValue);
                       if (category) {
-                        setSelectedCategory(categoryName);
-                        params.set('category_id', category.id.toString());
+                        const numericId = Number(category.id);
+                        setSelectedCategoryId(numericId);
+                        params.set('category_id', numericId.toString());
                         
                         // Remove brand_id if exists (reset when category changes)
                         params.delete('brand_id');
                         
                         // Load subcategories or filters
                         if (category.has_children) {
-                          await loadSubcategories(category.id);
+                          await loadSubcategories(numericId);
                         } else {
-                          await loadCategoryFilters(category.id);
+                          await loadCategoryFilters(numericId);
                         }
                       }
                     } else {
-                      setSelectedCategory("الكل");
+                      setSelectedCategoryId(null);
                       params.delete('category_id');
                       params.delete('brand_id');
                     }
@@ -907,9 +976,9 @@ const Products = () => {
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow"
                 >
-                  <option value="الكل">الكل</option>
+                  <option value="">الكل</option>
                   {categories.map(category => (
-                    <option key={category.id} value={category.name}>{category.name}</option>
+                    <option key={category.id} value={category.id.toString()}>{category.name}</option>
                   ))}
                 </select>
               </div>
@@ -943,17 +1012,16 @@ const Products = () => {
                         setCategoryFilters([]);
                         setSelectedFilters({});
                         
-                         const params = new URLSearchParams(location.search);
-                         const parentCategory = categories.find(cat => cat.name === selectedCategory);
-                         if (parentCategory) {
-                           params.set('category_id', parentCategory.id.toString());
-                         } else {
-                           params.delete('category_id');
-                         }
-                         const newUrl = params.toString()
-                           ? `${location.pathname}?${params.toString()}`
-                           : location.pathname;
-                         navigate(newUrl, { replace: true });
+                        const params = new URLSearchParams(location.search);
+                        if (selectedParentCategory) {
+                          params.set('category_id', selectedParentCategory.id.toString());
+                        } else {
+                          params.delete('category_id');
+                        }
+                        const newUrl = params.toString()
+                          ? `${location.pathname}?${params.toString()}`
+                          : location.pathname;
+                        navigate(newUrl, { replace: true });
                       }
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow"

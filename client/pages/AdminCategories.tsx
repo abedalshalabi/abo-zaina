@@ -73,6 +73,41 @@ const AdminCategories = () => {
     fetchCategories();
   }, [navigate, searchQuery, sortBy, sortOrder, currentPage, categoryFilter]);
 
+  const normalizeCategories = (rawCategories: any[]): Category[] => {
+    if (!Array.isArray(rawCategories)) {
+      return [];
+    }
+
+    return rawCategories.map((cat: any) => {
+      const normalizedLevel =
+        cat?.level !== undefined && cat?.level !== null ? Number(cat.level) : 0;
+
+      const normalizedParentId =
+        cat?.parent_id !== undefined && cat?.parent_id !== null
+          ? Number(cat.parent_id)
+          : null;
+
+      const normalizedChildren = Array.isArray(cat?.children) ? cat.children : [];
+
+      const normalizedParent = cat?.parent && typeof cat.parent === 'object'
+        ? {
+            ...cat.parent,
+            id: Number(cat.parent.id),
+          }
+        : undefined;
+
+      return {
+        ...cat,
+        id: Number(cat.id),
+        level: normalizedLevel,
+        parent_id: normalizedParentId ?? undefined,
+        filters: Array.isArray(cat?.filters) ? cat.filters : [],
+        children: normalizedChildren,
+        parent: normalizedParent,
+      };
+    });
+  };
+
   const fetchCategories = async () => {
     try {
       setLoading(true);
@@ -87,8 +122,19 @@ const AdminCategories = () => {
       
       // تحميل الفئات الرئيسية مع الفئات الفرعية
       const data = await adminCategoriesAPI.getCategories(filters);
-      setCategories(data.data || []);
-      setTotalPages(data.last_page || 1);
+
+      const rawCategories = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+      setCategories(normalizeCategories(rawCategories));
+
+      const lastPageFromMeta = data?.meta?.last_page;
+      const lastPageFallback = data?.last_page;
+      setTotalPages(
+        typeof lastPageFromMeta === "number"
+          ? lastPageFromMeta
+          : typeof lastPageFallback === "number"
+          ? lastPageFallback
+          : 1
+      );
     } catch (err: any) {
       setError(err.response?.data?.message || "فشل في تحميل الفئات");
     } finally {
