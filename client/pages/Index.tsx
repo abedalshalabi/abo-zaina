@@ -207,16 +207,18 @@ const Index = () => {
 
       {/* Hero Slider Section */}
       <section className="relative w-full overflow-hidden">
-        <div className="w-full">
-          <Carousel
+        <div className="w-full px-4 md:px-0 mt-4 md:mt-0">
+          <div className="rounded-2xl md:rounded-none overflow-hidden shadow-md md:shadow-none relative z-0 transform-gpu">
+            <Carousel
             slidesToShow={{ mobile: 1, tablet: 1, desktop: 1 }}
-            showDots={true}
+            showDots={false}
             showArrows={true}
+            gap={0}
             autoplay={true}
             rtl={true}
           >
             {/* Slide 1 */}
-            <div className="relative bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 text-white py-6 sm:py-8 lg:py-12 overflow-hidden min-h-[250px] sm:min-h-[300px] lg:min-h-[350px]">
+            <div className="relative bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 text-white py-6 sm:py-8 lg:py-12 overflow-hidden min-h-[180px] sm:min-h-[300px] lg:min-h-[350px]">
               <div className="absolute inset-0 overflow-hidden">
                 <div className="absolute top-4 left-4 sm:top-6 sm:left-6 lg:top-10 lg:left-10 text-xl sm:text-3xl lg:text-6xl opacity-10 animate-pulse">⚡</div>
                 <div className="absolute top-8 right-8 sm:top-12 sm:right-12 lg:top-20 lg:right-20 text-lg sm:text-2xl lg:text-4xl opacity-10 animate-bounce">🔌</div>
@@ -226,26 +228,26 @@ const Index = () => {
               
               <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 h-full flex items-center">
                 <div className="max-w-4xl w-full">
-                  <h1 className="text-2xl sm:text-4xl lg:text-6xl font-bold mb-3 sm:mb-4 lg:mb-6 leading-loose py-4">
+                  <h1 className="text-xl sm:text-4xl lg:text-6xl font-bold mb-2 sm:mb-4 lg:mb-6 leading-loose py-2 sm:py-4">
                     مرحباً بكم في
-                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-cyan-200 mt-6 py-2">
+                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-cyan-200 mt-2 sm:mt-6 py-1 sm:py-2">
                       أبو زينة للتقنيات
                     </span>
                   </h1>
-                  <p className="text-xs sm:text-sm lg:text-xl mb-4 sm:mb-6 lg:mb-8 text-blue-100 leading-relaxed max-w-2xl mt-6">
-                    وجهتكم الأولى للأجهزة الكهربائية والإلكترونية الحديثة. نوفر لكم أحدث التقنيات بأفضل الأسعار مع ضمان الجودة والخدمة المتميزة.
+                  <p className="text-[10px] sm:text-sm lg:text-xl mb-3 sm:mb-6 lg:mb-8 text-blue-100 leading-relaxed max-w-2xl mt-2 sm:mt-6">
+                    وجهتكم الأولى للأجهزة الكهربائية والإلكترونية الحديثة. نوفر لكم أحدث التقنيات بأفضل الأسعار.
                   </p>
-                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 lg:gap-4 max-w-md">
+                  <div className="flex flex-row gap-2 sm:gap-3 lg:gap-4 max-w-md">
                     <Link
                       to="/products"
-                      className="bg-white text-blue-900 px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 shadow-lg text-xs sm:text-sm lg:text-base"
+                      className="bg-white text-blue-900 px-3 sm:px-6 lg:px-8 py-1.5 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-1 sm:gap-2 shadow-lg text-[10px] sm:text-sm lg:text-base"
                     >
                       تسوق الآن
                       <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
                     </Link>
                     <Link
                       to="/offers"
-                      className="border-2 border-white text-white px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-white hover:text-blue-900 transition-colors text-center text-xs sm:text-sm lg:text-base"
+                      className="border-2 border-white text-white px-3 sm:px-6 lg:px-8 py-1.5 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-white hover:text-blue-900 transition-colors text-center text-[10px] sm:text-sm lg:text-base"
                     >
                       العروض الخاصة
                     </Link>
@@ -255,7 +257,7 @@ const Index = () => {
             </div>
 
             {/* Slide 2 */}
-            <div className="relative bg-gradient-to-r from-purple-900 via-purple-800 to-pink-900 text-white py-6 sm:py-8 lg:py-12 overflow-hidden min-h-[250px] sm:min-h-[300px] lg:min-h-[350px]">
+            <div className="relative bg-gradient-to-r from-purple-900 via-purple-800 to-pink-900 text-white py-6 sm:py-8 lg:py-12 overflow-hidden min-h-[180px] sm:min-h-[300px] lg:min-h-[350px]">
               <div className="absolute inset-0 overflow-hidden">
                 <div className="absolute top-4 right-4 sm:top-6 sm:right-6 lg:top-10 lg:right-10 text-xl sm:text-3xl lg:text-6xl opacity-10 animate-spin-slow">🏠</div>
                 <div className="absolute top-10 left-10 sm:top-16 sm:left-16 lg:top-24 lg:left-24 text-lg sm:text-2xl lg:text-4xl opacity-10 animate-pulse">❄️</div>
@@ -265,26 +267,26 @@ const Index = () => {
               
               <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 h-full flex items-center">
                 <div className="max-w-4xl w-full">
-                  <h1 className="text-2xl sm:text-4xl lg:text-6xl font-bold mb-3 sm:mb-4 lg:mb-6 leading-loose py-4">
+                  <h1 className="text-xl sm:text-4xl lg:text-6xl font-bold mb-2 sm:mb-4 lg:mb-6 leading-loose py-2 sm:py-4">
                     أجهزة منزلية
-                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-pink-200 mt-6 py-2">
+                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-pink-200 mt-2 sm:mt-6 py-1 sm:py-2">
                       عصرية وذكية
                     </span>
                   </h1>
-                  <p className="text-xs sm:text-sm lg:text-xl mb-4 sm:mb-6 lg:mb-8 text-purple-100 leading-relaxed max-w-2xl mt-6">
-                    اكتشف مجموعتنا الواسعة من الأجهزة المنزلية الذكية التي تجعل حياتك أسهل وأكثر راحة. من المطبخ إلى غرفة المعيشة.
+                  <p className="text-[10px] sm:text-sm lg:text-xl mb-3 sm:mb-6 lg:mb-8 text-purple-100 leading-relaxed max-w-2xl mt-2 sm:mt-6">
+                    اكتشف مجموعتنا الواسعة من الأجهزة المنزلية الذكية التي تجعل حياتك أسهل وأكثر راحة.
                   </p>
-                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 lg:gap-4 max-w-md">
+                  <div className="flex flex-row gap-2 sm:gap-3 lg:gap-4 max-w-md">
                     <Link
                       to="/kitchen"
-                      className="bg-white text-purple-900 px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-purple-50 transition-colors flex items-center justify-center gap-2 shadow-lg text-xs sm:text-sm lg:text-base"
+                      className="bg-white text-purple-900 px-3 sm:px-6 lg:px-8 py-1.5 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-purple-50 transition-colors flex items-center justify-center gap-1 sm:gap-2 shadow-lg text-[10px] sm:text-sm lg:text-base"
                     >
                       أجهزة المطبخ
                       <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
                     </Link>
                     <Link
                       to="/cooling"
-                      className="border-2 border-white text-white px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-white hover:text-purple-900 transition-colors text-center text-xs sm:text-sm lg:text-base"
+                      className="border-2 border-white text-white px-3 sm:px-6 lg:px-8 py-1.5 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-white hover:text-purple-900 transition-colors text-center text-[10px] sm:text-sm lg:text-base"
                     >
                       التكييف والتبريد
                     </Link>
@@ -294,7 +296,7 @@ const Index = () => {
             </div>
 
             {/* Slide 3 */}
-            <div className="relative bg-gradient-to-r from-green-900 via-green-800 to-teal-900 text-white py-6 sm:py-8 lg:py-12 overflow-hidden min-h-[250px] sm:min-h-[300px] lg:min-h-[350px]">
+            <div className="relative bg-gradient-to-r from-green-900 via-green-800 to-teal-900 text-white py-6 sm:py-8 lg:py-12 overflow-hidden min-h-[180px] sm:min-h-[300px] lg:min-h-[350px]">
               <div className="absolute inset-0 overflow-hidden">
                 <div className="absolute top-6 left-6 sm:top-8 sm:left-8 lg:top-12 lg:left-12 text-xl sm:text-3xl lg:text-6xl opacity-10 animate-bounce">🎯</div>
                 <div className="absolute top-12 right-12 sm:top-20 sm:right-20 lg:top-32 lg:right-32 text-lg sm:text-2xl lg:text-4xl opacity-10 animate-pulse">💰</div>
@@ -304,26 +306,26 @@ const Index = () => {
               
               <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 h-full flex items-center">
                 <div className="max-w-4xl w-full">
-                  <h1 className="text-2xl sm:text-4xl lg:text-6xl font-bold mb-3 sm:mb-4 lg:mb-6 leading-loose py-4">
+                  <h1 className="text-xl sm:text-4xl lg:text-6xl font-bold mb-2 sm:mb-4 lg:mb-6 leading-loose py-2 sm:py-4">
                     عروض حصرية
-                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-green-200 to-teal-200 mt-6 py-2">
+                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-green-200 to-teal-200 mt-2 sm:mt-6 py-1 sm:py-2">
                       وخصومات مذهلة
                     </span>
                   </h1>
-                  <p className="text-xs sm:text-sm lg:text-xl mb-4 sm:mb-6 lg:mb-8 text-green-100 leading-relaxed max-w-2xl mt-6">
-                    لا تفوت فرصة الحصول على أفضل الأجهزة بأسعار لا تُقاوم. عروض محدودة الوقت على أشهر العلامات التجارية العالمية.
+                  <p className="text-[10px] sm:text-sm lg:text-xl mb-3 sm:mb-6 lg:mb-8 text-green-100 leading-relaxed max-w-2xl mt-2 sm:mt-6">
+                    لا تفوت فرصة الحصول على أفضل الأجهزة بأسعار لا تُقاوم. عروض محدودة الوقت.
                   </p>
-                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 lg:gap-4 max-w-md">
+                  <div className="flex flex-row gap-2 sm:gap-3 lg:gap-4 max-w-md">
                     <Link
                       to="/offers"
-                      className="bg-white text-green-900 px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-green-50 transition-colors flex items-center justify-center gap-2 shadow-lg text-xs sm:text-sm lg:text-base"
+                      className="bg-white text-green-900 px-3 sm:px-6 lg:px-8 py-1.5 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-green-50 transition-colors flex items-center justify-center gap-1 sm:gap-2 shadow-lg text-[10px] sm:text-sm lg:text-base"
                     >
                       تصفح العروض
                       <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
                     </Link>
                     <Link
                       to="/products"
-                      className="border-2 border-white text-white px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-white hover:text-green-900 transition-colors text-center text-xs sm:text-sm lg:text-base"
+                      className="border-2 border-white text-white px-3 sm:px-6 lg:px-8 py-1.5 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-white hover:text-green-900 transition-colors text-center text-[10px] sm:text-sm lg:text-base"
                     >
                       جميع المنتجات
                     </Link>
@@ -331,29 +333,35 @@ const Index = () => {
                 </div>
               </div>
             </div>
-          </Carousel>
+            </Carousel>
+          </div>
         </div>
       </section>
 
       {/* Section 1: Main Categories */}
-      <section className="pt-12 pb-12 bg-transparent">
+      <section className="pt-8 pb-4 md:pt-12 md:pb-12 bg-transparent">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-10">
-            <h2 className="text-4xl font-bold text-gray-800 mb-4">التصنيفات الرئيسية</h2>
-            <p className="text-lg text-gray-600">اختر من بين مجموعة واسعة من الفئات المتخصصة</p>
+          <div className="text-center mb-6 md:mb-10">
+            <h2 className="text-2xl md:text-4xl font-bold text-gray-800 mb-2 md:mb-4">التصنيفات الرئيسية</h2>
+            <p className="text-xs md:text-lg text-gray-600">اختر من بين مجموعة واسعة من الفئات المتخصصة</p>
           </div>
 
           <SimpleCarousel3D
-            autoplay={true}
+            autoplay={false}
             rtl={true}
             showNavigation={true}
             showPagination={false}
+            slideDimensions={{
+              smallMobile: { width: 140, height: 180, spacing: 15 },
+              mobile: { width: 200, height: 240, spacing: 25 },
+              desktop: { width: 280, height: 280, spacing: 50 }
+            }}
           >
             {mainCategories.map((category, index) => {
               // Get isActive prop from SimpleCarousel3D (it will be passed via cloneElement)
               const CategorySlide = ({ isActive }: { isActive?: boolean }) => (
-                <Link
-                  to={category.href}
+              <Link
+                to={category.href}
                   className="group block bg-transparent transition-all duration-500"
                   style={{
                     perspective: '1000px',
@@ -361,7 +369,7 @@ const Index = () => {
                   }}
                 >
                   <div 
-                    className={`relative h-48 bg-transparent overflow-hidden transition-all duration-500 transform ${
+                    className={`relative h-28 sm:h-36 md:h-48 bg-transparent overflow-hidden transition-all duration-500 transform ${
                       isActive ? 'scale-110 -translate-y-3' : 'group-hover:scale-105 group-hover:-translate-y-3'
                     }`}
                     style={{
@@ -369,9 +377,9 @@ const Index = () => {
                       transformStyle: 'preserve-3d'
                     }}
                   >
-                    <img
-                      src={category.image}
-                      alt={category.name}
+                  <img
+                    src={category.image}
+                    alt={category.name}
                       className={`w-full h-full object-contain transition-all duration-500 ${
                         isActive ? 'scale-125' : 'group-hover:scale-110'
                       }`}
@@ -381,17 +389,17 @@ const Index = () => {
                         filter: isActive ? 'brightness(1.1) saturate(1.2)' : 'none'
                       }}
                     />
-                  </div>
+                </div>
                   <div className="pt-1 px-2 pb-0 mt-1">
                     <h3 className={`text-sm font-semibold text-center transition-all duration-500 leading-tight ${
                       isActive 
                         ? 'text-blue-600 scale-110 font-bold' 
                         : 'text-gray-800 group-hover:text-blue-600'
                     }`}>
-                      {category.name}
-                    </h3>
-                  </div>
-                </Link>
+                    {category.name}
+                  </h3>
+                </div>
+              </Link>
               );
               
               return <CategorySlide key={index} />;
@@ -411,47 +419,51 @@ const Index = () => {
       </section>
 
       {/* Section 2: Brand Categories */}
-      <section className="py-12 bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
+      <section className="py-6 md:py-12 bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">تسوق حسب العلامة التجارية</h2>
-            <p className="text-lg md:text-xl text-gray-600 mb-2">نعمل مع أفضل العلامات التجارية العالمية</p>
-            <p className="text-sm text-gray-500">اختر من بين مجموعة متنوعة من العلامات التجارية الموثوقة</p>
+          <div className="text-center mb-4 md:mb-10">
+            <h2 className="text-2xl md:text-4xl font-bold text-gray-800 mb-2 md:mb-4">تسوق حسب العلامة التجارية</h2>
+            <p className="text-sm md:text-xl text-gray-600 mb-1 md:mb-2">نعمل مع أفضل العلامات التجارية العالمية</p>
+            <p className="text-xs md:text-sm text-gray-500">اختر من بين مجموعة متنوعة من العلامات التجارية الموثوقة</p>
           </div>
 
           {brandCategories.length > 0 ? (
-            <Carousel
-              slidesToShow={{ mobile: 3, tablet: 5, desktop: 6 }}
-              showDots={false}
-              showArrows={true}
-              autoplay={true}
-              rtl={true}
-            >
-              {brandCategories.map((brand, index) => (
-                <Link
+          <SimpleCarousel3D
+            autoplay={false}
+            rtl={true}
+            showNavigation={true}
+            showPagination={false}
+            slideDimensions={{
+              smallMobile: { width: 100, height: 140, spacing: 10 },
+              mobile: { width: 140, height: 180, spacing: 20 },
+              desktop: { width: 180, height: 220, spacing: 30 }
+            }}
+          >
+            {brandCategories.map((brand, index) => (
+              <Link
                   key={brand.id || index}
                   to={`/products?brand_id=${brand.id || ''}`}
-                  className="group bg-white p-4 md:p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 block border border-gray-100 hover:border-blue-200"
-                >
-                  <div className="text-center">
-                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 md:p-4 mb-3 md:mb-4 group-hover:from-blue-50 group-hover:to-indigo-50 transition-all duration-300">
+                className="group block bg-white p-3 md:p-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border border-gray-100 hover:border-blue-200 h-full w-full"
+              >
+                <div className="text-center h-full flex flex-col justify-center items-center">
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-2 md:p-3 mb-2 md:mb-3 group-hover:from-blue-50 group-hover:to-indigo-50 transition-all duration-300 w-full flex-grow flex items-center justify-center">
                       {brand.logo ? (
-                        <img
-                          src={brand.logo}
-                          alt={brand.name}
-                          className="w-full h-10 md:h-12 object-contain group-hover:scale-110 transition-transform duration-300"
-                        />
+                    <img
+                      src={brand.logo}
+                      alt={brand.name}
+                      className="w-full h-10 md:h-12 object-contain group-hover:scale-110 transition-transform duration-300"
+                    />
                       ) : (
                         <div className="w-full h-10 md:h-12 flex items-center justify-center">
-                          <span className="text-gray-400 text-sm font-semibold">{brand.name}</span>
+                          <span className="text-gray-400 text-xs md:text-sm font-semibold">{brand.name}</span>
                         </div>
                       )}
-                    </div>
-                    <p className="text-xs md:text-sm text-gray-500">{brand.productCount || 0} منتج</p>
                   </div>
-                </Link>
-              ))}
-            </Carousel>
+                    <p className="text-[10px] md:text-xs text-gray-500">{brand.productCount || 0} منتج</p>
+                </div>
+              </Link>
+            ))}
+          </SimpleCarousel3D>
           ) : (
             <div className="text-center py-8 text-gray-500">لا توجد علامات تجارية متاحة</div>
           )}
@@ -459,105 +471,105 @@ const Index = () => {
       </section>
 
       {/* Section 3: Featured Offers */}
-      <section className="py-8 bg-white">
+      <section className="py-4 md:py-8 bg-white">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-8">
-            <h2 className="text-4xl font-bold text-gray-800 mb-4">العروض والأصناف المميزة</h2>
-            <p className="text-xl text-gray-600">اغتنم الفرصة واحصل على أفضل الصفقات</p>
+          <div className="text-center mb-4 md:mb-8">
+            <h2 className="text-2xl md:text-4xl font-bold text-gray-800 mb-2 md:mb-4">العروض والأصناف المميزة</h2>
+            <p className="text-sm md:text-xl text-gray-600">اغتنم الفرصة واحصل على أفضل الصفقات</p>
           </div>
 
           {featuredOffers.length > 0 ? (
-            <div className="product-grid grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-              {featuredOffers.map((product) => (
+          <div className="product-grid grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+            {featuredOffers.map((product) => (
                 <div
                   key={product.id}
-                  className="group bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden"
+                  className="group bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100"
                 >
                   <Link to={`/product/${product.id}`} className="block">
-                    <div className="relative p-2 md:p-4">
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-full h-32 md:h-48 object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
-                      />
-
-                      {/* Badges */}
-                      <div className="absolute top-6 right-6 flex flex-col gap-2">
+                <div className="relative p-2 md:p-4">
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="w-full h-32 md:h-48 object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
+                  />
+                  
+                  {/* Badges */}
+                  <div className="absolute top-3 right-3 md:top-6 md:right-6 flex flex-col gap-1 md:gap-2">
                         {product.originalPrice && product.originalPrice > product.price ? (
-                          <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                      <span className="bg-red-500 text-white px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-sm font-bold">
                             خصم {(product.originalPrice - product.price).toLocaleString()} ₪
-                          </span>
+                      </span>
                         ) : null}
                         {product.isNew ? (
-                          <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-                            جديد
-                          </span>
+                      <span className="bg-green-500 text-white px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-sm font-bold">
+                        جديد
+                      </span>
                         ) : null}
                         {product.isBestSeller ? (
-                          <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-                            الأكثر مبيعاً
-                          </span>
+                      <span className="bg-blue-500 text-white px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-sm font-bold">
+                        الأكثر مبيعاً
+                      </span>
                         ) : null}
-                      </div>
+                  </div>
 
-                      <button className="absolute top-6 left-6 p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors">
-                        <Heart className="w-5 h-5 text-gray-600" />
-                      </button>
-                    </div>
+                  <button className="absolute top-3 left-3 md:top-6 md:left-6 p-1.5 md:p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors">
+                    <Heart className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
+                  </button>
+                </div>
                   </Link>
 
-                  <div className="p-6">
+                <div className="p-3 md:p-6">
                     <Link to={`/product/${product.id}`} className="block">
-                      <h3 className="font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors">
-                        {product.name}
-                      </h3>
+                  <h3 className="font-bold text-gray-800 mb-1 md:mb-2 text-sm md:text-base line-clamp-2 group-hover:text-blue-600 transition-colors">
+                    {product.name}
+                  </h3>
                     </Link>
-
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="flex items-center">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-4 h-4 ${
-                              i < Math.floor(product.rating)
-                                ? "text-yellow-400 fill-current"
-                                : "text-gray-300"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <span className="text-sm text-gray-600">({product.reviews})</span>
+                  
+                  <div className="flex items-center gap-1 md:gap-2 mb-2 md:mb-3">
+                    <div className="flex items-center">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-3 h-3 md:w-4 md:h-4 ${
+                            i < Math.floor(product.rating)
+                              ? "text-yellow-400 fill-current"
+                              : "text-gray-300"
+                          }`}
+                        />
+                      ))}
                     </div>
-
-                    <div className="flex items-center gap-2 mb-4">
-                      <span className="text-2xl font-bold text-blue-600">{product.price} ₪</span>
-                      {product.originalPrice && product.originalPrice > 0 ? (
-                        <span className="text-gray-500 line-through">{product.originalPrice} ₪</span>
-                      ) : null}
-                    </div>
-
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        triggerAnimation(e.currentTarget, {
-                          image: product.image,
-                          name: product.name,
-                        });
-                        addItem({
-                          id: product.id,
-                          name: product.name,
-                          price: product.price,
-                          image: product.image,
-                          brand: "متنوع",
-                        });
-                      }}
-                      className="w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition-colors font-semibold"
-                    >
-                      أضف للسلة
-                    </button>
+                    <span className="text-xs md:text-sm text-gray-600">({product.reviews})</span>
                   </div>
+
+                  <div className="flex items-center gap-2 mb-3 md:mb-4 flex-wrap">
+                    <span className="text-lg md:text-2xl font-bold text-blue-600">{product.price} ₪</span>
+                      {product.originalPrice && product.originalPrice > 0 ? (
+                  <span className="text-xs md:text-sm text-gray-500 line-through">{product.originalPrice} ₪</span>
+                      ) : null}
+                  </div>
+
+                  <button 
+                    onClick={(e) => {
+                        e.preventDefault();
+                      triggerAnimation(e.currentTarget, {
+                        image: product.image,
+                          name: product.name,
+                      });
+                      addItem({
+                        id: product.id,
+                        name: product.name,
+                        price: product.price,
+                        image: product.image,
+                          brand: "متنوع",
+                      });
+                    }}
+                    className="w-full bg-blue-600 text-white py-2 md:py-3 rounded-lg md:rounded-xl hover:bg-blue-700 transition-colors font-semibold text-sm md:text-base"
+                  >
+                    أضف للسلة
+                  </button>
                 </div>
-              ))}
+              </div>
+            ))}
             </div>
           ) : (
             <div className="text-center py-12 text-gray-500">
@@ -578,31 +590,31 @@ const Index = () => {
       </section>
 
       {/* Section 4: Latest Products */}
-      <section className="py-8 bg-gradient-to-br from-blue-50 to-indigo-50">
+      <section className="py-4 md:py-8 bg-gradient-to-br from-blue-50 to-indigo-50">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-8">
-            <h2 className="text-4xl font-bold text-gray-800 mb-4">المنتجات الأحدث</h2>
-            <p className="text-xl text-gray-600">اكتشف أحدث ما وصل إلى متجرنا</p>
+          <div className="text-center mb-4 md:mb-8">
+            <h2 className="text-2xl md:text-4xl font-bold text-gray-800 mb-2 md:mb-4">المنتجات الأحدث</h2>
+            <p className="text-sm md:text-xl text-gray-600">اكتشف أحدث ما وصل إلى متجرنا</p>
           </div>
 
           {latestProductsData.length > 0 ? (
-            <div className="product-grid grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          <div className="product-grid grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
               {latestProductsData.map((product) => (
                 <div
                   key={product.id}
                   className="group bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden"
                 >
                   <Link to={`/product/${product.id}`} className="block">
-                    <div className="relative p-4">
-                      <img
-                        src={product.image}
-                        alt={product.name}
+                <div className="relative p-4">
+                  <img
+                    src={product.image}
+                    alt={product.name}
                         className="w-full h-40 object-contain bg-white rounded-xl group-hover:scale-105 transition-transform duration-300"
-                      />
+                  />
                       {product.isNew ? (
-                        <span className="absolute top-6 right-6 bg-gradient-to-r from-green-400 to-green-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-                          جديد
-                        </span>
+                  <span className="absolute top-6 right-6 bg-gradient-to-r from-green-400 to-green-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                    جديد
+                  </span>
                       ) : null}
                       {product.originalPrice && product.originalPrice > product.price ? (
                         <span className="absolute top-6 right-6 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
@@ -610,44 +622,44 @@ const Index = () => {
                         </span>
                       ) : null}
 
-                      <button className="absolute top-6 left-6 p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors">
-                        <Heart className="w-5 h-5 text-gray-600" />
-                      </button>
-                    </div>
+                  <button className="absolute top-6 left-6 p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors">
+                    <Heart className="w-5 h-5 text-gray-600" />
+                  </button>
+                </div>
                   </Link>
 
-                  <div className="p-6">
+                <div className="p-6">
                     <Link to={`/product/${product.id}`} className="block">
-                      <h3 className="font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors">
-                        {product.name}
-                      </h3>
+                  <h3 className="font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors">
+                    {product.name}
+                  </h3>
                     </Link>
-
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="flex items-center">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-4 h-4 ${
-                              i < Math.floor(product.rating)
-                                ? "text-yellow-400 fill-current"
-                                : "text-gray-300"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <span className="text-sm text-gray-600">({product.reviews})</span>
+                  
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="flex items-center">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-4 h-4 ${
+                            i < Math.floor(product.rating)
+                              ? "text-yellow-400 fill-current"
+                              : "text-gray-300"
+                          }`}
+                        />
+                      ))}
                     </div>
+                    <span className="text-sm text-gray-600">({product.reviews})</span>
+                  </div>
 
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-2xl font-bold text-blue-600">{product.price} ₪</span>
-                      <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-2xl font-bold text-blue-600">{product.price} ₪</span>
+                    <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
                         {product.stockStatus}
-                      </span>
-                    </div>
+                    </span>
+                  </div>
 
                     <div className="flex items-center gap-2">
-                      <button
+                  <button 
                         onClick={(e) => {
                           e.preventDefault();
                           triggerAnimation(e.currentTarget, {
@@ -655,25 +667,25 @@ const Index = () => {
                             name: product.name,
                           });
                           addItem({
-                            id: product.id,
-                            name: product.name,
-                            price: product.price,
-                            image: product.image,
+                      id: product.id,
+                      name: product.name,
+                      price: product.price,
+                      image: product.image,
                             brand: product.brand,
                           });
                         }}
                         className="flex-1 bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition-colors font-semibold"
-                      >
-                        أضف للسلة
-                      </button>
+                  >
+                    أضف للسلة
+                  </button>
                       <button className="p-3 bg-white text-blue-600 rounded-xl border border-blue-100 hover:border-blue-300 transition-colors">
                         <Heart className="w-5 h-5" />
                       </button>
                     </div>
-                  </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
+          </div>
           ) : (
             <div className="text-center py-12 text-gray-500">
               لا توجد منتجات جديدة متاحة حالياً.
@@ -761,16 +773,41 @@ const Index = () => {
               <p className="text-gray-400 mb-4">
                 وجهتكم الأولى للأجهزة الكهربائية والإلكترونية في فلسطين
               </p>
+              {/* روابط التواصل الاجتماعي */}
               <div className="flex gap-4">
-                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors cursor-pointer">
-                  <span className="text-white font-bold">ف</span>
-                </div>
-                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors cursor-pointer">
-                  <span className="text-white font-bold">ت</span>
-                </div>
-                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors cursor-pointer">
-                  <span className="text-white font-bold">ي</span>
-                </div>
+                <a
+                  href="https://www.facebook.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors cursor-pointer"
+                  aria-label="فيسبوك"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white">
+                    <path d="M13.5 9H16l.5-3h-3V4.5c0-.86.22-1.5 1.5-1.5H17V0h-2.5C11.57 0 10 1.57 10 4.5V6H8v3h2v9h3.5V9z" />
+                  </svg>
+                </a>
+                <a
+                  href="https://www.twitter.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors cursor-pointer"
+                  aria-label="تويتر"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white">
+                    <path d="M22.162 5.656c-.793.352-1.643.589-2.53.696a4.454 4.454 0 001.958-2.456 8.909 8.909 0 01-2.825 1.08 4.437 4.437 0 00-7.556 4.045A12.59 12.59 0 013.173 4.9a4.435 4.435 0 001.373 5.917 4.4 4.4 0 01-2.01-.555v.056a4.44 4.44 0 003.556 4.35 4.457 4.457 0 01-2.004.076 4.445 4.445 0 004.148 3.08A8.9 8.9 0 012 19.54a12.55 12.55 0 006.79 1.99c8.147 0 12.598-6.75 12.598-12.598 0-.192-.004-.383-.013-.573a9 9 0 002.22-2.303z" />
+                  </svg>
+                </a>
+                <a
+                  href="https://www.instagram.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center hover:bg-pink-600 transition-colors cursor-pointer"
+                  aria-label="إنستغرام"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white">
+                    <path d="M7 2C4.243 2 2 4.243 2 7v10c0 2.757 2.243 5 5 5h10c2.757 0 5-2.243 5-5V7c0-2.757-2.243-5-5-5H7zm10 2c1.654 0 3 1.346 3 3v10c0 1.654-1.346 3-3 3H7c-1.654 0-3-1.346-3-3V7c0-1.654 1.346-3 3-3h10zm-5 3a5 5 0 100 10 5 5 0 000-10zm0 2a3 3 0 110 6 3 3 0 010-6zm6.5-.25a1 1 0 100 2 1 1 0 000-2z" />
+                  </svg>
+                </a>
               </div>
             </div>
 

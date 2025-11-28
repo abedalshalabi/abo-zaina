@@ -819,7 +819,7 @@ const Products = () => {
             <span className="text-white font-semibold">نفدت الكمية</span>
           </div>
         )}
-        <button
+        <button 
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -862,8 +862,8 @@ const Products = () => {
       <div className="flex items-center gap-2 mb-4">
         <span className="text-xl font-bold text-brand-green">{product.price} ₪</span>
         {product.originalPrice && product.originalPrice > 0 && (
-          <span className="text-gray-500 line-through">{product.originalPrice} ₪</span>
-        )}
+                  <span className="text-gray-500 line-through">{product.originalPrice} ₪</span>
+                )}
       </div>
 
       <button
@@ -873,18 +873,18 @@ const Products = () => {
           if (!product.inStock) return;
 
           const imageForAnimation = product.image || product.images?.[0] || "/placeholder.svg";
-          triggerAnimation(e.currentTarget, {
+            triggerAnimation(e.currentTarget, {
             image: imageForAnimation,
-            name: product.name
-          });
-
-          addItem({
-            id: product.id,
-            name: product.name,
-            price: product.price,
+              name: product.name
+            });
+            
+            addItem({
+              id: product.id,
+              name: product.name,
+              price: product.price,
             image: imageForAnimation,
-            brand: product.brand
-          });
+              brand: product.brand
+            });
         }}
         className={`w-full py-2 rounded-lg transition-colors ${
           product.inStock ? "bg-brand-blue text-white hover:bg-blue-700" : "bg-gray-300 text-gray-500 cursor-not-allowed"
@@ -893,8 +893,8 @@ const Products = () => {
       >
         {product.inStock ? "أضف للسلة" : "نفدت الكمية"}
       </button>
-      </Link>
-    );
+    </Link>
+  );
   };
 
   return (
@@ -1197,9 +1197,9 @@ const Products = () => {
                   <div className="flex items-center gap-2">
                     <div className="flex-1">
                       <label className="block text-xs text-gray-600 mb-1">من</label>
-                      <input
+                  <input
                         type="number"
-                        min="0"
+                    min="0"
                         max={priceRange[1]}
                         step="100"
                         value={priceRange[0]}
@@ -1217,8 +1217,8 @@ const Products = () => {
                         type="number"
                         min={priceRange[0]}
                         max="50000"
-                        step="100"
-                        value={priceRange[1]}
+                    step="100"
+                    value={priceRange[1]}
                         onChange={(e) => {
                           const maxValue = Math.max(priceRange[0], Math.min(parseInt(e.target.value) || 50000, 50000));
                           setPriceRange([priceRange[0], maxValue]);
@@ -1335,7 +1335,7 @@ const Products = () => {
                         <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                       </div>
                       <p className="text-sm text-gray-500">جاري التحميل تلقائياً...</p>
-                    </div>
+              </div>
                   ) : (
                     <p className="text-gray-500">تم عرض جميع المنتجات</p>
                   )}

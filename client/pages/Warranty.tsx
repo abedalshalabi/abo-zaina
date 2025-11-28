@@ -131,29 +131,29 @@ const Warranty = () => {
               const iconColors = ["text-blue-600", "text-yellow-600", "text-green-600"];
               
               return (
-                <div key={index} className="bg-gray-50 p-8 rounded-2xl hover:shadow-lg transition-all duration-300 border-2 border-transparent hover:border-blue-200">
-                  <div className="text-center mb-6">
-                    <div className="flex justify-center mb-4">
+              <div key={index} className="bg-gray-50 p-8 rounded-2xl hover:shadow-lg transition-all duration-300 border-2 border-transparent hover:border-blue-200">
+                <div className="text-center mb-6">
+                  <div className="flex justify-center mb-4">
                       <IconComponent className={`w-8 h-8 ${iconColors[index % iconColors.length]}`} />
-                    </div>
-                    <h3 className="text-2xl font-bold text-gray-800 mb-2">{warranty.title}</h3>
-                    <div className="text-lg text-blue-600 font-semibold mb-1">{warranty.duration}</div>
-                    <div className="text-sm text-green-600">{warranty.coverage}</div>
                   </div>
-                  
-                  <p className="text-gray-600 text-center mb-6">{warranty.description}</p>
-                  
-                  {warranty.features && warranty.features.length > 0 && (
-                    <div className="space-y-3">
-                      {warranty.features.map((feature, idx) => (
-                        <div key={idx} className="flex items-center gap-3">
-                          <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                          <span className="text-gray-700">{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <h3 className="text-2xl font-bold text-gray-800 mb-2">{warranty.title}</h3>
+                  <div className="text-lg text-blue-600 font-semibold mb-1">{warranty.duration}</div>
+                  <div className="text-sm text-green-600">{warranty.coverage}</div>
                 </div>
+                
+                <p className="text-gray-600 text-center mb-6">{warranty.description}</p>
+                
+                  {warranty.features && warranty.features.length > 0 && (
+                <div className="space-y-3">
+                  {warranty.features.map((feature, idx) => (
+                    <div key={idx} className="flex items-center gap-3">
+                      <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                      <span className="text-gray-700">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+                  )}
+              </div>
               );
             })}
           </div>
@@ -176,14 +176,14 @@ const Warranty = () => {
                 </div>
                 <h3 className="text-xl font-bold text-gray-800 mb-4">{period.category}</h3>
                 {period.items && period.items.length > 0 && (
-                  <div className="space-y-2">
-                    {period.items.map((item, idx) => (
-                      <div key={idx} className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                        <span className="text-gray-600 text-sm">{item}</span>
-                      </div>
-                    ))}
-                  </div>
+                <div className="space-y-2">
+                  {period.items.map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                      <span className="text-gray-600 text-sm">{item}</span>
+                    </div>
+                  ))}
+                </div>
                 )}
               </div>
             ))}
@@ -204,21 +204,21 @@ const Warranty = () => {
               const IconComponent = processIcons[index % processIcons.length];
               
               return (
-                <div key={index} className="text-center">
-                  <div className="relative mb-6">
-                    <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-4">
+              <div key={index} className="text-center">
+                <div className="relative mb-6">
+                  <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-4">
                       <IconComponent className="w-6 h-6" />
-                    </div>
-                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 text-gray-800 rounded-full flex items-center justify-center text-sm font-bold">
-                      {step.step || index + 1}
-                    </div>
-                    {index < warrantyProcess.length - 1 && (
-                      <div className="hidden md:block absolute top-8 left-full w-full h-0.5 bg-gray-300 transform translate-x-4"></div>
-                    )}
                   </div>
-                  <h3 className="text-xl font-bold text-gray-800 mb-3">{step.title}</h3>
-                  <p className="text-gray-600">{step.description}</p>
+                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 text-gray-800 rounded-full flex items-center justify-center text-sm font-bold">
+                      {step.step || index + 1}
+                  </div>
+                  {index < warrantyProcess.length - 1 && (
+                    <div className="hidden md:block absolute top-8 left-full w-full h-0.5 bg-gray-300 transform translate-x-4"></div>
+                  )}
                 </div>
+                <h3 className="text-xl font-bold text-gray-800 mb-3">{step.title}</h3>
+                <p className="text-gray-600">{step.description}</p>
+              </div>
               );
             })}
           </div>
@@ -240,22 +240,22 @@ const Warranty = () => {
               
               return (
                 <div key={index} className={`p-8 rounded-2xl ${condition.important !== false ? 'bg-red-50 border-2 border-red-200' : 'bg-white'} hover:shadow-lg transition-all duration-300`}>
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0">
                       <IconComponent className={`w-6 h-6 ${iconColor}`} />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-800 mb-3">{condition.title}</h3>
-                      <p className="text-gray-600 leading-relaxed">{condition.description}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-3">{condition.title}</h3>
+                    <p className="text-gray-600 leading-relaxed">{condition.description}</p>
                       {(condition.important !== false) && (
-                        <div className="mt-3 flex items-center gap-2">
-                          <AlertTriangle className="w-5 h-5 text-red-500" />
-                          <span className="text-red-600 font-semibold text-sm">شرط إجباري</span>
-                        </div>
-                      )}
-                    </div>
+                      <div className="mt-3 flex items-center gap-2">
+                        <AlertTriangle className="w-5 h-5 text-red-500" />
+                        <span className="text-red-600 font-semibold text-sm">شرط إجباري</span>
+                      </div>
+                    )}
                   </div>
                 </div>
+              </div>
               );
             })}
           </div>
@@ -276,22 +276,22 @@ const Warranty = () => {
               const iconColor = serviceIconColors[index % serviceIconColors.length];
               
               return (
-                <div key={index} className="bg-gray-50 p-6 rounded-xl hover:shadow-lg transition-all duration-300">
-                  <div className="text-center mb-4">
-                    <div className="flex justify-center mb-3">
+              <div key={index} className="bg-gray-50 p-6 rounded-xl hover:shadow-lg transition-all duration-300">
+                <div className="text-center mb-4">
+                  <div className="flex justify-center mb-3">
                       <IconComponent className={`w-8 h-8 ${iconColor}`} />
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-800 mb-2">{service.title}</h3>
                   </div>
-                  <p className="text-gray-600 text-sm mb-3 text-center">{service.description}</p>
-                  {service.availability && (
-                    <div className="text-center">
-                      <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-semibold">
-                        {service.availability}
-                      </span>
-                    </div>
-                  )}
+                  <h3 className="text-lg font-bold text-gray-800 mb-2">{service.title}</h3>
                 </div>
+                <p className="text-gray-600 text-sm mb-3 text-center">{service.description}</p>
+                  {service.availability && (
+                <div className="text-center">
+                  <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-semibold">
+                    {service.availability}
+                  </span>
+                </div>
+                  )}
+              </div>
               );
             })}
           </div>
@@ -323,13 +323,13 @@ const Warranty = () => {
 
       {/* Important Notes */}
       {settings.warranty_notes && settings.warranty_notes.length > 0 && (
-        <section className="py-20 bg-white">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold text-gray-800 mb-4">ملاحظات مهمة</h2>
-            </div>
-            
-            <div className="max-w-4xl mx-auto space-y-6">
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-800 mb-4">ملاحظات مهمة</h2>
+          </div>
+          
+          <div className="max-w-4xl mx-auto space-y-6">
               {settings.warranty_notes.map((note, index) => {
                 const typeColors: { [key: string]: { bg: string; border: string; icon: string; title: string; text: string } } = {
                   blue: { bg: 'bg-blue-50', border: 'border-blue-500', icon: 'text-blue-600', title: 'text-blue-800', text: 'text-blue-700' },
@@ -343,19 +343,19 @@ const Warranty = () => {
                 
                 return (
                   <div key={index} className={`${colors.bg} border-l-4 ${colors.border} p-6 rounded-lg`}>
-                    <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3">
                       <IconComponent className={`w-6 h-6 ${colors.icon} flex-shrink-0 mt-1`} />
-                      <div>
+                <div>
                         <h3 className={`font-bold ${colors.title} mb-2`}>{note.title}</h3>
                         <p className={colors.text}>{note.description}</p>
-                      </div>
-                    </div>
-                  </div>
+                </div>
+              </div>
+            </div>
                 );
               })}
-            </div>
           </div>
-        </section>
+        </div>
+      </section>
       )}
 
       {/* Contact Section */}
@@ -373,12 +373,12 @@ const Warranty = () => {
               تواصل معنا
             </Link>
             {settings.warranty_cta_phone && (
-              <a
+            <a
                 href={`tel:${settings.warranty_cta_phone}`}
-                className="border-2 border-white text-white px-8 py-4 rounded-full hover:bg-white hover:text-blue-600 transition-colors font-semibold"
-              >
-                اتصل الآن
-              </a>
+              className="border-2 border-white text-white px-8 py-4 rounded-full hover:bg-white hover:text-blue-600 transition-colors font-semibold"
+            >
+              اتصل الآن
+            </a>
             )}
           </div>
         </div>

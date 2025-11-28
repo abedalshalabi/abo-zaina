@@ -108,35 +108,37 @@ const Carousel: React.FC<CarouselProps> = ({
       {showArrows && (
         <>
           <button
-            className={`absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-white shadow-lg rounded-full p-3 hover:bg-gray-50 transition-all duration-200 hidden md:flex items-center justify-center ${
-              !canScrollNext ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-xl'
+            className={`absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 transition-all duration-200 flex items-center justify-center ${
+              !canScrollNext ? 'opacity-50 cursor-not-allowed' : 'hover:scale-110'
             }`}
-            onClick={scrollNext}
-            disabled={!canScrollNext}
-            aria-label="الشريحة التالية"
+            onClick={rtl ? scrollPrev : scrollNext}
+            disabled={rtl ? !canScrollPrev : !canScrollNext}
+            aria-label={rtl ? "الشريحة السابقة" : "الشريحة التالية"}
           >
-            <ChevronRight className="w-5 h-5 text-gray-600" />
+            <ChevronRight className="w-8 h-8 md:w-10 md:h-10 text-white drop-shadow-md" />
           </button>
           <button
-            className={`absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-white shadow-lg rounded-full p-3 hover:bg-gray-50 transition-all duration-200 hidden md:flex items-center justify-center ${
-              !canScrollPrev ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-xl'
+            className={`absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 transition-all duration-200 flex items-center justify-center ${
+              !canScrollPrev ? 'opacity-50 cursor-not-allowed' : 'hover:scale-110'
             }`}
-            onClick={scrollPrev}
-            disabled={!canScrollPrev}
-            aria-label="الشريحة السابقة"
+            onClick={rtl ? scrollNext : scrollPrev}
+            disabled={rtl ? !canScrollNext : !canScrollPrev}
+            aria-label={rtl ? "الشريحة التالية" : "الشريحة السابقة"}
           >
-            <ChevronLeft className="w-5 h-5 text-gray-600" />
+            <ChevronLeft className="w-8 h-8 md:w-10 md:h-10 text-white drop-shadow-md" />
           </button>
         </>
       )}
 
       {/* Mobile Swipe Indicator */}
-      <div className="md:hidden text-center mb-2 sm:mb-4">
-        <div className="inline-flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-500 bg-gray-100 px-2 sm:px-3 py-1 rounded-full">
-          <span className="text-sm sm:text-base">👆</span>
-          <span>اسحب لليمين أو اليسار</span>
+      {showDots && (
+        <div className="md:hidden text-center mb-2 sm:mb-4">
+          <div className="inline-flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-500 bg-gray-100 px-2 sm:px-3 py-1 rounded-full">
+            <span className="text-sm sm:text-base">👆</span>
+            <span>اسحب لليمين أو اليسار</span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Carousel Container */}
       <div className="w-full overflow-hidden cursor-grab active:cursor-grabbing embla" ref={emblaRef}>
@@ -161,14 +163,16 @@ const Carousel: React.FC<CarouselProps> = ({
       </div>
 
       {/* Progress Bar for Mobile */}
-      <div className="md:hidden mt-2 sm:mt-4 mx-4 bg-gray-200 rounded-full h-1 overflow-hidden">
-        <div 
-          className="bg-blue-600 h-full transition-all duration-300 ease-out"
-          style={{ 
-            width: `${((selectedIndex + 1) / scrollSnaps.length) * 100}%` 
-          }}
-        />
-      </div>
+      {showDots && (
+        <div className="md:hidden mt-2 sm:mt-4 mx-4 bg-gray-200 rounded-full h-1 overflow-hidden">
+          <div 
+            className="bg-blue-600 h-full transition-all duration-300 ease-out"
+            style={{ 
+              width: `${((selectedIndex + 1) / scrollSnaps.length) * 100}%` 
+            }}
+          />
+        </div>
+      )}
 
       {/* Dots Navigation */}
       {showDots && scrollSnaps.length > 1 && (
@@ -189,11 +193,13 @@ const Carousel: React.FC<CarouselProps> = ({
       )}
 
       {/* Slide Counter for Mobile */}
-      <div className="md:hidden text-center mt-2 sm:mt-3">
-        <span className="text-xs sm:text-sm text-gray-500">
-          {selectedIndex + 1} من {scrollSnaps.length}
-        </span>
-      </div>
+      {showDots && (
+        <div className="md:hidden text-center mt-2 sm:mt-3">
+          <span className="text-xs sm:text-sm text-gray-500">
+            {selectedIndex + 1} من {scrollSnaps.length}
+          </span>
+        </div>
+      )}
     </div>
   )
 }
