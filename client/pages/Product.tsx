@@ -22,6 +22,7 @@ import {
 import { useCart } from "../context/CartContext";
 import { useAnimation } from "../context/AnimationContext";
 import Header from "../components/Header";
+import SEO from "../components/SEO";
 import { productsAPI, categoriesAPI } from "../services/api";
 import { STORAGE_BASE_URL } from "../config/env";
 
@@ -334,8 +335,54 @@ const Product = () => {
 
   breadcrumbItems.push({ label: product.name });
 
+  const siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const productUrl = `${siteUrl}/product/${product.id}`;
+  const productImage = product.images && product.images[0] 
+    ? (product.images[0].startsWith('http') ? product.images[0] : `${STORAGE_BASE_URL}/${product.images[0]}`)
+    : `${siteUrl}/placeholder.svg`;
+
+  // Structured Data for Product
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": product.name,
+    "description": product.description || `${product.name} - ${product.brand}`,
+    "image": product.images?.map(img => img.startsWith('http') ? img : `${STORAGE_BASE_URL}/${img}`) || [productImage],
+    "brand": {
+      "@type": "Brand",
+      "name": product.brand
+    },
+    "category": product.category,
+    "offers": {
+      "@type": "Offer",
+      "url": productUrl,
+      "priceCurrency": "ILS",
+      "price": product.price,
+      "priceValidUntil": new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      "availability": product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      "itemCondition": "https://schema.org/NewCondition"
+    },
+    "aggregateRating": product.reviews > 0 ? {
+      "@type": "AggregateRating",
+      "ratingValue": product.rating,
+      "reviewCount": product.reviews,
+      "bestRating": "5",
+      "worstRating": "1"
+    } : undefined,
+    "sku": product.id.toString()
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 arabic">
+      <SEO
+        title={`${product.name} - ${product.brand} | أبو زينة للتقنيات`}
+        description={product.description || `${product.name} من ${product.brand} - ${product.price} ₪`}
+        keywords={`${product.name}, ${product.brand}, ${product.category}, أجهزة كهربائية, إلكترونيات`}
+        image={productImage}
+        type="product"
+        url={productUrl}
+        structuredData={structuredData}
+      />
       <Header 
         showSearch={true}
         showActions={true}

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Phone, Mail, MapPin, Clock, Send, MessageCircle, Headphones, Shield } from "lucide-react";
 import { useState, useEffect } from "react";
 import Header from "../components/Header";
+import SEO from "../components/SEO";
 import { settingsAPI } from "../services/api";
 
 interface ContactSettings {
@@ -219,8 +220,35 @@ const Contact = () => {
     "أخرى"
   ];
 
+  const siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "ContactPage",
+    "name": "اتصل بنا - أبو زينة للتقنيات",
+    "description": settings.contact_hero_description || "تواصل معنا في أبو زينة للتقنيات",
+    "url": `${siteUrl}/contact`,
+    "mainEntity": {
+      "@type": "Organization",
+      "name": "أبو زينة للتقنيات",
+      "telephone": settings.contact_phone || "",
+      "email": settings.contact_email || "",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": settings.contact_address || "",
+        "addressCountry": "PS"
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 arabic">
+      <SEO
+        title="اتصل بنا - أبو زينة للتقنيات"
+        description={settings.contact_hero_description || "تواصل معنا في أبو زينة للتقنيات. نحن هنا لمساعدتك في جميع استفساراتك"}
+        keywords="اتصل بنا, تواصل, دعم العملاء, أبو زينة, خدمة العملاء"
+        structuredData={structuredData}
+      />
       <Header 
         showSearch={true}
         showActions={true}

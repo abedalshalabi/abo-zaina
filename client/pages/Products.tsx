@@ -12,6 +12,7 @@ import {
 import { useCart } from "../context/CartContext";
 import { useAnimation } from "../context/AnimationContext";
 import Header from "../components/Header";
+import SEO from "../components/SEO";
 import { productsAPI, categoriesAPI, brandsAPI, wishlistAPI } from "../services/api";
 import { STORAGE_BASE_URL } from "../config/env";
 
@@ -897,8 +898,36 @@ const Products = () => {
   );
   };
 
+  const siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const currentUrl = `${siteUrl}${location.pathname}${location.search}`;
+  
+  // Get category name for SEO
+  const categoryName = selectedParentCategory?.name || selectedSubcategory?.name || '';
+  const pageTitle = categoryName 
+    ? `${categoryName} - منتجات | أبو زينة للتقنيات`
+    : 'جميع المنتجات | أبو زينة للتقنيات';
+  const pageDescription = categoryName
+    ? `تصفح مجموعة واسعة من منتجات ${categoryName} في أبو زينة للتقنيات. أفضل الأسعار والجودة المضمونة.`
+    : 'تصفح جميع منتجاتنا من الأجهزة الكهربائية والإلكترونية. أفران، ثلاجات، غسالات، تلفزيونات، هواتف ذكية وأكثر.';
+
+  // Structured Data for Product Collection
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": pageTitle,
+    "description": pageDescription,
+    "url": currentUrl
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 arabic">
+      <SEO
+        title={pageTitle}
+        description={pageDescription}
+        keywords={`${categoryName}, منتجات, أجهزة كهربائية, إلكترونيات, تسوق أونلاين`}
+        url={currentUrl}
+        structuredData={structuredData}
+      />
       <Header 
         showSearch={true}
         showActions={true}

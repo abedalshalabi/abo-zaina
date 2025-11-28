@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Users, Target, Award, Heart, Zap, Shield, Clock } from "lucide-react";
 import Header from "../components/Header";
+import SEO from "../components/SEO";
 import { useState, useEffect } from "react";
 import { settingsAPI } from "../services/api";
 
@@ -105,8 +106,24 @@ const About = () => {
   const team = settings.about_team || [];
   const story = settings.about_story_content || { title: "قصتنا", description: "", image: "" };
 
+  const siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    "name": "من نحن - أبو زينة للتقنيات",
+    "description": settings.about_hero_description || "تعرف على قصة أبو زينة للتقنيات وقيمنا ومبادئنا",
+    "url": `${siteUrl}/about`
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 arabic">
+      <SEO
+        title="من نحن - أبو زينة للتقنيات"
+        description={settings.about_hero_description || "تعرف على قصة أبو زينة للتقنيات، رؤيتنا، قيمنا، وفريقنا المتميز"}
+        keywords="من نحن, أبو زينة, قصة الشركة, فريق العمل, رؤية الشركة"
+        structuredData={structuredData}
+      />
       <Header 
         showSearch={true}
         showActions={true}

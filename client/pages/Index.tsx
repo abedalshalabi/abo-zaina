@@ -20,6 +20,7 @@ import { useAnimation } from "../context/AnimationContext";
 import Header from "../components/Header";
 import Carousel from "../components/Carousel";
 import SimpleCarousel3D from "../components/SimpleCarousel3D";
+import SEO from "../components/SEO";
 import { productsAPI, categoriesAPI, brandsAPI } from "../services/api";
 
 const Index = () => {
@@ -198,8 +199,46 @@ const Index = () => {
     );
   }
 
+  const siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  
+  // Structured Data for Homepage
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Store",
+    "name": "أبو زينة للتقنيات",
+    "description": "متجر متخصص في بيع الأجهزة الكهربائية والإلكترونية في فلسطين",
+    "url": siteUrl,
+    "logo": `${siteUrl}/placeholder.svg`,
+    "image": `${siteUrl}/placeholder.svg`,
+    "address": {
+      "@type": "PostalAddress",
+      "addressCountry": "PS",
+      "addressLocality": "فلسطين"
+    },
+    "sameAs": [],
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": `${siteUrl}/products?search={search_term_string}`
+      },
+      "query-input": "required name=search_term_string"
+    },
+    "offers": {
+      "@type": "AggregateOffer",
+      "priceCurrency": "ILS",
+      "availability": "https://schema.org/InStock"
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 arabic">
+      <SEO
+        title="أبو زينة للتقنيات - عالم التكنولوجيا والأجهزة الكهربائية"
+        description="تسوق أونلاين من أبو زينة للتقنيات - أفضل متجر للأجهزة الكهربائية والإلكترونية في فلسطين. أفران، ثلاجات، غسالات، تلفزيونات، هواتف ذكية وأكثر. توصيل سريع وضمان شامل."
+        keywords="أجهزة كهربائية, إلكترونيات, أفران, ثلاجات, غسالات, تلفزيونات, هواتف ذكية, تسوق أونلاين, أبو زينة, فلسطين"
+        structuredData={structuredData}
+      />
       <Header 
         showSearch={true}
         showActions={true}
