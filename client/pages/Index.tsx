@@ -439,30 +439,32 @@ const Index = () => {
               desktop: { width: 180, height: 220, spacing: 30 }
             }}
           >
-            {brandCategories.map((brand, index) => (
-              <Link
-                  key={brand.id || index}
+            {brandCategories.map((brand, index) => {
+              const BrandSlide = ({ isActive }: { isActive?: boolean }) => (
+                <Link
                   to={`/products?brand_id=${brand.id || ''}`}
-                className="group block bg-white p-3 md:p-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border border-gray-100 hover:border-blue-200 h-full w-full"
-              >
-                <div className="text-center h-full flex flex-col justify-center items-center">
-                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-2 md:p-3 mb-2 md:mb-3 group-hover:from-blue-50 group-hover:to-indigo-50 transition-all duration-300 w-full flex-grow flex items-center justify-center">
-                      {brand.logo ? (
-                    <img
-                      src={brand.logo}
-                      alt={brand.name}
-                      className="w-full h-10 md:h-12 object-contain group-hover:scale-110 transition-transform duration-300"
-                    />
-                      ) : (
-                        <div className="w-full h-10 md:h-12 flex items-center justify-center">
-                          <span className="text-gray-400 text-xs md:text-sm font-semibold">{brand.name}</span>
-                        </div>
-                      )}
+                  className="group block bg-white p-3 md:p-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border border-gray-100 hover:border-blue-200 h-full w-full"
+                >
+                  <div className="text-center h-full flex flex-col justify-center items-center">
+                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-2 md:p-3 mb-2 md:mb-3 group-hover:from-blue-50 group-hover:to-indigo-50 transition-all duration-300 w-full flex-grow flex items-center justify-center">
+                        {brand.logo ? (
+                      <img
+                        src={brand.logo}
+                        alt={brand.name}
+                        className="w-full h-10 md:h-12 object-contain group-hover:scale-110 transition-transform duration-300"
+                      />
+                        ) : (
+                          <div className="w-full h-10 md:h-12 flex items-center justify-center">
+                            <span className="text-gray-400 text-xs md:text-sm font-semibold">{brand.name}</span>
+                          </div>
+                        )}
+                    </div>
+                      <p className="text-[10px] md:text-xs text-gray-500">{brand.productCount || 0} منتج</p>
                   </div>
-                    <p className="text-[10px] md:text-xs text-gray-500">{brand.productCount || 0} منتج</p>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+              return <BrandSlide key={brand.id || index} />;
+            })}
           </SimpleCarousel3D>
           ) : (
             <div className="text-center py-8 text-gray-500">لا توجد علامات تجارية متاحة</div>

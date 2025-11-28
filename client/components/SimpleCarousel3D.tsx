@@ -81,9 +81,60 @@ const SimpleCarousel3D: React.FC<SimpleCarousel3DProps> = ({
   const dragStartIndex = useRef<number>(0);
   const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Audio Context for sound effects
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  const playTickSound = useCallback(() => {
+    // Haptic feedback for mobile
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(10); // اهتزاز خفيف جداً لمدة 10ms
+    }
+
+    try {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      
+      const ctx = audioContextRef.current;
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+
+      oscillator.type = 'sine';
+      // صوت "نقرة" عصرية (أكثر حدة وأقصر)
+      oscillator.frequency.setValueAtTime(600, ctx.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.03);
+
+      gainNode.gain.setValueAtTime(0.08, ctx.currentTime); // مستوى صوت مناسب
+      gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03);
+
+      oscillator.connect(gainNode);
+      gainNode.connect(ctx.destination);
+
+      oscillator.start();
+      oscillator.stop(ctx.currentTime + 0.03);
+    } catch (error) {
+      // Ignore audio errors (e.g. if not supported or blocked)
+    }
+  }, []);
+
+  const isInitialMount = useRef(true);
+
   // Call onSlideChange when currentIndex updates
   useEffect(() => {
-    if (onSlideChange && children.length > 0) {
+    if (children.length > 0) {
+      // Skip sound on initial mount
+      if (isInitialMount.current) {
+        isInitialMount.current = false;
+      } else if (!isResetting) {
+        // Play sound on index change (unless resetting)
+        playTickSound();
+      }
+
+      if (onSlideChange) {
       // حساب الفهرس الحقيقي بناءً على القائمة الممتدة
       // العناصر الحقيقية تبدأ من الفهرس 2
       let realIndex = currentIndex - 2;
@@ -102,8 +153,9 @@ const SimpleCarousel3D: React.FC<SimpleCarousel3DProps> = ({
       }
       
       onSlideChange(realIndex);
+      }
     }
-  }, [currentIndex, children, onSlideChange]);
+  }, [currentIndex, children, onSlideChange, isResetting, playTickSound]);
 
   useEffect(() => {
     const handleResize = () => {
