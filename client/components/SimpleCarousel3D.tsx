@@ -83,11 +83,40 @@ const SimpleCarousel3D: React.FC<SimpleCarousel3DProps> = ({
 
   // Audio Context for sound effects
   const audioContextRef = useRef<AudioContext | null>(null);
+  const userInteracted = useRef(false);
 
-  const playTickSound = useCallback(() => {
+  // Track user interaction to enable audio/vibration
+  useEffect(() => {
+    const enableInteractions = () => {
+      userInteracted.current = true;
+    };
+
+    // Listen for any user interaction
+    const events = ['touchstart', 'mousedown', 'keydown', 'click'];
+    events.forEach(event => {
+      document.addEventListener(event, enableInteractions, { once: true, passive: true });
+    });
+
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, enableInteractions);
+      });
+    };
+  }, []);
+
+  const playTickSound = useCallback(async () => {
+    // Only play sound/vibration after user interaction
+    if (!userInteracted.current) {
+      return;
+    }
+
     // Haptic feedback for mobile
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate(10); // اهتزاز خفيف جداً لمدة 10ms
+      try {
+        navigator.vibrate(10); // اهتزاز خفيف جداً لمدة 10ms
+      } catch (error) {
+        // Ignore vibration errors
+      }
     }
 
     try {
@@ -96,8 +125,10 @@ const SimpleCarousel3D: React.FC<SimpleCarousel3DProps> = ({
       }
       
       const ctx = audioContextRef.current;
+      
+      // Resume audio context if suspended
       if (ctx.state === 'suspended') {
-        ctx.resume();
+        await ctx.resume();
       }
 
       const oscillator = ctx.createOscillator();
@@ -276,6 +307,9 @@ const SimpleCarousel3D: React.FC<SimpleCarousel3DProps> = ({
 
   // Mouse drag handlers
   const handleMouseDown = (e: React.MouseEvent) => {
+    // Enable audio/vibration on interaction
+    userInteracted.current = true;
+    
     setIsDragging(true);
     dragStartX.current = e.clientX;
     dragCurrentX.current = e.clientX;
@@ -469,6 +503,9 @@ const SimpleCarousel3D: React.FC<SimpleCarousel3DProps> = ({
       if (target.closest('button')) {
         return;
       }
+
+      // Enable audio/vibration on interaction
+      userInteracted.current = true;
 
       if (e.touches.length === 0) return;
     touchStartX.current = e.touches[0].clientX;
@@ -809,11 +846,18 @@ const SimpleCarousel3D: React.FC<SimpleCarousel3DProps> = ({
       {showNavigation && (
         <>
           <button
-            onMouseDown={(e) => e.stopPropagation()}
-            onTouchStart={(e) => e.stopPropagation()}
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              userInteracted.current = true;
+            }}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              userInteracted.current = true;
+            }}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              userInteracted.current = true;
               if (!isTransitioning && !isDragging) {
                 nextSlide();
               }
@@ -828,11 +872,18 @@ const SimpleCarousel3D: React.FC<SimpleCarousel3DProps> = ({
             </svg>
           </button>
           <button
-            onMouseDown={(e) => e.stopPropagation()}
-            onTouchStart={(e) => e.stopPropagation()}
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              userInteracted.current = true;
+            }}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              userInteracted.current = true;
+            }}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              userInteracted.current = true;
               if (!isTransitioning && !isDragging) {
                 prevSlide();
               }

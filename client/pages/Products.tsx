@@ -797,20 +797,20 @@ const Products = () => {
     return (
       <Link
         to={`/product/${product.id}`}
-        className="product-card p-4 group block hover:transform hover:scale-105 transition-all duration-300"
+        className="product-card p-2 md:p-4 group block hover:transform hover:scale-105 transition-all duration-300"
       >
-      <div className="relative mb-4">
+      <div className="relative mb-2 md:mb-4">
         <img
           src={product.image || product.images?.[0] || "/placeholder.svg"}
           alt={product.name}
-          className="w-full h-48 object-contain bg-white rounded-lg"
+          className="w-full h-32 md:h-48 object-contain bg-white rounded-lg"
           onError={(e) => {
             console.error("Image load error for product", product.id, ":", e.currentTarget.src);
             e.currentTarget.src = "/placeholder.svg";
           }}
         />
         {product.originalPrice && product.originalPrice > product.price && (
-          <span className="absolute top-2 right-2 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+          <span className="absolute top-1 right-1 md:top-2 md:right-2 bg-red-500 text-white px-2 py-0.5 md:px-3 md:py-1 rounded-full text-xs md:text-sm font-bold">
             خصم {(product.originalPrice - product.price).toLocaleString()} ₪
           </span>
         )}
@@ -827,7 +827,7 @@ const Products = () => {
               toggleWishlist(product);
             }
           }}
-          className={`absolute top-2 left-2 p-2 rounded-full shadow-md transition-colors ${
+          className={`absolute top-1 left-1 md:top-2 md:left-2 p-1.5 md:p-2 rounded-full shadow-md transition-colors ${
             isInWishlist ? "bg-red-50 hover:bg-red-100" : "bg-white hover:bg-gray-50"
           }`}
           aria-pressed={isInWishlist}
@@ -835,34 +835,34 @@ const Products = () => {
           disabled={isProcessingWishlist}
         >
           <Heart
-            className={`w-4 h-4 ${isInWishlist ? "text-red-500" : "text-gray-600"}`}
+            className={`w-3 h-3 md:w-4 md:h-4 ${isInWishlist ? "text-red-500" : "text-gray-600"}`}
             fill={isInWishlist ? "currentColor" : "none"}
           />
         </button>
       </div>
 
-      <h3 className="font-semibold text-gray-800 mb-2 group-hover:text-brand-blue transition-colors line-clamp-2">
+      <h3 className="font-semibold text-gray-800 mb-1 md:mb-2 group-hover:text-brand-blue transition-colors line-clamp-2 text-sm md:text-base">
         {product.name}
       </h3>
 
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-1 md:mb-3">
         <div className="flex items-center">
           {[...Array(5)].map((_, i) => (
             <Star
               key={i}
-              className={`w-4 h-4 ${
+              className={`w-3 h-3 md:w-4 md:h-4 ${
                 i < Math.floor(product.rating) ? "text-yellow-400 fill-current" : "text-gray-300"
               }`}
             />
           ))}
         </div>
-        <span className="text-sm text-gray-600">({product.reviews})</span>
+        <span className="text-xs md:text-sm text-gray-600">({product.reviews})</span>
       </div>
 
-      <div className="flex items-center gap-2 mb-4">
-        <span className="text-xl font-bold text-brand-green">{product.price} ₪</span>
+      <div className="flex items-center gap-2 mb-2 md:mb-4">
+        <span className="text-lg md:text-xl font-bold text-brand-green">{product.price} ₪</span>
         {product.originalPrice && product.originalPrice > 0 && (
-                  <span className="text-gray-500 line-through">{product.originalPrice} ₪</span>
+                  <span className="text-sm md:text-base text-gray-500 line-through">{product.originalPrice} ₪</span>
                 )}
       </div>
 
@@ -886,7 +886,7 @@ const Products = () => {
               brand: product.brand
             });
         }}
-        className={`w-full py-2 rounded-lg transition-colors ${
+        className={`w-full py-1.5 md:py-2 rounded-lg transition-colors text-sm md:text-base ${
           product.inStock ? "bg-brand-blue text-white hover:bg-blue-700" : "bg-gray-300 text-gray-500 cursor-not-allowed"
         }`}
         disabled={!product.inStock}
@@ -1312,7 +1312,7 @@ const Products = () => {
               </div>
             ) : productsToShow.length > 0 ? (
               <>
-              <div className={`grid gap-6 ${
+              <div className={`grid gap-3 md:gap-6 ${
                 viewMode === "grid" 
                   ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" 
                   : "grid-cols-1"
