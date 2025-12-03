@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { adminDashboardAPI } from "../services/adminApi";
+import { useNavigate, Link } from "react-router-dom";
+import { adminDashboardAPI, adminContactMessagesAPI } from "../services/adminApi";
 import AdminLayout from "../components/AdminLayout";
 import {
   Users,
@@ -10,7 +10,6 @@ import {
   TrendingUp,
   TrendingDown,
   Eye,
-  Star,
   BarChart3,
   Settings,
   LogOut,
@@ -19,7 +18,9 @@ import {
   Bell,
   Search,
   Boxes,
-  Tag
+  Tag,
+  MessageSquare,
+  AlertCircle
 } from "lucide-react";
 
 interface DashboardStats {
@@ -60,6 +61,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [newMessagesCount, setNewMessagesCount] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -70,7 +72,21 @@ const AdminDashboard = () => {
     }
 
     fetchDashboardData();
+    fetchNewMessagesCount();
   }, [navigate]);
+
+  const fetchNewMessagesCount = async () => {
+    try {
+      const response = await adminContactMessagesAPI.getContactMessages({
+        status: 'new',
+        per_page: 1,
+        page: 1
+      });
+      setNewMessagesCount(response.meta?.total || 0);
+    } catch (error) {
+      console.error('Error fetching new messages count:', error);
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -153,6 +169,32 @@ const AdminDashboard = () => {
   return (
     <AdminLayout>
       <div className="p-6">
+          {/* New Messages Alert */}
+          {newMessagesCount > 0 && (
+            <div className="mb-6 bg-blue-50 border-r-4 border-blue-600 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-blue-600 rounded-full p-2">
+                    <MessageSquare className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">
+                      لديك {newMessagesCount} {newMessagesCount === 1 ? 'رسالة جديدة' : 'رسائل جديدة'}
+                    </h3>
+                    <p className="text-sm text-gray-600">يوجد رسائل اتصال جديدة تحتاج إلى مراجعة</p>
+                  </div>
+                </div>
+                <Link
+                  to="/admin/contact-messages?status=new"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  عرض الرسائل
+                </Link>
+              </div>
+            </div>
+          )}
+
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <StatCard
@@ -277,10 +319,6 @@ const AdminDashboard = () => {
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-gray-900">{product.sales_count} مبيع</p>
-                    <div className="flex items-center text-yellow-500">
-                      <Star className="w-4 h-4 fill-current" />
-                      <span className="text-sm text-gray-600 mr-1">4.5</span>
-                    </div>
                   </div>
                 </div>
               ))}

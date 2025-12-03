@@ -21,7 +21,7 @@ import Header from "../components/Header";
 import Carousel from "../components/Carousel";
 import SimpleCarousel3D from "../components/SimpleCarousel3D";
 import SEO from "../components/SEO";
-import { productsAPI, categoriesAPI, brandsAPI } from "../services/api";
+import { productsAPI, categoriesAPI, brandsAPI, settingsAPI } from "../services/api";
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -33,6 +33,7 @@ const Index = () => {
   const [latestProducts, setLatestProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
+  const [socialSettings, setSocialSettings] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -44,17 +45,19 @@ const Index = () => {
         setError("");
         
         // Load featured and latest products
-        const [featuredResponse, latestResponse, categoriesResponse, brandsResponse] = await Promise.all([
+        const [featuredResponse, latestResponse, categoriesResponse, brandsResponse, settingsResponse] = await Promise.all([
           productsAPI.getFeaturedProducts(),
           productsAPI.getLatestProducts(),
           categoriesAPI.getCategories(),
-          brandsAPI.getBrands()
+          brandsAPI.getBrands(),
+          settingsAPI.getSettings('header')
         ]);
         
         setFeaturedProducts(featuredResponse.data || []);
         setLatestProducts(latestResponse.data || []);
         setCategories(categoriesResponse.data || []);
         setBrands(brandsResponse.data || []);
+        setSocialSettings(settingsResponse.data || {});
         
         // Debug: Log categories to check show_in_slider
         console.log('Categories loaded:', categoriesResponse.data);
@@ -257,7 +260,7 @@ const Index = () => {
             rtl={true}
           >
             {/* Slide 1 */}
-            <div className="relative bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 text-white py-6 sm:py-8 lg:py-12 overflow-hidden min-h-[180px] sm:min-h-[300px] lg:min-h-[350px]">
+            <div className="relative bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 text-white py-6 sm:py-8 lg:py-4 overflow-hidden min-h-[180px] sm:min-h-[300px] lg:min-h-[180px]">
               <div className="absolute inset-0 overflow-hidden">
                 <div className="absolute top-4 left-4 sm:top-6 sm:left-6 lg:top-10 lg:left-10 text-xl sm:text-3xl lg:text-6xl opacity-10 animate-pulse">⚡</div>
                 <div className="absolute top-8 right-8 sm:top-12 sm:right-12 lg:top-20 lg:right-20 text-lg sm:text-2xl lg:text-4xl opacity-10 animate-bounce">🔌</div>
@@ -296,7 +299,7 @@ const Index = () => {
             </div>
 
             {/* Slide 2 */}
-            <div className="relative bg-gradient-to-r from-purple-900 via-purple-800 to-pink-900 text-white py-6 sm:py-8 lg:py-12 overflow-hidden min-h-[180px] sm:min-h-[300px] lg:min-h-[350px]">
+            <div className="relative bg-gradient-to-r from-purple-900 via-purple-800 to-pink-900 text-white py-6 sm:py-8 lg:py-4 overflow-hidden min-h-[180px] sm:min-h-[300px] lg:min-h-[180px]">
               <div className="absolute inset-0 overflow-hidden">
                 <div className="absolute top-4 right-4 sm:top-6 sm:right-6 lg:top-10 lg:right-10 text-xl sm:text-3xl lg:text-6xl opacity-10 animate-spin-slow">🏠</div>
                 <div className="absolute top-10 left-10 sm:top-16 sm:left-16 lg:top-24 lg:left-24 text-lg sm:text-2xl lg:text-4xl opacity-10 animate-pulse">❄️</div>
@@ -335,7 +338,7 @@ const Index = () => {
             </div>
 
             {/* Slide 3 */}
-            <div className="relative bg-gradient-to-r from-green-900 via-green-800 to-teal-900 text-white py-6 sm:py-8 lg:py-12 overflow-hidden min-h-[180px] sm:min-h-[300px] lg:min-h-[350px]">
+            <div className="relative bg-gradient-to-r from-green-900 via-green-800 to-teal-900 text-white py-6 sm:py-8 lg:py-4 overflow-hidden min-h-[180px] sm:min-h-[300px] lg:min-h-[180px]">
               <div className="absolute inset-0 overflow-hidden">
                 <div className="absolute top-6 left-6 sm:top-8 sm:left-8 lg:top-12 lg:left-12 text-xl sm:text-3xl lg:text-6xl opacity-10 animate-bounce">🎯</div>
                 <div className="absolute top-12 right-12 sm:top-20 sm:right-20 lg:top-32 lg:right-32 text-lg sm:text-2xl lg:text-4xl opacity-10 animate-pulse">💰</div>
@@ -467,44 +470,55 @@ const Index = () => {
           </div>
 
           {brandCategories.length > 0 ? (
-          <SimpleCarousel3D
-            autoplay={false}
-            rtl={true}
-            showNavigation={true}
-            showPagination={false}
-            slideDimensions={{
-              smallMobile: { width: 100, height: 140, spacing: 10 },
-              mobile: { width: 140, height: 180, spacing: 20 },
-              desktop: { width: 180, height: 220, spacing: 30 }
-            }}
-          >
-            {brandCategories.map((brand, index) => {
-              const BrandSlide = ({ isActive }: { isActive?: boolean }) => (
+            <>
+              <SimpleCarousel3D
+                autoplay={false}
+                rtl={true}
+                showNavigation={true}
+                showPagination={false}
+                slideDimensions={{
+                  smallMobile: { width: 100, height: 140, spacing: 10 },
+                  mobile: { width: 140, height: 180, spacing: 20 },
+                  desktop: { width: 180, height: 220, spacing: 30 }
+                }}
+              >
+                {brandCategories.map((brand, index) => {
+                  const BrandSlide = ({ isActive }: { isActive?: boolean }) => (
+                    <Link
+                      to={`/products?brand_id=${brand.id || ''}`}
+                      className="group block bg-white p-3 md:p-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border border-gray-100 hover:border-blue-200 h-full w-full"
+                    >
+                      <div className="text-center h-full flex flex-col justify-center items-center">
+                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-2 md:p-3 mb-2 md:mb-3 group-hover:from-blue-50 group-hover:to-indigo-50 transition-all duration-300 w-full flex-grow flex items-center justify-center">
+                            {brand.logo ? (
+                          <img
+                            src={brand.logo}
+                            alt={brand.name}
+                            className="w-full h-10 md:h-12 object-contain group-hover:scale-110 transition-transform duration-300"
+                          />
+                            ) : (
+                              <div className="w-full h-10 md:h-12 flex items-center justify-center">
+                                <span className="text-gray-400 text-xs md:text-sm font-semibold">{brand.name}</span>
+                              </div>
+                            )}
+                        </div>
+                          <p className="text-[10px] md:text-xs text-gray-500">{brand.productCount || 0} منتج</p>
+                      </div>
+                    </Link>
+                  );
+                  return <BrandSlide key={brand.id || index} />;
+                })}
+              </SimpleCarousel3D>
+              <div className="text-center mt-6 md:mt-8">
                 <Link
-                  to={`/products?brand_id=${brand.id || ''}`}
-                  className="group block bg-white p-3 md:p-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border border-gray-100 hover:border-blue-200 h-full w-full"
+                  to="/brands"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
                 >
-                  <div className="text-center h-full flex flex-col justify-center items-center">
-                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-2 md:p-3 mb-2 md:mb-3 group-hover:from-blue-50 group-hover:to-indigo-50 transition-all duration-300 w-full flex-grow flex items-center justify-center">
-                        {brand.logo ? (
-                      <img
-                        src={brand.logo}
-                        alt={brand.name}
-                        className="w-full h-10 md:h-12 object-contain group-hover:scale-110 transition-transform duration-300"
-                      />
-                        ) : (
-                          <div className="w-full h-10 md:h-12 flex items-center justify-center">
-                            <span className="text-gray-400 text-xs md:text-sm font-semibold">{brand.name}</span>
-                          </div>
-                        )}
-                    </div>
-                      <p className="text-[10px] md:text-xs text-gray-500">{brand.productCount || 0} منتج</p>
-                  </div>
+                  عرض جميع الماركات
+                  <ArrowRight className="w-5 h-5" />
                 </Link>
-              );
-              return <BrandSlide key={brand.id || index} />;
-            })}
-          </SimpleCarousel3D>
+              </div>
+            </>
           ) : (
             <div className="text-center py-8 text-gray-500">لا توجد علامات تجارية متاحة</div>
           )}
@@ -816,39 +830,84 @@ const Index = () => {
               </p>
               {/* روابط التواصل الاجتماعي */}
               <div className="flex gap-4">
-                <a
-                  href="https://www.facebook.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors cursor-pointer"
-                  aria-label="فيسبوك"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white">
-                    <path d="M13.5 9H16l.5-3h-3V4.5c0-.86.22-1.5 1.5-1.5H17V0h-2.5C11.57 0 10 1.57 10 4.5V6H8v3h2v9h3.5V9z" />
-                  </svg>
-                </a>
-                <a
-                  href="https://www.twitter.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors cursor-pointer"
-                  aria-label="تويتر"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white">
-                    <path d="M22.162 5.656c-.793.352-1.643.589-2.53.696a4.454 4.454 0 001.958-2.456 8.909 8.909 0 01-2.825 1.08 4.437 4.437 0 00-7.556 4.045A12.59 12.59 0 013.173 4.9a4.435 4.435 0 001.373 5.917 4.4 4.4 0 01-2.01-.555v.056a4.44 4.44 0 003.556 4.35 4.457 4.457 0 01-2.004.076 4.445 4.445 0 004.148 3.08A8.9 8.9 0 012 19.54a12.55 12.55 0 006.79 1.99c8.147 0 12.598-6.75 12.598-12.598 0-.192-.004-.383-.013-.573a9 9 0 002.22-2.303z" />
-                  </svg>
-                </a>
-                <a
-                  href="https://www.instagram.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center hover:bg-pink-600 transition-colors cursor-pointer"
-                  aria-label="إنستغرام"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white">
-                    <path d="M7 2C4.243 2 2 4.243 2 7v10c0 2.757 2.243 5 5 5h10c2.757 0 5-2.243 5-5V7c0-2.757-2.243-5-5-5H7zm10 2c1.654 0 3 1.346 3 3v10c0 1.654-1.346 3-3 3H7c-1.654 0-3-1.346-3-3V7c0-1.654 1.346-3 3-3h10zm-5 3a5 5 0 100 10 5 5 0 000-10zm0 2a3 3 0 110 6 3 3 0 010-6zm6.5-.25a1 1 0 100 2 1 1 0 000-2z" />
-                  </svg>
-                </a>
+                {socialSettings.social_media_facebook && (
+                  <a
+                    href={socialSettings.social_media_facebook}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors cursor-pointer"
+                    aria-label="فيسبوك"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white">
+                      <path d="M13.5 9H16l.5-3h-3V4.5c0-.86.22-1.5 1.5-1.5H17V0h-2.5C11.57 0 10 1.57 10 4.5V6H8v3h2v9h3.5V9z" />
+                    </svg>
+                  </a>
+                )}
+                {socialSettings.social_media_twitter && (
+                  <a
+                    href={socialSettings.social_media_twitter}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors cursor-pointer"
+                    aria-label="تويتر"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white">
+                      <path d="M22.162 5.656c-.793.352-1.643.589-2.53.696a4.454 4.454 0 001.958-2.456 8.909 8.909 0 01-2.825 1.08 4.437 4.437 0 00-7.556 4.045A12.59 12.59 0 013.173 4.9a4.435 4.435 0 001.373 5.917 4.4 4.4 0 01-2.01-.555v.056a4.44 4.44 0 003.556 4.35 4.457 4.457 0 01-2.004.076 4.445 4.445 0 004.148 3.08A8.9 8.9 0 012 19.54a12.55 12.55 0 006.79 1.99c8.147 0 12.598-6.75 12.598-12.598 0-.192-.004-.383-.013-.573a9 9 0 002.22-2.303z" />
+                    </svg>
+                  </a>
+                )}
+                {socialSettings.social_media_instagram && (
+                  <a
+                    href={socialSettings.social_media_instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center hover:bg-pink-600 transition-colors cursor-pointer"
+                    aria-label="إنستغرام"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white">
+                      <path d="M7 2C4.243 2 2 4.243 2 7v10c0 2.757 2.243 5 5 5h10c2.757 0 5-2.243 5-5V7c0-2.757-2.243-5-5-5H7zm10 2c1.654 0 3 1.346 3 3v10c0 1.654-1.346 3-3 3H7c-1.654 0-3-1.346-3-3V7c0-1.654 1.346-3 3-3h10zm-5 3a5 5 0 100 10 5 5 0 000-10zm0 2a3 3 0 110 6 3 3 0 010-6zm6.5-.25a1 1 0 100 2 1 1 0 000-2z" />
+                    </svg>
+                  </a>
+                )}
+                {socialSettings.social_media_linkedin && (
+                  <a
+                    href={socialSettings.social_media_linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-10 h-10 bg-blue-700 rounded-full flex items-center justify-center hover:bg-blue-800 transition-colors cursor-pointer"
+                    aria-label="لينكد إن"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white">
+                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                    </svg>
+                  </a>
+                )}
+                {socialSettings.social_media_youtube && (
+                  <a
+                    href={socialSettings.social_media_youtube}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors cursor-pointer"
+                    aria-label="يوتيوب"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white">
+                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                    </svg>
+                  </a>
+                )}
+                {socialSettings.social_media_telegram && (
+                  <a
+                    href={socialSettings.social_media_telegram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-10 h-10 bg-blue-400 rounded-full flex items-center justify-center hover:bg-blue-500 transition-colors cursor-pointer"
+                    aria-label="تيليجرام"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white">
+                      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.174 1.858-.927 6.654-1.309 8.838-.17.968-.504 1.291-.828 1.323-.696.062-1.223-.459-1.897-.9-1.05-.692-1.644-1.123-2.664-1.798-1.18-.78-.415-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.062 3.345-.479.329-.913.489-1.302.481-.428-.008-1.252-.241-1.865-.44-.752-.244-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635.099-.002.321.023.465.14a.49.49 0 01.168.343c.01.05.015.131.003.199z"/>
+                    </svg>
+                  </a>
+                )}
               </div>
             </div>
 
@@ -868,11 +927,25 @@ const Index = () => {
             <div>
               <h3 className="font-semibold mb-4">الفئات</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><Link to="/kitchen" className="hover:text-white transition-colors">أجهزة المطبخ</Link></li>
-                <li><Link to="/cooling" className="hover:text-white transition-colors">التكييف والتبريد</Link></li>
-                <li><Link to="/washing" className="hover:text-white transition-colors">أجهزة الغسيل</Link></li>
-                <li><Link to="/cleaning" className="hover:text-white transition-colors">أجهزة التنظيف</Link></li>
-                <li><Link to="/electronics" className="hover:text-white transition-colors">الإلكترونيات</Link></li>
+                {categories
+                  .filter((cat: any) => !cat.parent_id && cat.is_active !== 0 && cat.is_active !== false)
+                  .slice(0, 5)
+                  .map((category: any) => (
+                    <li key={category.id}>
+                      <Link 
+                        to={category.slug ? `/products?category_id=${category.id}` : `/products`}
+                        className="hover:text-white transition-colors"
+                      >
+                        {category.name}
+                      </Link>
+                    </li>
+                  ))}
+                {categories.filter((cat: any) => !cat.parent_id && cat.is_active !== 0 && cat.is_active !== false).length === 0 && (
+                  <>
+                    <li><Link to="/products" className="hover:text-white transition-colors">جميع المنتجات</Link></li>
+                    <li><Link to="/categories" className="hover:text-white transition-colors">جميع الفئات</Link></li>
+                  </>
+                )}
               </ul>
             </div>
 
@@ -884,14 +957,22 @@ const Index = () => {
                   <MapPin className="w-4 h-4" />
                   <span>جنين، فلسطين</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Phone className="w-4 h-4" />
-                  <span>+966 11 456 7890</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Mail className="w-4 h-4" />
-                  <span>info@abuzaina-tech.com</span>
-                </div>
+                {socialSettings.header_phone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4" />
+                    <a href={`tel:${socialSettings.header_phone.replace(/[^0-9+]/g, '')}`} className="hover:text-white transition-colors">
+                      <span dir="ltr" className="inline-block">{socialSettings.header_phone}</span>
+                    </a>
+                  </div>
+                )}
+                {socialSettings.header_email && (
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4" />
+                    <a href={`mailto:${socialSettings.header_email}`} className="hover:text-white transition-colors">
+                      <span dir="ltr" className="inline-block">{socialSettings.header_email}</span>
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           </div>

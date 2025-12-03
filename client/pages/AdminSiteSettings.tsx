@@ -385,6 +385,164 @@ const AdminSiteSettings = () => {
   const renderSettingInput = (setting: SiteSetting) => {
     switch (setting.type) {
       case 'json':
+        // Special handling for header_menu_items (object with nested arrays)
+        if (setting.key === 'header_menu_items' && setting.value && typeof setting.value === 'object' && !Array.isArray(setting.value)) {
+          const menuItems = setting.value as { main_pages?: Array<{ title: string; link: string }>, customer_service?: Array<{ title: string; link: string }>, account?: Array<{ title: string; link: string }> };
+          
+          const updateMenuSection = (section: string, index: number, field: string, value: string) => {
+            const currentValue = setting.value as any;
+            const sectionArray = currentValue[section] || [];
+            const newArray = [...sectionArray];
+            newArray[index] = { ...newArray[index], [field]: value };
+            handleSettingChange(setting.key, { ...currentValue, [section]: newArray });
+          };
+
+          const addMenuSectionItem = (section: string) => {
+            const currentValue = setting.value as any;
+            const sectionArray = currentValue[section] || [];
+            handleSettingChange(setting.key, { 
+              ...currentValue, 
+              [section]: [...sectionArray, { title: '', link: '' }] 
+            });
+          };
+
+          const removeMenuSectionItem = (section: string, index: number) => {
+            const currentValue = setting.value as any;
+            const sectionArray = currentValue[section] || [];
+            handleSettingChange(setting.key, { 
+              ...currentValue, 
+              [section]: sectionArray.filter((_: any, i: number) => i !== index) 
+            });
+          };
+
+          return (
+            <div className="space-y-6">
+              {/* Main Pages */}
+              <div className="border rounded-lg p-4">
+                <h4 className="font-semibold text-gray-800 mb-3">الصفحات الرئيسية</h4>
+                <div className="space-y-3">
+                  {(menuItems.main_pages || []).map((item, index) => (
+                    <div key={`main_pages-${index}`} className="flex gap-2">
+                      <Input
+                        type="text"
+                        value={item.title || ''}
+                        onChange={(e) => updateMenuSection('main_pages', index, 'title', e.target.value)}
+                        placeholder="العنوان"
+                        className="flex-1"
+                      />
+                      <Input
+                        type="text"
+                        value={item.link || ''}
+                        onChange={(e) => updateMenuSection('main_pages', index, 'link', e.target.value)}
+                        placeholder="الرابط (مثال: /products)"
+                        className="flex-1"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeMenuSectionItem('main_pages', index)}
+                        className="text-red-600 hover:text-red-800 p-2"
+                        title="حذف"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => addMenuSectionItem('main_pages')}
+                    className="w-full border-2 border-dashed border-gray-300 rounded-lg p-2 text-gray-600 hover:border-blue-500 hover:text-blue-600 flex items-center justify-center gap-2 text-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    إضافة صفحة رئيسية
+                  </button>
+                </div>
+              </div>
+
+              {/* Customer Service */}
+              <div className="border rounded-lg p-4">
+                <h4 className="font-semibold text-gray-800 mb-3">خدمة العملاء</h4>
+                <div className="space-y-3">
+                  {(menuItems.customer_service || []).map((item, index) => (
+                    <div key={`customer_service-${index}`} className="flex gap-2">
+                      <Input
+                        type="text"
+                        value={item.title || ''}
+                        onChange={(e) => updateMenuSection('customer_service', index, 'title', e.target.value)}
+                        placeholder="العنوان"
+                        className="flex-1"
+                      />
+                      <Input
+                        type="text"
+                        value={item.link || ''}
+                        onChange={(e) => updateMenuSection('customer_service', index, 'link', e.target.value)}
+                        placeholder="الرابط (مثال: /about)"
+                        className="flex-1"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeMenuSectionItem('customer_service', index)}
+                        className="text-red-600 hover:text-red-800 p-2"
+                        title="حذف"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => addMenuSectionItem('customer_service')}
+                    className="w-full border-2 border-dashed border-gray-300 rounded-lg p-2 text-gray-600 hover:border-blue-500 hover:text-blue-600 flex items-center justify-center gap-2 text-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    إضافة عنصر خدمة عملاء
+                  </button>
+                </div>
+              </div>
+
+              {/* Account */}
+              <div className="border rounded-lg p-4">
+                <h4 className="font-semibold text-gray-800 mb-3">الحساب</h4>
+                <div className="space-y-3">
+                  {(menuItems.account || []).map((item, index) => (
+                    <div key={`account-${index}`} className="flex gap-2">
+                      <Input
+                        type="text"
+                        value={item.title || ''}
+                        onChange={(e) => updateMenuSection('account', index, 'title', e.target.value)}
+                        placeholder="العنوان"
+                        className="flex-1"
+                      />
+                      <Input
+                        type="text"
+                        value={item.link || ''}
+                        onChange={(e) => updateMenuSection('account', index, 'link', e.target.value)}
+                        placeholder="الرابط (مثال: /login)"
+                        className="flex-1"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeMenuSectionItem('account', index)}
+                        className="text-red-600 hover:text-red-800 p-2"
+                        title="حذف"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => addMenuSectionItem('account')}
+                    className="w-full border-2 border-dashed border-gray-300 rounded-lg p-2 text-gray-600 hover:border-blue-500 hover:text-blue-600 flex items-center justify-center gap-2 text-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    إضافة عنصر حساب
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
         if (Array.isArray(setting.value)) {
           // Check if it's an array of strings (like contact_subjects)
           const isStringArray = setting.value.length > 0 && typeof setting.value[0] === 'string';
@@ -580,19 +738,83 @@ const AdminSiteSettings = () => {
                     لا توجد إعدادات متاحة لهذه الصفحة
                   </div>
                 ) : (
-                  settings.map((setting) => (
-                    <div key={setting.id} className="space-y-2">
-                      <Label htmlFor={setting.key} className="text-sm font-medium text-gray-700">
-                        {setting.description || setting.key}
-                        {setting.type === 'json' && (
-                          <span className="text-xs text-gray-500 block mt-1">
-                            {Array.isArray(setting.value) ? '(مصفوفة)' : '(JSON Format)'}
-                          </span>
+                  (() => {
+                    // Separate settings into groups for better organization
+                    const contactSettings = settings.filter(s => 
+                      s.key === 'header_phone' || s.key === 'header_email'
+                    );
+                    const socialSettings = settings.filter(s => 
+                      s.key.startsWith('social_media_') || s.key === 'whatsapp_number'
+                    );
+                    const otherSettings = settings.filter(s => 
+                      !contactSettings.includes(s) && !socialSettings.includes(s)
+                    );
+
+                    return (
+                      <>
+                        {/* Social Media Section */}
+                        {(socialSettings.length > 0 || contactSettings.length > 0) && (
+                          <div className="space-y-6 pb-6 border-b border-gray-200">
+                            <h3 className="text-lg font-semibold text-gray-800">وسائل التواصل الاجتماعي</h3>
+                            {socialSettings.map((setting) => (
+                              <div key={setting.id} className="space-y-2">
+                                <Label htmlFor={setting.key} className="text-sm font-medium text-gray-700">
+                                  {setting.description || setting.key}
+                                  {setting.type === 'json' && (
+                                    <span className="text-xs text-gray-500 block mt-1">
+                                      {Array.isArray(setting.value) ? '(مصفوفة)' : '(JSON Format)'}
+                                    </span>
+                                  )}
+                                </Label>
+                                {renderSettingInput(setting)}
+                              </div>
+                            ))}
+                            
+                            {/* Contact Info at the bottom of social media section */}
+                            {contactSettings.length > 0 && (
+                              <>
+                                <div className="pt-4 mt-4 border-t border-gray-200">
+                                  <h4 className="text-sm font-medium text-gray-600 mb-4">معلومات الاتصال</h4>
+                                  {contactSettings.map((setting) => (
+                                    <div key={setting.id} className="space-y-2">
+                                      <Label htmlFor={setting.key} className="text-sm font-medium text-gray-700">
+                                        {setting.description || setting.key}
+                                        {setting.type === 'json' && (
+                                          <span className="text-xs text-gray-500 block mt-1">
+                                            {Array.isArray(setting.value) ? '(مصفوفة)' : '(JSON Format)'}
+                                          </span>
+                                        )}
+                                      </Label>
+                                      {renderSettingInput(setting)}
+                                    </div>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                          </div>
                         )}
-                      </Label>
-                      {renderSettingInput(setting)}
-                    </div>
-                  ))
+
+                        {/* Other Settings */}
+                        {otherSettings.length > 0 && (
+                          <div className="space-y-6">
+                            {otherSettings.map((setting) => (
+                              <div key={setting.id} className="space-y-2">
+                                <Label htmlFor={setting.key} className="text-sm font-medium text-gray-700">
+                                  {setting.description || setting.key}
+                                  {setting.type === 'json' && (
+                                    <span className="text-xs text-gray-500 block mt-1">
+                                      {Array.isArray(setting.value) ? '(مصفوفة)' : '(JSON Format)'}
+                                    </span>
+                                  )}
+                                </Label>
+                                {renderSettingInput(setting)}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()
                 )}
               </div>
 

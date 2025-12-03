@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Search,
@@ -33,6 +33,27 @@ interface Product {
   categoryIds?: number[];
   filterValues?: Record<string, any>;
 }
+
+// Helper function to format price without trailing zeros
+const formatPrice = (price: number | string): string => {
+  // Convert to number if it's a string
+  const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+  
+  // Check if it's a whole number
+  if (numPrice % 1 === 0) {
+    // Return as integer without decimals
+    return numPrice.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+  } else {
+    // Return with decimals but remove trailing zeros
+    return numPrice.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    }).replace(/\.?0+$/, '');
+  }
+};
 
 const Products = () => {
   const { addItem } = useCart();
@@ -231,12 +252,7 @@ const Products = () => {
     loadWishlist();
   }, []);
   
-  // Load products on initial mount (after categories/brands are loaded)
-  useEffect(() => {
-    if (!loading && (categories.length > 0 || brands.length > 0)) {
-      loadProducts(1, false);
-    }
-  }, []);
+  // Products will be loaded by the filters useEffect below
 
   // Read category_id and brand_id from URL and set selected values
   useEffect(() => {
@@ -610,8 +626,18 @@ const Products = () => {
     }
   };
 
+  // Track if initial load has happened
+  const initialLoadRef = useRef(false);
+  
   // Reload products when filters change (reset to page 1)
   useEffect(() => {
+    // Wait for categories/brands to be loaded before first load
+    if (!initialLoadRef.current && (categories.length === 0 && brands.length === 0)) {
+      return;
+    }
+    
+    initialLoadRef.current = true;
+    
     // Debounce to avoid too many API calls
     const timeoutId = setTimeout(() => {
       setProducts([]);
@@ -621,7 +647,7 @@ const Products = () => {
     }, 300);
     
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, selectedCategoryId, selectedSubcategory, selectedBrand, priceRange, sortBy, selectedFilters]);
+  }, [searchQuery, selectedCategoryId, selectedSubcategory, selectedBrand, priceRange, sortBy, selectedFilters, categories.length, brands.length]);
   
   // Infinity scroll observer - تحميل تلقائي عند التمرير
   useEffect(() => {
@@ -861,9 +887,9 @@ const Products = () => {
       </div>
 
       <div className="flex items-center gap-2 mb-2 md:mb-4">
-        <span className="text-lg md:text-xl font-bold text-brand-green">{product.price} ₪</span>
-        {product.originalPrice && product.originalPrice > 0 && (
-                  <span className="text-sm md:text-base text-gray-500 line-through">{product.originalPrice} ₪</span>
+        <span className="text-lg md:text-xl font-bold text-brand-green">{formatPrice(product.price)} ₪</span>
+        {product.originalPrice && product.originalPrice > 0 && product.originalPrice > product.price && (
+                  <span className="text-sm md:text-base text-gray-500 line-through">{formatPrice(product.originalPrice)} ₪</span>
                 )}
       </div>
 
@@ -937,7 +963,19 @@ const Products = () => {
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
           {/* Filters Sidebar */}
           <div className={`${showFilters ? 'block' : 'hidden'} lg:block w-full lg:w-80 space-y-6 ${showFilters ? 'mb-6' : ''} lg:sticky lg:top-28 lg:self-start lg:max-h-[calc(100vh-9rem)] lg:overflow-y-auto lg:scrollbar-hide`}>
-            <div className="bg-white p-6 rounded-lg shadow-sm">
+            {/* Mobile Overlay */}
+            {showFilters && (
+              <div 
+                className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+                onClick={() => setShowFilters(false)}
+              />
+            )}
+            
+            {/* Filters Panel */}
+            <div className={`lg:relative fixed lg:top-auto top-32 right-4 lg:right-auto h-[70vh] lg:h-auto w-[75vw] lg:w-auto max-w-xs lg:max-w-none z-50 lg:z-auto transform transition-transform duration-300 ease-in-out ${
+              showFilters ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
+            }`}>
+              <div className="bg-white h-full lg:h-auto p-4 sm:p-6 rounded-xl lg:rounded-lg shadow-2xl lg:shadow-sm overflow-y-auto">
               <h3 className="font-semibold text-lg mb-4">البحث والفلترة</h3>
               
               {/* Search */}
@@ -1265,6 +1303,7 @@ const Products = () => {
                 </div>
               </div>
             </div>
+            </div>
           </div>
 
           {/* Products Area */}
@@ -1273,14 +1312,6 @@ const Products = () => {
             <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => setShowFilters(!showFilters)}
-                    className="lg:hidden flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                  >
-                    <SlidersHorizontal className="w-4 h-4" />
-                    الفلاتر
-                  </button>
-                  
                   <span className="text-gray-600">
                     {productsToShow.length} منتج
                   </span>
@@ -1386,6 +1417,44 @@ const Products = () => {
           </div>
         </div>
       </div>
+
+      {/* Floating Filter Button - Mobile Only */}
+      {(() => {
+        // Check if any filters are applied
+        const hasActiveFilters = 
+          searchQuery.trim() !== "" ||
+          selectedCategoryId !== null ||
+          selectedSubcategory !== null ||
+          selectedBrand !== "الكل" ||
+          priceRange[0] !== 0 ||
+          priceRange[1] !== 50000 ||
+          Object.keys(selectedFilters).length > 0;
+
+        return (
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`lg:hidden fixed bottom-6 left-6 z-50 ${
+              hasActiveFilters 
+                ? 'bg-orange-500 hover:bg-orange-600' 
+                : 'bg-blue-600 hover:bg-blue-700'
+            } text-white p-4 rounded-full shadow-lg transition-all duration-300 hover:scale-110 relative flex items-center justify-center`}
+            style={{ position: 'fixed', bottom: '24px', left: '24px' }}
+            aria-label="فتح الفلاتر"
+          >
+            <SlidersHorizontal className="w-6 h-6 flex-shrink-0" />
+            {hasActiveFilters && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold animate-pulse">
+                !
+              </span>
+            )}
+            {showFilters && !hasActiveFilters && (
+              <span className="absolute -top-1 -right-1 bg-gray-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                ×
+              </span>
+            )}
+          </button>
+        );
+      })()}
     </div>
   );
 };

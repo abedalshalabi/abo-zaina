@@ -14,8 +14,10 @@ import {
   Settings,
   ChevronDown,
   ChevronRight,
-  Gift
+  Gift,
+  MessageSquare
 } from 'lucide-react';
+import { adminContactMessagesAPI } from '../services/adminApi';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -25,6 +27,7 @@ function AdminLayout({ children }: AdminLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [newMessagesCount, setNewMessagesCount] = useState(0);
 
   const handleLogout = () => {
     localStorage.removeItem('admin_token');
@@ -33,6 +36,30 @@ function AdminLayout({ children }: AdminLayoutProps) {
   };
 
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
+
+  // Fetch new messages count
+  useEffect(() => {
+    const fetchNewMessagesCount = async () => {
+      try {
+        const token = localStorage.getItem('admin_token');
+        if (!token) return;
+
+        const response = await adminContactMessagesAPI.getContactMessages({
+          status: 'new',
+          per_page: 1,
+          page: 1
+        });
+        setNewMessagesCount(response.meta?.total || 0);
+      } catch (error) {
+        console.error('Error fetching new messages count:', error);
+      }
+    };
+
+    fetchNewMessagesCount();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchNewMessagesCount, 30000);
+    return () => clearInterval(interval);
+  }, [location.pathname]);
 
   const menuItems = [
     {
@@ -75,6 +102,11 @@ function AdminLayout({ children }: AdminLayoutProps) {
       icon: Gift,
       path: '/admin/offers',
     },
+    {
+      title: 'رسائل الاتصال',
+      icon: MessageSquare,
+      path: '/admin/contact-messages',
+    },
   ];
 
   const settingsSubMenu = [
@@ -114,14 +146,21 @@ function AdminLayout({ children }: AdminLayoutProps) {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                  className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-colors ${
                     isActive(item.path)
                       ? 'bg-blue-50 text-blue-600 font-medium'
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  <item.icon className="w-5 h-5" />
-                  <span>{item.title}</span>
+                  <div className="flex items-center gap-3">
+                    <item.icon className="w-5 h-5" />
+                    <span>{item.title}</span>
+                  </div>
+                  {item.path === '/admin/contact-messages' && newMessagesCount > 0 && (
+                    <span className="bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                      {newMessagesCount > 99 ? '99+' : newMessagesCount}
+                    </span>
+                  )}
                 </Link>
               ))}
               
@@ -209,14 +248,21 @@ function AdminLayout({ children }: AdminLayoutProps) {
                   key={item.path}
                   to={item.path}
                   onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                  className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-colors ${
                     isActive(item.path)
                       ? 'bg-blue-50 text-blue-600 font-medium'
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  <item.icon className="w-5 h-5" />
-                  <span>{item.title}</span>
+                  <div className="flex items-center gap-3">
+                    <item.icon className="w-5 h-5" />
+                    <span>{item.title}</span>
+                  </div>
+                  {item.path === '/admin/contact-messages' && newMessagesCount > 0 && (
+                    <span className="bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                      {newMessagesCount > 99 ? '99+' : newMessagesCount}
+                    </span>
+                  )}
                 </Link>
               ))}
               

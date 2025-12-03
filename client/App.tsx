@@ -28,6 +28,7 @@ import AdminUserCreate from "./pages/AdminUserCreate";
 import AdminUserView from "./pages/AdminUserView";
 import AdminSiteSettings from "./pages/AdminSiteSettings";
 import AdminOffers from "./pages/AdminOffers";
+import AdminContactMessages from "./pages/AdminContactMessages";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import About from "./pages/About";
@@ -37,6 +38,7 @@ import Returns from "./pages/Returns";
 import Warranty from "./pages/Warranty";
 import Offers from "./pages/Offers";
 import CategoriesPage from "./pages/Categories";
+import BrandsPage from "./pages/Brands";
 import Product from "./pages/Product";
 import { CartProvider } from "./context/CartContext";
 import { AnimationProvider } from "./context/AnimationContext";
@@ -103,6 +105,10 @@ function App() {
           element={<CategoriesPage />} 
         />
         <Route 
+          path="/brands" 
+          element={<BrandsPage />} 
+        />
+        <Route 
           path="/login" 
           element={<Login />} 
         />
@@ -160,6 +166,7 @@ function App() {
         <Route path="/admin/reviews" element={<AdminReviews />} />
         <Route path="/admin/site-settings" element={<AdminSiteSettings />} />
         <Route path="/admin/offers" element={<AdminOffers />} />
+        <Route path="/admin/contact-messages" element={<AdminContactMessages />} />
 
         {/* Catch-all route */}
         <Route path="*" element={<NotFound />} />

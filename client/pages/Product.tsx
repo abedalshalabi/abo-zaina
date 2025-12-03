@@ -23,7 +23,7 @@ import { useCart } from "../context/CartContext";
 import { useAnimation } from "../context/AnimationContext";
 import Header from "../components/Header";
 import SEO from "../components/SEO";
-import { productsAPI, categoriesAPI } from "../services/api";
+import { productsAPI, categoriesAPI, settingsAPI } from "../services/api";
 import { STORAGE_BASE_URL } from "../config/env";
 
 interface ProductDetail {
@@ -120,6 +120,27 @@ const deriveBreadcrumbCategories = (
   return result;
 };
 
+// Helper function to format price without trailing zeros
+const formatPrice = (price: number | string): string => {
+  // Convert to number if it's a string
+  const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+  
+  // Check if it's a whole number
+  if (numPrice % 1 === 0) {
+    // Return as integer without decimals
+    return numPrice.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+  } else {
+    // Return with decimals but remove trailing zeros
+    return numPrice.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    }).replace(/\.?0+$/, '');
+  }
+};
+
 const Product = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -129,21 +150,36 @@ const Product = () => {
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const [isWishlisted, setIsWishlisted] = useState(false);
-  const [activeTab, setActiveTab] = useState<'description' | 'specifications' | 'reviews'>('description');
+  const [activeTab, setActiveTab] = useState<'description' | 'specifications'>('description');
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [breadcrumbCategories, setBreadcrumbCategories] = useState<{ main?: BreadcrumbCategory; sub?: BreadcrumbCategory }>({});
+  const [whatsappNumber, setWhatsappNumber] = useState<string>("");
+  const [headerSettings, setHeaderSettings] = useState<any>({});
+  const [showShareMenu, setShowShareMenu] = useState(false);
 
   useEffect(() => {
     const loadProduct = async () => {
       if (id) {
         try {
-          const [productResponse, categoriesResponse] = await Promise.all([
+          const [productResponse, categoriesResponse, settingsResponse] = await Promise.all([
             productsAPI.getProduct(Number(id)),
             categoriesAPI.getCategories().catch((error) => {
               console.error("Error loading categories for breadcrumb:", error);
               return { data: [] };
             }),
+            settingsAPI.getSettings('header').catch((error) => {
+              console.error("Error loading settings:", error);
+              return { data: {} };
+            }),
           ]);
+          
+          // Set WhatsApp number and header settings from settings
+          if (settingsResponse.data) {
+            if (settingsResponse.data.whatsapp_number) {
+              setWhatsappNumber(settingsResponse.data.whatsapp_number);
+            }
+            setHeaderSettings(settingsResponse.data);
+          }
 
           const apiProduct = productResponse.data;
           const categoriesData = categoriesResponse?.data || [];
@@ -276,8 +312,99 @@ const Product = () => {
 
   const handleQuantityChange = (change: number) => {
     const newQuantity = quantity + change;
-    if (newQuantity >= 1 && newQuantity <= (product?.stockCount || 1)) {
+    if (newQuantity >= 1) {
       setQuantity(newQuantity);
+    }
+  };
+
+  const handleWhatsAppOrder = () => {
+    if (!product) return;
+    
+    if (!whatsappNumber) {
+      alert('رقم الواتساب غير متوفر حالياً');
+      return;
+    }
+    
+    // Clean phone number (remove any non-numeric characters)
+    const phoneNumber = whatsappNumber.replace(/[^0-9]/g, '');
+    const productName = product.name;
+    const productPrice = formatPrice(product.price);
+    const productUrl = window.location.href;
+    const quantityText = quantity > 1 ? `الكمية: ${quantity}` : '';
+    
+    const message = `مرحباً، أريد طلب المنتج التالي:\n\n${productName}\nالسعر: ${productPrice} ₪\n${quantityText}\n\nرابط المنتج: ${productUrl}`;
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+    
+    window.open(whatsappUrl, '_blank');
+  };
+
+  const handleShare = async () => {
+    if (!product) return;
+
+    const productUrl = window.location.href;
+    const productName = product.name;
+    const productPrice = formatPrice(product.price);
+    const shareText = `${productName} - ${productPrice} ₪`;
+
+    // Check if Web Share API is available (mobile devices)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: productName,
+          text: shareText,
+          url: productUrl,
+        });
+        return;
+      } catch (err) {
+        // User cancelled or error occurred, fall back to share menu
+        if ((err as Error).name !== 'AbortError') {
+          console.log('Share failed:', err);
+        }
+      }
+    }
+
+    // Show share menu
+    setShowShareMenu(true);
+  };
+
+  const shareToPlatform = (platform: string) => {
+    if (!product) return;
+    
+    const productUrl = window.location.href;
+    const productName = product.name;
+    const productPrice = formatPrice(product.price);
+    const shareText = `${productName} - ${productPrice} ₪`;
+
+    setShowShareMenu(false);
+
+    switch (platform) {
+      case 'copy':
+        navigator.clipboard.writeText(productUrl).then(() => {
+          alert('تم نسخ رابط المنتج!');
+        }).catch(() => {
+          // Fallback for older browsers
+          const textArea = document.createElement('textarea');
+          textArea.value = productUrl;
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+          alert('تم نسخ رابط المنتج!');
+        });
+        break;
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(productUrl)}`, '_blank', 'width=600,height=400');
+        break;
+      case 'twitter':
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(productUrl)}`, '_blank', 'width=600,height=400');
+        break;
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodeURIComponent(shareText + ' ' + productUrl)}`, '_blank');
+        break;
+      case 'telegram':
+        window.open(`https://t.me/share/url?url=${encodeURIComponent(productUrl)}&text=${encodeURIComponent(shareText)}`, '_blank');
+        break;
     }
   };
 
@@ -337,9 +464,18 @@ const Product = () => {
 
   const siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
   const productUrl = `${siteUrl}/product/${product.id}`;
-  const productImage = product.images && product.images[0] 
-    ? (product.images[0].startsWith('http') ? product.images[0] : `${STORAGE_BASE_URL}/${product.images[0]}`)
-    : `${siteUrl}/placeholder.svg`;
+  // Ensure product image URL is absolute and properly formatted
+  let productImage = `${siteUrl}/placeholder.svg`;
+  if (product.images && product.images[0]) {
+    const img = product.images[0];
+    if (img.startsWith('http')) {
+      productImage = img;
+    } else if (img.startsWith('/')) {
+      productImage = `${STORAGE_BASE_URL}${img}`;
+    } else {
+      productImage = `${STORAGE_BASE_URL}/${img}`;
+    }
+  }
 
   // Structured Data for Product
   const structuredData = {
@@ -362,13 +498,6 @@ const Product = () => {
       "availability": product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       "itemCondition": "https://schema.org/NewCondition"
     },
-    "aggregateRating": product.reviews > 0 ? {
-      "@type": "AggregateRating",
-      "ratingValue": product.rating,
-      "reviewCount": product.reviews,
-      "bestRating": "5",
-      "worstRating": "1"
-    } : undefined,
     "sku": product.id.toString()
   };
 
@@ -482,24 +611,9 @@ const Product = () => {
 
           {/* Product Info */}
           <div className="space-y-6">
-            {/* Brand and Rating */}
+            {/* Brand */}
             <div className="flex items-center justify-between">
               <span className="text-blue-600 font-semibold text-lg">{product.brand}</span>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star 
-                      key={i} 
-                      className={`w-4 h-4 ${
-                        i < Math.floor(product.rating) 
-                          ? 'text-yellow-400 fill-current' 
-                          : 'text-gray-300'
-                      }`} 
-                    />
-                  ))}
-                </div>
-                <span className="text-sm text-gray-600">({product.reviews} تقييم)</span>
-              </div>
             </div>
 
             {/* Product Name */}
@@ -507,9 +621,9 @@ const Product = () => {
 
             {/* Price */}
             <div className="flex items-center gap-4">
-              <span className="text-3xl font-bold text-blue-600">{product.price.toLocaleString()} ₪</span>
-              {product.originalPrice && (
-                <span className="text-xl text-gray-500 line-through">{product.originalPrice.toLocaleString()} ₪</span>
+              <span className="text-3xl font-bold text-blue-600">{formatPrice(product.price)} ₪</span>
+              {product.originalPrice && product.originalPrice > 0 && product.originalPrice > product.price && (
+                <span className="text-xl text-gray-500 line-through">{formatPrice(product.originalPrice)} ₪</span>
               )}
             </div>
 
@@ -521,7 +635,7 @@ const Product = () => {
               <span className={`font-medium ${
                 product.inStock ? 'text-green-600' : 'text-red-600'
               }`}>
-                {product.inStock ? `متوفر (${product.stockCount} قطعة)` : 'غير متوفر'}
+                {product.inStock ? 'متوفر' : 'غير متوفر'}
               </span>
             </div>
 
@@ -554,34 +668,96 @@ const Product = () => {
                     <span className="px-4 py-2 font-medium">{quantity}</span>
                     <button 
                       onClick={() => handleQuantityChange(1)}
-                      disabled={quantity >= product.stockCount}
-                      className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="p-2 hover:bg-gray-100"
                     >
                       <Plus className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
 
-                <div className="flex gap-4">
+                <div className="flex flex-col gap-3">
+                  <div className="flex gap-4">
+                    <button 
+                      onClick={handleAddToCart}
+                      className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-semibold"
+                    >
+                      <ShoppingCart className="w-5 h-5" />
+                      إضافة للسلة
+                    </button>
+                    <button 
+                      onClick={() => setIsWishlisted(!isWishlisted)}
+                      className={`p-3 rounded-lg border-2 transition-colors ${
+                        isWishlisted 
+                          ? 'border-red-500 bg-red-50 text-red-500' 
+                          : 'border-gray-300 hover:border-red-300 hover:bg-red-50 hover:text-red-500'
+                      }`}
+                    >
+                      <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current' : ''}`} />
+                    </button>
+                    <div className="relative">
+                      <button 
+                        onClick={handleShare}
+                        className="p-3 rounded-lg border-2 border-gray-300 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-500 transition-colors"
+                        aria-label="مشاركة المنتج"
+                      >
+                        <Share2 className="w-5 h-5" />
+                      </button>
+                      
+                      {/* Share Menu */}
+                      {showShareMenu && (
+                        <>
+                          <div 
+                            className="fixed inset-0 z-40" 
+                            onClick={() => setShowShareMenu(false)}
+                          />
+                          <div className="absolute left-0 bottom-full mb-2 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50 min-w-[200px]">
+                            <button
+                              onClick={() => shareToPlatform('copy')}
+                              className="w-full text-right px-4 py-2 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                            >
+                              <span>📋</span>
+                              <span>نسخ الرابط</span>
+                            </button>
+                            <button
+                              onClick={() => shareToPlatform('facebook')}
+                              className="w-full text-right px-4 py-2 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                            >
+                              <span>📘</span>
+                              <span>Facebook</span>
+                            </button>
+                            <button
+                              onClick={() => shareToPlatform('twitter')}
+                              className="w-full text-right px-4 py-2 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                            >
+                              <span>🐦</span>
+                              <span>Twitter</span>
+                            </button>
+                            <button
+                              onClick={() => shareToPlatform('whatsapp')}
+                              className="w-full text-right px-4 py-2 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                            >
+                              <span>💬</span>
+                              <span>WhatsApp</span>
+                            </button>
+                            <button
+                              onClick={() => shareToPlatform('telegram')}
+                              className="w-full text-right px-4 py-2 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                            >
+                              <span>✈️</span>
+                              <span>Telegram</span>
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  
                   <button 
-                    onClick={handleAddToCart}
-                    className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-semibold"
+                    onClick={handleWhatsAppOrder}
+                    className="w-full bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg transition-colors flex items-center justify-center gap-2 font-semibold"
                   >
-                    <ShoppingCart className="w-5 h-5" />
-                    إضافة للسلة
-                  </button>
-                  <button 
-                    onClick={() => setIsWishlisted(!isWishlisted)}
-                    className={`p-3 rounded-lg border-2 transition-colors ${
-                      isWishlisted 
-                        ? 'border-red-500 bg-red-50 text-red-500' 
-                        : 'border-gray-300 hover:border-red-300 hover:bg-red-50 hover:text-red-500'
-                    }`}
-                  >
-                    <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current' : ''}`} />
-                  </button>
-                  <button className="p-3 rounded-lg border-2 border-gray-300 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-500 transition-colors">
-                    <Share2 className="w-5 h-5" />
+                    <MessageCircle className="w-5 h-5" />
+                    طلب عبر واتساب
                   </button>
                 </div>
               </div>
@@ -604,10 +780,10 @@ const Product = () => {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <RotateCcw className="w-6 h-6 text-orange-500" />
+                <Zap className="w-6 h-6 text-orange-500" />
                 <div>
-                  <p className="font-medium text-gray-800">إرجاع مجاني</p>
-                  <p className="text-sm text-gray-600">خلال 14 يوم</p>
+                  <p className="font-medium text-gray-800">دعم فني مجاني</p>
+                  <p className="text-sm text-gray-600">خدمة عملاء متاحة</p>
                 </div>
               </div>
             </div>
@@ -621,8 +797,7 @@ const Product = () => {
             <div className="flex">
               {[
                 { key: 'description', label: 'الوصف' },
-                { key: 'specifications', label: 'المواصفات' },
-                { key: 'reviews', label: 'التقييمات' }
+                { key: 'specifications', label: 'المواصفات' }
               ].map((tab) => (
                 <button
                   key={tab.key}
@@ -672,97 +847,6 @@ const Product = () => {
               </div>
             )}
 
-            {activeTab === 'reviews' && (
-              <div>
-                <h3 className="text-xl font-bold text-gray-800 mb-4">تقييمات العملاء</h3>
-                <div className="space-y-6">
-                  {/* Rating Summary */}
-                  <div className="flex items-center gap-6 p-4 bg-gray-50 rounded-lg">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-blue-600">{product.rating}</div>
-                      <div className="flex items-center gap-1 mt-1">
-                        {[...Array(5)].map((_, i) => (
-                          <Star 
-                            key={i} 
-                            className={`w-4 h-4 ${
-                              i < Math.floor(product.rating) 
-                                ? 'text-yellow-400 fill-current' 
-                                : 'text-gray-300'
-                            }`} 
-                          />
-                        ))}
-                      </div>
-                      <div className="text-sm text-gray-600 mt-1">{product.reviews} تقييم</div>
-                    </div>
-                    
-                    <div className="flex-1">
-                      {[5, 4, 3, 2, 1].map((stars) => (
-                        <div key={stars} className="flex items-center gap-2 mb-1">
-                          <span className="text-sm text-gray-600 w-8">{stars} ⭐</span>
-                          <div className="flex-1 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-yellow-400 h-2 rounded-full" 
-                              style={{ width: `${Math.random() * 80 + 10}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Sample Reviews */}
-                  <div className="space-y-4">
-                    {[
-                      {
-                        name: "أحمد محمد",
-                        rating: 5,
-                        date: "منذ أسبوع",
-                        comment: "منتج ممتاز وجودة عالية، أنصح به بشدة. التوصيل كان سريع والتعامل محترف."
-                      },
-                      {
-                        name: "فاطمة علي",
-                        rating: 4,
-                        date: "منذ أسبوعين",
-                        comment: "جيد جداً ولكن السعر مرتفع قليلاً. الجودة ممتازة والخدمة جيدة."
-                      },
-                      {
-                        name: "محمد السعيد",
-                        rating: 5,
-                        date: "منذ شهر",
-                        comment: "أفضل منتج اشتريته هذا العام. يستحق كل شيكل دفعته فيه."
-                      }
-                    ].map((review, index) => (
-                      <div key={index} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                              <span className="text-blue-600 font-semibold">{review.name.charAt(0)}</span>
-                            </div>
-                            <div>
-                              <p className="font-medium text-gray-800">{review.name}</p>
-                              <div className="flex items-center gap-1">
-                                {[...Array(5)].map((_, i) => (
-                                  <Star 
-                                    key={i} 
-                                    className={`w-3 h-3 ${
-                                      i < review.rating 
-                                        ? 'text-yellow-400 fill-current' 
-                                        : 'text-gray-300'
-                                    }`} 
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                          <span className="text-sm text-gray-500">{review.date}</span>
-                        </div>
-                        <p className="text-gray-700">{review.comment}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
@@ -772,22 +856,26 @@ const Product = () => {
             <h3 className="text-2xl font-bold mb-4">هل تحتاج مساعدة؟</h3>
             <p className="text-blue-100 mb-6">فريق خدمة العملاء جاهز لمساعدتك في أي وقت</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a 
-                href="tel:+966114567890" 
-                className="flex items-center gap-2 bg-white text-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 transition-colors font-semibold"
-              >
-                <Phone className="w-5 h-5" />
-                اتصل بنا: 966+ 11 456 7890
-              </a>
-              <a 
-                href="https://wa.me/966114567890" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors font-semibold"
-              >
-                <MessageCircle className="w-5 h-5" />
-                واتساب
-              </a>
+              {headerSettings.header_phone && (
+                <a 
+                  href={`tel:${headerSettings.header_phone.replace(/[^0-9+]/g, '')}`} 
+                  className="flex items-center gap-2 bg-white text-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 transition-colors font-semibold"
+                >
+                  <Phone className="w-5 h-5" />
+                  <span>اتصل بنا: <span dir="ltr" className="inline-block">{headerSettings.header_phone}</span></span>
+                </a>
+              )}
+              {whatsappNumber && (
+                <a 
+                  href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}`}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors font-semibold"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                  واتساب
+                </a>
+              )}
             </div>
           </div>
         </div>

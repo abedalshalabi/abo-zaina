@@ -28,7 +28,11 @@ const SEO = ({
   const siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
   const currentUrl = url || `${siteUrl}${location.pathname}${location.search}`;
   const canonicalUrl = canonical || currentUrl;
-  const fullImageUrl = image.startsWith('http') ? image : `${siteUrl}${image}`;
+  // Ensure image URL is absolute
+  let fullImageUrl = image;
+  if (!image.startsWith('http')) {
+    fullImageUrl = image.startsWith('/') ? `${siteUrl}${image}` : `${siteUrl}/${image}`;
+  }
 
   useEffect(() => {
     // Update document title
@@ -67,6 +71,11 @@ const SEO = ({
     setMetaTag('property', 'og:title', title);
     setMetaTag('property', 'og:description', description);
     setMetaTag('property', 'og:image', fullImageUrl);
+    setMetaTag('property', 'og:image:url', fullImageUrl);
+    setMetaTag('property', 'og:image:secure_url', fullImageUrl);
+    setMetaTag('property', 'og:image:type', 'image/jpeg');
+    setMetaTag('property', 'og:image:width', '1200');
+    setMetaTag('property', 'og:image:height', '630');
     setMetaTag('property', 'og:url', currentUrl);
     setMetaTag('property', 'og:type', type);
     setMetaTag('property', 'og:locale', 'ar_SA');

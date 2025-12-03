@@ -177,6 +177,21 @@ const CategoriesPage = () => {
     return roots;
   }, [categories]);
 
+  // Flatten all children recursively for mobile view
+  const flattenAllChildren = (node: CategoryNode): CategoryNode[] => {
+    const result: CategoryNode[] = [];
+    const traverse = (n: CategoryNode) => {
+      if (n.children && n.children.length > 0) {
+        n.children.forEach((child) => {
+          result.push(child);
+          traverse(child);
+        });
+      }
+    };
+    traverse(node);
+    return result;
+  };
+
   const renderChildLevel = (nodes: CategoryNode[], depth: number): React.ReactNode => {
     if (!nodes.length) {
       return null;
@@ -306,65 +321,130 @@ const CategoriesPage = () => {
             لا توجد تصنيفات متاحة حالياً.
           </div>
         ) : (
-          <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
-            {rootCategories.map((parent) => (
-              <div
-                key={parent.id}
-                className="group bg-white rounded-3xl shadow-md hover:shadow-xl transition-transform hover:-translate-y-1 border border-gray-100 px-8 py-10 flex flex-col items-center"
-              >
-                <div className="relative mb-6 flex flex-col items-center">
-                  <Link
-                    to={`/products?category_id=${parent.id}`}
-                    className="block w-32 h-32 sm:w-36 sm:h-36 rounded-full border-4 border-blue-100 overflow-hidden shadow-lg transition-transform duration-700 group-hover:scale-105"
-                  >
-                    {parent.image ? (
-                      <img
-                        src={parent.image}
-                        alt={parent.name}
-                        className="w-full h-full object-cover object-center"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 text-blue-500 text-4xl font-bold">
-                        {parent.name.charAt(0)}
-                      </div>
-                    )}
-                  </Link>
-                  {parent.children.length > 0 && (
-                    <div className="mt-4 w-0.5 h-10 bg-blue-200/80" />
-                  )}
-                </div>
-
-                <Link
-                  to={`/products?category_id=${parent.id}`}
-                  className="text-xl font-semibold text-gray-800 hover:text-blue-600 transition-colors"
-                >
-                  {parent.name}
-                </Link>
-                <p className="text-sm text-gray-500 text-center px-4 mt-2 leading-relaxed">
-                  {parent.description || "استكشف المنتجات والفئات الفرعية الخاصة بهذا القسم."}
-                </p>
-
-                {parent.children.length > 0 ? (
-                  renderChildLevel(parent.children, 1)
-                ) : (
-                  <div className="bg-gray-50 border border-dashed border-gray-200 rounded-2xl px-4 py-6 text-center text-sm text-gray-400 w-full mt-6">
-                    لا توجد فئات فرعية لهذا التصنيف حالياً.
-                  </div>
-                )}
-
-                <div className="flex justify-end w-full mt-8">
-                  <Link
-                    to={`/products?category_id=${parent.id}`}
-                    className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
-                  >
-                    تصفح جميع منتجات {parent.name}
-                    <ChevronRight className="w-4 h-4" />
-                  </Link>
-                </div>
+          <>
+            {/* Mobile View - All categories as circles */}
+            <div className="md:hidden">
+              <div className="flex flex-wrap justify-center gap-4">
+                {rootCategories.map((parent) => {
+                  const allChildren = flattenAllChildren(parent);
+                  return (
+                    <React.Fragment key={parent.id}>
+                      {/* Parent Category */}
+                      <Link
+                        to={`/products?category_id=${parent.id}`}
+                        className="flex flex-col items-center gap-2 group"
+                      >
+                        <div className="w-20 h-20 rounded-full border-2 border-blue-100 bg-white shadow-sm hover:shadow-md transition-all overflow-hidden flex items-center justify-center">
+                          {parent.image ? (
+                            <img
+                              src={parent.image}
+                              alt={parent.name}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-500 text-sm font-semibold">
+                              {parent.name.charAt(0)}
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-[10px] font-medium text-gray-600 text-center max-w-[90px] leading-tight">
+                          {parent.name}
+                        </span>
+                      </Link>
+                      {/* All Children Categories (all levels) */}
+                      {allChildren.map((child) => (
+                        <Link
+                          key={child.id}
+                          to={`/products?category_id=${child.id}`}
+                          className="flex flex-col items-center gap-2 group"
+                        >
+                          <div className="w-20 h-20 rounded-full border-2 border-blue-100 bg-white shadow-sm hover:shadow-md transition-all overflow-hidden flex items-center justify-center">
+                            {child.image ? (
+                              <img
+                                src={child.image}
+                                alt={child.name}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-500 text-sm font-semibold">
+                                {child.name.charAt(0)}
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-[10px] font-medium text-gray-600 text-center max-w-[90px] leading-tight">
+                            {child.name}
+                          </span>
+                        </Link>
+                      ))}
+                    </React.Fragment>
+                  );
+                })}
               </div>
-            ))}
-          </div>
+            </div>
+
+            {/* Desktop View - Grid layout */}
+            <div className="hidden md:grid gap-10 md:grid-cols-2 lg:grid-cols-3">
+              {rootCategories.map((parent) => (
+                <div
+                  key={parent.id}
+                  className="group bg-white rounded-3xl shadow-md hover:shadow-xl transition-transform hover:-translate-y-1 border border-gray-100 px-8 py-10 flex flex-col items-center"
+                >
+                  <div className="relative mb-6 flex flex-col items-center">
+                    <Link
+                      to={`/products?category_id=${parent.id}`}
+                      className="block w-32 h-32 sm:w-36 sm:h-36 rounded-full border-4 border-blue-100 overflow-hidden shadow-lg transition-transform duration-700 group-hover:scale-105"
+                    >
+                      {parent.image ? (
+                        <img
+                          src={parent.image}
+                          alt={parent.name}
+                          className="w-full h-full object-cover object-center"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 text-blue-500 text-4xl font-bold">
+                          {parent.name.charAt(0)}
+                        </div>
+                      )}
+                    </Link>
+                    {parent.children.length > 0 && (
+                      <div className="mt-4 w-0.5 h-10 bg-blue-200/80" />
+                    )}
+                  </div>
+
+                  <Link
+                    to={`/products?category_id=${parent.id}`}
+                    className="text-xl font-semibold text-gray-800 hover:text-blue-600 transition-colors"
+                  >
+                    {parent.name}
+                  </Link>
+                  <p className="text-sm text-gray-500 text-center px-4 mt-2 leading-relaxed">
+                    {parent.description || "استكشف المنتجات والفئات الفرعية الخاصة بهذا القسم."}
+                  </p>
+
+                  {parent.children.length > 0 ? (
+                    renderChildLevel(parent.children, 1)
+                  ) : (
+                    <div className="bg-gray-50 border border-dashed border-gray-200 rounded-2xl px-4 py-6 text-center text-sm text-gray-400 w-full mt-6">
+                      لا توجد فئات فرعية لهذا التصنيف حالياً.
+                    </div>
+                  )}
+
+                  <div className="flex justify-end w-full mt-8">
+                    <Link
+                      to={`/products?category_id=${parent.id}`}
+                      className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                    >
+                      تصفح جميع منتجات {parent.name}
+                      <ChevronRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </main>
     </div>

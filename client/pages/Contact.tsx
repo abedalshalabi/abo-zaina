@@ -3,7 +3,7 @@ import { Phone, Mail, MapPin, Clock, Send, MessageCircle, Headphones, Shield } f
 import { useState, useEffect } from "react";
 import Header from "../components/Header";
 import SEO from "../components/SEO";
-import { settingsAPI } from "../services/api";
+import { settingsAPI, contactAPI } from "../services/api";
 
 interface ContactSettings {
   contact_hero_title?: string;
@@ -27,6 +27,13 @@ interface ContactSettings {
     question: string;
     answer: string;
   }>;
+  contact_info?: ContactInfoItem[];
+}
+
+interface ContactInfoItem {
+  type: 'phone' | 'email' | 'address' | 'hours';
+  title: string;
+  details: string | string[];
 }
 
 const Contact = () => {
@@ -41,6 +48,8 @@ const Contact = () => {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -70,19 +79,39 @@ const Contact = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmitError("");
+    setSubmitSuccess(false);
     
-    // Simulate form submission
-    setTimeout(() => {
-      alert('تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.');
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        subject: '',
-        message: ''
+    try {
+      const response = await contactAPI.submitContact({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone || undefined,
+        subject: formData.subject,
+        message: formData.message,
       });
+
+      if (response.message) {
+        setSubmitSuccess(true);
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          subject: '',
+          message: ''
+        });
+        
+        // Hide success message after 5 seconds
+        setTimeout(() => {
+          setSubmitSuccess(false);
+        }, 5000);
+      }
+    } catch (error: any) {
+      console.error("Error submitting contact form:", error);
+      setSubmitError(error.message || 'حدث خطأ أثناء إرسال الرسالة. يرجى المحاولة مرة أخرى.');
+    } finally {
       setIsSubmitting(false);
-    }, 2000);
+    }
   };
 
   if (loading) {
@@ -380,6 +409,20 @@ const Contact = () => {
                     placeholder="اكتب رسالتك هنا..."
                   ></textarea>
                 </div>
+
+                {/* Success Message */}
+                {submitSuccess && (
+                  <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
+                    <p className="font-semibold">تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.</p>
+                  </div>
+                )}
+
+                {/* Error Message */}
+                {submitError && (
+                  <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+                    <p className="font-semibold">{submitError}</p>
+                  </div>
+                )}
 
                 <button
                   type="submit"

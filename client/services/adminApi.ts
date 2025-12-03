@@ -411,4 +411,27 @@ export const adminOffersAPI = {
   }
 };
 
+// Admin Contact Messages API
+export const adminContactMessagesAPI = {
+  async getContactMessages(filters: any = {}) {
+    const response = await adminApi.get('/v1/admin/contact-messages', { params: filters });
+    return response.data;
+  },
+  
+  async getContactMessage(id: string) {
+    const response = await adminApi.get(`/v1/admin/contact-messages/${id}`);
+    return response.data;
+  },
+  
+  async updateStatus(id: string, status: 'new' | 'read' | 'replied') {
+    const response = await adminApi.put(`/v1/admin/contact-messages/${id}/status`, { status });
+    return response.data;
+  },
+  
+  async deleteContactMessage(id: string) {
+    const response = await adminApi.delete(`/v1/admin/contact-messages/${id}`);
+    return response.data;
+  }
+};
+
 export default adminApi;

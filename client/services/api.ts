@@ -414,5 +414,33 @@ export const offersAPI = {
   },
 };
 
+// Contact API
+export const contactAPI = {
+  // Submit contact form
+  submitContact: async (formData: {
+    name: string;
+    email: string;
+    phone?: string;
+    subject: string;
+    message: string;
+  }) => {
+    const response = await fetch(`${API_BASE_URL}/contact`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify(formData),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'حدث خطأ أثناء إرسال الرسالة');
+    }
+    
+    return response.json();
+  },
+};
+
 // Export types
 export type { User, Product, CartItem, Order };

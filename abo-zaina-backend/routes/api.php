@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\SiteSettingController;
 use App\Http\Controllers\Api\OfferController;
+use App\Http\Controllers\Api\ContactController;
 
 /*
 |--------------------------------------------------------------------------
@@ -60,6 +61,9 @@ Route::prefix('v1')->group(function () {
     
     // Public site settings (for frontend)
     Route::get('/settings', [SiteSettingController::class, 'public']);
+    
+    // Contact form route
+    Route::post('/contact', [ContactController::class, 'store']);
     
     // Cart routes (session-based for guests)
     Route::get('/cart', [CartController::class, 'index']);
@@ -176,6 +180,12 @@ Route::prefix('v1')->group(function () {
               Route::put('/admin/offers/{offer}', [OfferController::class, 'update']);
               Route::post('/admin/offers/{offer}', [OfferController::class, 'update']); // For FormData with _method=PUT
               Route::delete('/admin/offers/{offer}', [OfferController::class, 'destroy']);
+
+              // Contact messages management
+              Route::get('/admin/contact-messages', [ContactController::class, 'index']);
+              Route::get('/admin/contact-messages/{id}', [ContactController::class, 'show']);
+              Route::put('/admin/contact-messages/{id}/status', [ContactController::class, 'updateStatus']);
+              Route::delete('/admin/contact-messages/{id}', [ContactController::class, 'destroy']);
           });
     });
 

@@ -153,19 +153,12 @@ const SimpleCarousel3D: React.FC<SimpleCarousel3DProps> = ({
   }, []);
 
   const isInitialMount = useRef(true);
+  const lastPlayedRealIndex = useRef<number | null>(null);
+  const soundTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Call onSlideChange when currentIndex updates
   useEffect(() => {
     if (children.length > 0) {
-      // Skip sound on initial mount
-      if (isInitialMount.current) {
-        isInitialMount.current = false;
-      } else if (!isResetting) {
-        // Play sound on index change (unless resetting)
-        playTickSound();
-      }
-
-      if (onSlideChange) {
       // حساب الفهرس الحقيقي بناءً على القائمة الممتدة
       // العناصر الحقيقية تبدأ من الفهرس 2
       let realIndex = currentIndex - 2;
@@ -182,10 +175,35 @@ const SimpleCarousel3D: React.FC<SimpleCarousel3DProps> = ({
       while (realIndex >= totalReal) {
         realIndex -= totalReal;
       }
+
+      // Skip sound on initial mount
+      if (isInitialMount.current) {
+        isInitialMount.current = false;
+        lastPlayedRealIndex.current = realIndex;
+      } else if (!isResetting && lastPlayedRealIndex.current !== realIndex) {
+        // Play sound only if realIndex changed and not resetting
+        // Clear any pending sound
+        if (soundTimeoutRef.current) {
+          clearTimeout(soundTimeoutRef.current);
+        }
+        // Debounce sound to prevent double play
+        soundTimeoutRef.current = setTimeout(() => {
+          playTickSound();
+          lastPlayedRealIndex.current = realIndex;
+        }, 50);
+      }
       
-      onSlideChange(realIndex);
+      if (onSlideChange) {
+        onSlideChange(realIndex);
       }
     }
+
+    // Cleanup timeout on unmount or index change
+    return () => {
+      if (soundTimeoutRef.current) {
+        clearTimeout(soundTimeoutRef.current);
+      }
+    };
   }, [currentIndex, children, onSlideChange, isResetting, playTickSound]);
 
   useEffect(() => {
@@ -335,8 +353,8 @@ const SimpleCarousel3D: React.FC<SimpleCarousel3DProps> = ({
     const spacing = isSmallMobile ? 15 : isMobile ? 30 : 50;
     const slideSize = slideWidth + spacing;
     
-    // Use a threshold (30% of slide size) before changing index for smoother transitions
-    const threshold = slideSize * 0.3;
+    // Use a threshold (25% of slide size) before changing index for smoother transitions
+    const threshold = slideSize * 0.25;
     const absDistance = Math.abs(dragDistance);
     
     // Only update index if we've moved past the threshold
@@ -351,9 +369,20 @@ const SimpleCarousel3D: React.FC<SimpleCarousel3DProps> = ({
     const adjustedSlidesMoved = rtl ? -slidesMoved : slidesMoved;
     let newIndex = dragStartIndex.current - adjustedSlidesMoved;
     
-    // Update index smoothly without triggering transition
+    // Limit to max 1 slide movement during drag to prevent jumping
+    const maxMovement = 1;
+    if (Math.abs(adjustedSlidesMoved) > maxMovement) {
+      newIndex = dragStartIndex.current + (adjustedSlidesMoved > 0 ? maxMovement : -maxMovement);
+    }
+    
+    // Update index smoothly without triggering transition (only for visual feedback)
+    // But limit the change to prevent double jumps
     if (newIndex !== currentIndex && newIndex >= 0 && newIndex < extendedChildren.length) {
-      setCurrentIndex(newIndex);
+      // Only update if the change is reasonable (max 1 slide difference)
+      const indexDiff = Math.abs(newIndex - dragStartIndex.current);
+      if (indexDiff <= 1) {
+        setCurrentIndex(newIndex);
+      }
     }
   }, [windowWidth, extendedChildren.length, currentIndex, rtl]);
 
@@ -393,6 +422,7 @@ const SimpleCarousel3D: React.FC<SimpleCarousel3DProps> = ({
     
     // Calculate distance and apply inertia
     const distance = dragCurrentX.current - dragStartX.current;
+    const absDistance = Math.abs(distance);
     const absVelocity = Math.abs(dragVelocity.current);
     
     // Get slide dimensions
@@ -408,18 +438,34 @@ const SimpleCarousel3D: React.FC<SimpleCarousel3DProps> = ({
     const slideWidth = currentDims.width;
     const spacing = currentDims.spacing;
     const slideSize = slideWidth + spacing;
+    const minDistanceThreshold = slideSize * 0.15; // 15% of slide size minimum
 
     // Calculate base shift from dragging (positional)
     // distance > 0 (Right Drag): RTL -> Next(+), LTR -> Prev(-)
     const rawSlidesDragged = Math.round(distance / slideSize);
     const positionalShift = rtl ? rawSlidesDragged : -rawSlidesDragged;
+    
+    // If movement is too small, don't move
+    if (absDistance < minDistanceThreshold && absVelocity < 0.1) {
+      setIsTransitioning(true);
+      setCurrentIndex(dragStartIndex.current);
+      setTimeout(() => {
+        setIsTransitioning(false);
+      }, 300);
+      
+      // Reset values
+      dragStartX.current = 0;
+      dragCurrentX.current = 0;
+      dragVelocity.current = 0;
+      dragStartIndex.current = currentIndex;
+      return;
+    }
 
-    // Calculate extra momentum from velocity (Flick)
+    // Calculate extra momentum from velocity (Flick) - only for fast swipes
     let momentum = 0;
-    if (absVelocity > 0.5) {
-      momentum = Math.min(Math.ceil(absVelocity * 1.5), 3);
-    } else if (absVelocity > 0.2) {
-      momentum = 1;
+    // Only apply momentum for very fast swipes to avoid double jumps
+    if (absVelocity > 1.0 && absDistance > slideSize * 0.5) {
+      momentum = 1; // Only add 1 extra slide for very fast swipes
     }
 
     // Apply direction to momentum
@@ -428,21 +474,22 @@ const SimpleCarousel3D: React.FC<SimpleCarousel3DProps> = ({
     const momentumShift = momentum * directionSign;
 
     // Total shift relative to START of drag
+    // Use positional shift as base, only add momentum if positional shift is 0 or 1
     let totalShift = positionalShift;
     
-    // Only add momentum if it pushes further in the same direction
-    if (momentum > 0) {
-       // If positional shift is 0 (didn't drag half way), but flicked hard, use momentum
-       if (positionalShift === 0) {
-         totalShift = momentumShift;
-       } else {
-         // If positional shift matches direction, ensure we go at least momentum distance
-         if ((positionalShift > 0 && momentumShift > 0) || (positionalShift < 0 && momentumShift < 0)) {
-            if (Math.abs(momentumShift) > Math.abs(positionalShift)) {
-                totalShift = momentumShift;
-            }
-         }
-       }
+    // Only add momentum if positional shift is small (0 or 1) to prevent double jumps
+    if (momentum > 0 && Math.abs(positionalShift) <= 1) {
+      // Only add momentum if it's in the same direction
+      if ((positionalShift >= 0 && momentumShift > 0) || (positionalShift <= 0 && momentumShift < 0)) {
+        totalShift = positionalShift + momentumShift;
+      } else {
+        totalShift = positionalShift;
+      }
+    }
+
+    // Limit total shift to max 1 slide to prevent jumping
+    if (Math.abs(totalShift) > 1) {
+      totalShift = totalShift > 0 ? 1 : -1;
     }
 
     let finalIndex = dragStartIndex.current + totalShift;
@@ -559,28 +606,47 @@ const SimpleCarousel3D: React.FC<SimpleCarousel3DProps> = ({
       
       // Calculate distance and apply inertia
       const distance = dragCurrentX.current - dragStartX.current;
+      const absDistance = Math.abs(distance);
       const absVelocity = Math.abs(dragVelocity.current);
       
-      // Determine how many slides to move based on velocity
+      // Get slide dimensions to calculate threshold
+      const isMobile = windowWidth <= 768;
+      const isSmallMobile = windowWidth <= 480;
+      const currentDims = isSmallMobile 
+        ? slideDimensions.smallMobile 
+        : isMobile 
+          ? slideDimensions.mobile 
+          : slideDimensions.desktop;
+      const slideSize = currentDims.width + currentDims.spacing;
+      const minDistanceThreshold = slideSize * 0.15; // 15% of slide size minimum
+      
+      // Determine how many slides to move based on distance and velocity
+      // Always move exactly 1 slide to prevent jumping
       let slidesToMove = 0;
       
-      if (absVelocity > 0.5) {
-        slidesToMove = Math.min(Math.ceil(absVelocity * 1.5), 4);
-      } else if (absVelocity > 0.2) {
-        slidesToMove = 2;
-      } else if (absVelocity > 0.05) {
-        slidesToMove = 1;
+      if (absDistance > minDistanceThreshold) {
+        // Calculate how many slides we've actually dragged
+        const slidesDragged = Math.abs(distance) / slideSize;
+        
+        // If we've dragged more than 0.5 slides, move 1 slide
+        if (slidesDragged >= 0.5) {
+          slidesToMove = 1;
+        } else if (absVelocity > 0.8 && absDistance > slideSize * 0.3) {
+          // Only for very fast swipes, move 1 slide
+          slidesToMove = 1;
+        }
       }
       
       // Apply movement based on direction with smooth single transition
-      if (slidesToMove > 0) {
+      if (slidesToMove > 0 && absDistance > minDistanceThreshold) {
         const direction = distance > 0 ? 1 : -1;
         
-        // Get current index from state (we need to access it from closure)
-        const currentIdx = currentIndex;
+        // Use dragStartIndex to prevent double jumps
+        const startIdx = dragStartIndex.current;
         
         // Calculate final index for smooth single transition with endless loop
-        let finalIndex = currentIdx + (direction * slidesToMove);
+        // Always move exactly 1 slide
+        let finalIndex = startIdx + (direction * 1);
         
         // Handle endless loop boundaries
         if (finalIndex < 0) finalIndex = 0;
@@ -609,9 +675,12 @@ const SimpleCarousel3D: React.FC<SimpleCarousel3DProps> = ({
           }
         }, 500);
       } else {
-        // If no movement needed, just ensure we're at the correct position
+        // If no movement needed or distance too small, snap back to original position
         setIsTransitioning(true);
-        setTimeout(() => setIsTransitioning(false), 300);
+        setCurrentIndex(dragStartIndex.current);
+        setTimeout(() => {
+          setIsTransitioning(false);
+        }, 300);
       }
       
       // Reset values
