@@ -524,12 +524,12 @@ const AdminProductView = () => {
             <div className="flex items-center space-x-2 space-x-reverse">
               <Calendar className="w-4 h-4 text-gray-400" />
               <span className="text-gray-600">تاريخ الإنشاء:</span>
-              <span className="font-medium">{new Date(product.created_at).toLocaleDateString('ar-SA')}</span>
+              <span className="font-medium">{new Date(product.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
             </div>
             <div className="flex items-center space-x-2 space-x-reverse">
               <Clock className="w-4 h-4 text-gray-400" />
               <span className="text-gray-600">آخر تحديث:</span>
-              <span className="font-medium">{new Date(product.updated_at).toLocaleDateString('ar-SA')}</span>
+              <span className="font-medium">{new Date(product.updated_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
             </div>
           </div>
         </div>

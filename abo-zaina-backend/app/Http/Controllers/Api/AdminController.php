@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Brand;
 use App\Models\Review;
+use App\Models\Product;
 use App\Http\Resources\OrderResource;
 use App\Http\Resources\BrandResource;
 use App\Http\Resources\ReviewResource;
@@ -13,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\QueryBuilder;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -64,7 +66,7 @@ class AdminController extends Controller
     public function orders(Request $request): JsonResponse
     {
         $query = QueryBuilder::for(Order::class)
-            ->with(['orderItems.product'])
+            ->with(['items.product'])
             ->allowedFilters([
                 'order_number',
                 'customer_name',
@@ -108,7 +110,7 @@ class AdminController extends Controller
     public function showOrder(Order $order): JsonResponse
     {
         return response()->json([
-            'data' => new OrderResource($order->load(['orderItems.product']))
+            'data' => new OrderResource($order->load(['items.product']))
         ]);
     }
 
@@ -123,12 +125,175 @@ class AdminController extends Controller
             'notes' => 'nullable|string',
         ]);
 
+        $oldStatus = $order->order_status;
+        $newStatus = $validated['order_status'] ?? $oldStatus;
+
+        // If order is being cancelled and wasn't cancelled before, restore stock
+        if ($newStatus === 'cancelled' && $oldStatus !== 'cancelled') {
+            $this->restoreOrderStock($order);
+        }
+
+        // If order is being changed from cancelled to any other status, deduct stock
+        if ($oldStatus === 'cancelled' && $newStatus !== 'cancelled') {
+            // Check stock availability first
+            $stockCheck = $this->checkOrderStockAvailability($order);
+            if (!$stockCheck['available']) {
+                return response()->json([
+                    'message' => $stockCheck['message']
+                ], 400);
+            }
+            
+            // Deduct stock
+            $this->deductOrderStock($order);
+        }
+
         $order->update($validated);
 
         return response()->json([
             'message' => 'Order updated successfully',
-            'data' => new OrderResource($order->load(['orderItems.product']))
+            'data' => new OrderResource($order->load(['items.product']))
         ]);
+    }
+
+    /**
+     * Admin: Get new orders count
+     */
+    public function newOrdersCount(): JsonResponse
+    {
+        $count = Order::where('order_status', 'pending')
+            ->where('created_at', '>=', now()->subDays(1))
+            ->count();
+
+        return response()->json([
+            'count' => $count
+        ]);
+    }
+
+    /**
+     * Admin: Delete order
+     */
+    public function deleteOrder(Order $order): JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            // Restore stock if order wasn't already cancelled
+            if ($order->order_status !== 'cancelled') {
+                $this->restoreOrderStock($order);
+            }
+
+            // Delete order items first (cascade should handle this, but being explicit)
+            $order->items()->delete();
+            
+            // Delete the order
+            $order->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Order deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error deleting order: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to delete order',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Restore stock for all items in an order
+     */
+    private function restoreOrderStock(Order $order): void
+    {
+        $order->load('items.product');
+
+        foreach ($order->items as $item) {
+            if ($item->product) {
+                $product = $item->product;
+                
+                // Restore stock quantity
+                $product->increment('stock_quantity', $item->quantity);
+                
+                // Decrease sales count
+                $product->decrement('sales_count', $item->quantity);
+                
+                // If stock_status is 'stock_based', update in_stock based on new stock_quantity
+                if ($product->stock_status === 'stock_based') {
+                    $product->refresh(); // Refresh to get updated stock_quantity
+                    $product->in_stock = $product->stock_quantity > 0;
+                    $product->save();
+                }
+            }
+        }
+    }
+
+    /**
+     * Check if there's enough stock for all items in an order
+     */
+    private function checkOrderStockAvailability(Order $order): array
+    {
+        $order->load('items.product');
+
+        foreach ($order->items as $item) {
+            if ($item->product) {
+                $product = $item->product;
+                
+                // Check stock availability based on stock_status
+                $isAvailable = false;
+                if ($product->stock_status === 'out_of_stock') {
+                    // For out_of_stock, product is not available regardless of stock quantity
+                    $isAvailable = false;
+                } elseif ($product->stock_status === 'in_stock' || $product->stock_status === 'on_backorder') {
+                    // For in_stock or on_backorder, allow purchase regardless of stock quantity (can go negative)
+                    $isAvailable = true;
+                } elseif ($product->stock_status === 'stock_based') {
+                    // For stock_based, check if stock_quantity is sufficient
+                    $isAvailable = $product->stock_quantity >= $item->quantity;
+                } else {
+                    // Default: not available
+                    $isAvailable = false;
+                }
+
+                if (!$isAvailable) {
+                    return [
+                        'available' => false,
+                        'message' => "Product {$product->name} is out of stock or insufficient quantity"
+                    ];
+                }
+            }
+        }
+
+        return ['available' => true];
+    }
+
+    /**
+     * Deduct stock for all items in an order
+     */
+    private function deductOrderStock(Order $order): void
+    {
+        $order->load('items.product');
+
+        foreach ($order->items as $item) {
+            if ($item->product) {
+                $product = $item->product;
+                
+                // Deduct stock quantity
+                $product->decrement('stock_quantity', $item->quantity);
+                
+                // Increase sales count
+                $product->increment('sales_count', $item->quantity);
+                
+                // If stock_status is 'stock_based', update in_stock based on new stock_quantity
+                if ($product->stock_status === 'stock_based') {
+                    $product->refresh(); // Refresh to get updated stock_quantity
+                    $product->in_stock = $product->stock_quantity > 0;
+                    $product->save();
+                }
+            }
+        }
     }
 
     /**

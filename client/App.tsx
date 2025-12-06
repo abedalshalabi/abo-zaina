@@ -10,6 +10,7 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminProducts from "./pages/AdminProducts";
 import AdminOrders from "./pages/AdminOrders";
+import AdminOrderView from "./pages/AdminOrderView";
 import AdminUsers from "./pages/AdminUsers";
 import AdminCategories from "./pages/AdminCategories";
 import AdminBrands from "./pages/AdminBrands";
@@ -29,6 +30,7 @@ import AdminUserView from "./pages/AdminUserView";
 import AdminSiteSettings from "./pages/AdminSiteSettings";
 import AdminOffers from "./pages/AdminOffers";
 import AdminContactMessages from "./pages/AdminContactMessages";
+import AdminCities from "./pages/AdminCities";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import About from "./pages/About";
@@ -151,6 +153,7 @@ function App() {
         <Route path="/admin/products/:id" element={<AdminProductView />} />
         <Route path="/admin/products/:id/edit" element={<AdminProductEdit />} />
         <Route path="/admin/orders" element={<AdminOrders />} />
+        <Route path="/admin/orders/:id" element={<AdminOrderView />} />
         <Route path="/admin/users" element={<AdminUsers />} />
         <Route path="/admin/users/create" element={<AdminUserCreate />} />
         <Route path="/admin/users/:id" element={<AdminUserView />} />
@@ -167,6 +170,7 @@ function App() {
         <Route path="/admin/site-settings" element={<AdminSiteSettings />} />
         <Route path="/admin/offers" element={<AdminOffers />} />
         <Route path="/admin/contact-messages" element={<AdminContactMessages />} />
+        <Route path="/admin/cities" element={<AdminCities />} />
 
         {/* Catch-all route */}
         <Route path="*" element={<NotFound />} />

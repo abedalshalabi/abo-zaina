@@ -426,7 +426,7 @@ const AdminReviews = () => {
                         <div className="flex items-center">
                           <Calendar className="w-4 h-4 text-gray-400 mr-2" />
                           <div className="text-sm text-gray-900">
-                            {new Date(review.created_at).toLocaleDateString('ar-SA')}
+                            {new Date(review.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                           </div>
                         </div>
                       </td>

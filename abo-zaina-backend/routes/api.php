@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\SiteSettingController;
 use App\Http\Controllers\Api\OfferController;
 use App\Http\Controllers\Api\ContactController;
+use App\Http\Controllers\Api\AdminCityController;
 
 /*
 |--------------------------------------------------------------------------
@@ -58,6 +59,15 @@ Route::prefix('v1')->group(function () {
     // Public brand routes
     Route::get('/brands', [CategoryController::class, 'brands']);
     Route::get('/brands/{brand}', [CategoryController::class, 'showBrand']);
+    
+    // Public cities routes
+    Route::get('/cities', function () {
+        $cities = \App\Models\City::where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+        return response()->json(['data' => $cities]);
+    });
     
     // Public site settings (for frontend)
     Route::get('/settings', [SiteSettingController::class, 'public']);
@@ -155,10 +165,19 @@ Route::prefix('v1')->group(function () {
               Route::put('/admin/brands/{brand}', [AdminController::class, 'updateBrand']);
               Route::delete('/admin/brands/{brand}', [AdminController::class, 'destroyBrand']);
 
+              // City management
+              Route::get('/admin/cities', [AdminCityController::class, 'index']);
+              Route::post('/admin/cities', [AdminCityController::class, 'store']);
+              Route::get('/admin/cities/{city}', [AdminCityController::class, 'show']);
+              Route::put('/admin/cities/{city}', [AdminCityController::class, 'update']);
+              Route::delete('/admin/cities/{city}', [AdminCityController::class, 'destroy']);
+
               // Order management
               Route::get('/admin/orders', [AdminController::class, 'orders']);
+              Route::get('/admin/orders/new-count', [AdminController::class, 'newOrdersCount']);
               Route::get('/admin/orders/{order}', [AdminController::class, 'showOrder']);
               Route::put('/admin/orders/{order}', [AdminController::class, 'updateOrder']);
+              Route::delete('/admin/orders/{order}', [AdminController::class, 'deleteOrder']);
 
               // Site Settings management
               Route::get('/admin/settings', [SiteSettingController::class, 'index']);

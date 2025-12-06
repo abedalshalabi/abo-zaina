@@ -20,8 +20,8 @@ return new class extends Migration
             $table->string('customer_phone');
             $table->string('customer_city');
             $table->string('customer_district');
-            $table->string('customer_street');
-            $table->string('customer_building');
+            $table->string('customer_street')->nullable();
+            $table->string('customer_building')->nullable();
             $table->text('customer_additional_info')->nullable();
             $table->decimal('subtotal', 10, 2);
             $table->decimal('shipping_cost', 10, 2)->default(0);

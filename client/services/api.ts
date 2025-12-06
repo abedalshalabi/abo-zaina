@@ -273,14 +273,27 @@ export const ordersAPI = {
     customer_additional_info?: string;
     payment_method: string;
     notes?: string;
+    items: Array<{
+      product_id: number;
+      quantity: number;
+      price: number;
+    }>;
   }) => {
     const response = await fetch(`${API_BASE_URL}/orders`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
+      credentials: 'include', // Include session cookie
       body: JSON.stringify(orderData),
     });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'فشل في إنشاء الطلب');
+    }
+    
     return response.json();
   },
 
@@ -438,6 +451,17 @@ export const contactAPI = {
       throw new Error(error.message || 'حدث خطأ أثناء إرسال الرسالة');
     }
     
+    return response.json();
+  },
+};
+
+// Cities API (public)
+export const citiesAPI = {
+  getCities: async () => {
+    const response = await fetch(`${API_BASE_URL}/cities`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch cities');
+    }
     return response.json();
   },
 };

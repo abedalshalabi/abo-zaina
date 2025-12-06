@@ -15,9 +15,10 @@ import {
   ChevronDown,
   ChevronRight,
   Gift,
-  MessageSquare
+  MessageSquare,
+  MapPin
 } from 'lucide-react';
-import { adminContactMessagesAPI } from '../services/adminApi';
+import { adminContactMessagesAPI, adminOrdersAPI } from '../services/adminApi';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -28,6 +29,7 @@ function AdminLayout({ children }: AdminLayoutProps) {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [newMessagesCount, setNewMessagesCount] = useState(0);
+  const [newOrdersCount, setNewOrdersCount] = useState(0);
 
   const handleLogout = () => {
     localStorage.removeItem('admin_token');
@@ -55,9 +57,25 @@ function AdminLayout({ children }: AdminLayoutProps) {
       }
     };
 
+    const fetchNewOrdersCount = async () => {
+      try {
+        const token = localStorage.getItem('admin_token');
+        if (!token) return;
+
+        const response = await adminOrdersAPI.getNewOrdersCount();
+        setNewOrdersCount(response.count || 0);
+      } catch (error) {
+        console.error('Error fetching new orders count:', error);
+      }
+    };
+
     fetchNewMessagesCount();
+    fetchNewOrdersCount();
     // Refresh every 30 seconds
-    const interval = setInterval(fetchNewMessagesCount, 30000);
+    const interval = setInterval(() => {
+      fetchNewMessagesCount();
+      fetchNewOrdersCount();
+    }, 30000);
     return () => clearInterval(interval);
   }, [location.pathname]);
 
@@ -86,6 +104,11 @@ function AdminLayout({ children }: AdminLayoutProps) {
       title: 'الطلبات',
       icon: ShoppingCart,
       path: '/admin/orders',
+    },
+    {
+      title: 'المدن',
+      icon: MapPin,
+      path: '/admin/cities',
     },
     {
       title: 'المستخدمين',
@@ -159,6 +182,11 @@ function AdminLayout({ children }: AdminLayoutProps) {
                   {item.path === '/admin/contact-messages' && newMessagesCount > 0 && (
                     <span className="bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                       {newMessagesCount > 99 ? '99+' : newMessagesCount}
+                    </span>
+                  )}
+                  {item.path === '/admin/orders' && newOrdersCount > 0 && (
+                    <span className="bg-green-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                      {newOrdersCount > 99 ? '99+' : newOrdersCount}
                     </span>
                   )}
                 </Link>
@@ -261,6 +289,11 @@ function AdminLayout({ children }: AdminLayoutProps) {
                   {item.path === '/admin/contact-messages' && newMessagesCount > 0 && (
                     <span className="bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                       {newMessagesCount > 99 ? '99+' : newMessagesCount}
+                    </span>
+                  )}
+                  {item.path === '/admin/orders' && newOrdersCount > 0 && (
+                    <span className="bg-green-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                      {newOrdersCount > 99 ? '99+' : newOrdersCount}
                     </span>
                   )}
                 </Link>

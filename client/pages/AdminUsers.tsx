@@ -403,7 +403,7 @@ const AdminUsers = () => {
                           <Calendar className="w-4 h-4 text-gray-400 mr-2" />
                           <div className="text-sm text-gray-900">
                             {user.last_login_at 
-                              ? new Date(user.last_login_at).toLocaleDateString('ar-SA')
+                              ? new Date(user.last_login_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
                               : "لم يسجل دخول"
                             }
                           </div>

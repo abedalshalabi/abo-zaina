@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { adminDashboardAPI, adminContactMessagesAPI } from "../services/adminApi";
+import { adminDashboardAPI, adminContactMessagesAPI, adminOrdersAPI } from "../services/adminApi";
 import AdminLayout from "../components/AdminLayout";
 import {
   Users,
@@ -62,6 +62,7 @@ const AdminDashboard = () => {
   const [error, setError] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [newMessagesCount, setNewMessagesCount] = useState(0);
+  const [newOrdersCount, setNewOrdersCount] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -73,6 +74,15 @@ const AdminDashboard = () => {
 
     fetchDashboardData();
     fetchNewMessagesCount();
+    fetchNewOrdersCount();
+    
+    // Poll for new orders and messages every 30 seconds
+    const interval = setInterval(() => {
+      fetchNewMessagesCount();
+      fetchNewOrdersCount();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, [navigate]);
 
   const fetchNewMessagesCount = async () => {
@@ -85,6 +95,15 @@ const AdminDashboard = () => {
       setNewMessagesCount(response.meta?.total || 0);
     } catch (error) {
       console.error('Error fetching new messages count:', error);
+    }
+  };
+
+  const fetchNewOrdersCount = async () => {
+    try {
+      const response = await adminOrdersAPI.getNewOrdersCount();
+      setNewOrdersCount(response.count || 0);
+    } catch (error) {
+      console.error('Error fetching new orders count:', error);
     }
   };
 
@@ -169,6 +188,32 @@ const AdminDashboard = () => {
   return (
     <AdminLayout>
       <div className="p-6">
+          {/* New Orders Alert */}
+          {newOrdersCount > 0 && (
+            <div className="mb-6 bg-green-50 border-r-4 border-green-600 rounded-lg p-4 animate-pulse">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-green-600 rounded-full p-2">
+                    <ShoppingCart className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">
+                      لديك {newOrdersCount} {newOrdersCount === 1 ? 'طلب جديد' : 'طلبات جديدة'}
+                    </h3>
+                    <p className="text-sm text-gray-600">يوجد طلبات جديدة تحتاج إلى مراجعة</p>
+                  </div>
+                </div>
+                <Link
+                  to="/admin/orders?status=pending"
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  عرض الطلبات
+                </Link>
+              </div>
+            </div>
+          )}
+
           {/* New Messages Alert */}
           {newMessagesCount > 0 && (
             <div className="mb-6 bg-blue-50 border-r-4 border-blue-600 rounded-lg p-4">

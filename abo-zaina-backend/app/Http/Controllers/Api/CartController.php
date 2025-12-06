@@ -51,7 +51,23 @@ class CartController extends Controller
 
         $product = Product::findOrFail($validated['product_id']);
 
-        if (!$product->in_stock || $product->stock_quantity < $validated['quantity']) {
+        // Check stock availability based on stock_status
+        $isAvailable = false;
+        if ($product->stock_status === 'out_of_stock') {
+            // For out_of_stock, product is not available regardless of stock quantity
+            $isAvailable = false;
+        } elseif ($product->stock_status === 'in_stock' || $product->stock_status === 'on_backorder') {
+            // For in_stock or on_backorder, allow purchase regardless of stock quantity (can go negative)
+            $isAvailable = true;
+        } elseif ($product->stock_status === 'stock_based') {
+            // For stock_based, check if stock_quantity is sufficient
+            $isAvailable = $product->stock_quantity >= $validated['quantity'];
+        } else {
+            // Default: not available
+            $isAvailable = false;
+        }
+
+        if (!$isAvailable) {
             return response()->json([
                 'message' => 'Product is out of stock or insufficient quantity'
             ], 400);
@@ -107,7 +123,23 @@ class CartController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        if (!$cart->product->in_stock || $cart->product->stock_quantity < $validated['quantity']) {
+        // Check stock availability based on stock_status
+        $isAvailable = false;
+        if ($cart->product->stock_status === 'out_of_stock') {
+            // For out_of_stock, product is not available regardless of stock quantity
+            $isAvailable = false;
+        } elseif ($cart->product->stock_status === 'in_stock' || $cart->product->stock_status === 'on_backorder') {
+            // For in_stock or on_backorder, allow purchase regardless of stock quantity (can go negative)
+            $isAvailable = true;
+        } elseif ($cart->product->stock_status === 'stock_based') {
+            // For stock_based, check if stock_quantity is sufficient
+            $isAvailable = $cart->product->stock_quantity >= $validated['quantity'];
+        } else {
+            // Default: not available
+            $isAvailable = false;
+        }
+
+        if (!$isAvailable) {
             return response()->json([
                 'message' => 'Product is out of stock or insufficient quantity'
             ], 400);

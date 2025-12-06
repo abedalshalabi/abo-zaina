@@ -38,6 +38,7 @@ interface ProductDetail {
   brand: string;
   discount?: number;
   inStock: boolean;
+  stockStatus: string;
   stockCount: number;
   description: string;
   features: string[];
@@ -256,7 +257,10 @@ const Product = () => {
             category: apiProduct.category?.name || '',
             brand: apiProduct.brand?.name || '',
             discount: apiProduct.discount_percentage,
-            inStock: apiProduct.in_stock || apiProduct.stock_quantity > 0,
+            inStock: apiProduct.stock_status === 'stock_based' 
+              ? (apiProduct.stock_quantity || 0) > 0
+              : (apiProduct.stock_status === 'in_stock' || (apiProduct.in_stock && apiProduct.stock_status !== 'out_of_stock')),
+            stockStatus: apiProduct.stock_status || 'in_stock',
             stockCount: apiProduct.stock_quantity || 0,
             description: apiProduct.description || '',
             features: apiProduct.features || [],
@@ -630,12 +634,24 @@ const Product = () => {
             {/* Stock Status */}
             <div className="flex items-center gap-2">
               <div className={`w-3 h-3 rounded-full ${
-                product.inStock ? 'bg-green-500' : 'bg-red-500'
+                product.stockStatus === 'stock_based' 
+                  ? (product.stockCount > 0 ? 'bg-green-500' : 'bg-red-500')
+                  : (product.stockStatus === 'in_stock' ? 'bg-green-500' : 
+                     product.stockStatus === 'out_of_stock' ? 'bg-red-500' : 
+                     'bg-orange-500')
               }`}></div>
               <span className={`font-medium ${
-                product.inStock ? 'text-green-600' : 'text-red-600'
+                product.stockStatus === 'stock_based'
+                  ? (product.stockCount > 0 ? 'text-green-600' : 'text-red-600')
+                  : (product.stockStatus === 'in_stock' ? 'text-green-600' : 
+                     product.stockStatus === 'out_of_stock' ? 'text-red-600' : 
+                     'text-orange-600')
               }`}>
-                {product.inStock ? 'متوفر' : 'غير متوفر'}
+                {product.stockStatus === 'stock_based'
+                  ? (product.stockCount > 0 ? 'متوفر' : 'نفذت الكمية')
+                  : (product.stockStatus === 'in_stock' ? 'متوفر' : 
+                     product.stockStatus === 'out_of_stock' ? 'غير متوفر' : 
+                     'طلب مسبق')}
               </span>
             </div>
 

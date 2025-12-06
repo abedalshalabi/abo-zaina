@@ -5,12 +5,10 @@ import {
   Search,
   Filter,
   Eye,
-  Edit,
   ArrowLeft,
   ArrowRight,
   Package,
   User,
-  DollarSign,
   Calendar,
   Clock,
   CheckCircle,
@@ -18,9 +16,11 @@ import {
   AlertCircle,
   Truck,
   CreditCard,
-  MoreHorizontal
+  MoreHorizontal,
+  Trash2
 } from "lucide-react";
 import { adminOrdersAPI } from "../services/adminApi";
+import Swal from "sweetalert2";
 
 interface Order {
   id: number;
@@ -115,6 +115,40 @@ const AdminOrders = () => {
       ));
     } catch (err: any) {
       setError(err.response?.data?.message || "فشل في تحديث حالة الطلب");
+    }
+  };
+
+  const handleDeleteOrder = async (orderId: number, orderNumber: string) => {
+    const result = await Swal.fire({
+      title: 'هل أنت متأكد؟',
+      text: `سيتم حذف الطلب #${orderNumber} نهائياً. لا يمكن التراجع عن هذا الإجراء.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'نعم، احذف',
+      cancelButtonText: 'إلغاء',
+      reverseButtons: true
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await adminOrdersAPI.deleteOrder(orderId.toString());
+        setOrders(orders.filter(order => order.id !== orderId));
+        Swal.fire({
+          icon: 'success',
+          title: 'تم الحذف',
+          text: 'تم حذف الطلب بنجاح',
+          confirmButtonText: 'حسناً'
+        });
+      } catch (err: any) {
+        Swal.fire({
+          icon: 'error',
+          title: 'خطأ',
+          text: err.response?.data?.message || 'فشل في حذف الطلب',
+          confirmButtonText: 'حسناً'
+        });
+      }
     }
   };
 
@@ -305,7 +339,6 @@ const AdminOrders = () => {
                       
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <DollarSign className="w-5 h-5 text-gray-400 mr-3" />
                           <div>
                             <div className="text-sm font-medium text-gray-900">
                               {order.total.toLocaleString()} شيكل
@@ -347,10 +380,17 @@ const AdminOrders = () => {
                           <Calendar className="w-5 h-5 text-gray-400 mr-3" />
                           <div>
                             <div className="text-sm text-gray-900">
-                              {new Date(order.created_at).toLocaleDateString('ar-SA')}
+                              {new Date(order.created_at).toLocaleDateString('en-US', { 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                              })}
                             </div>
                             <div className="text-sm text-gray-500">
-                              {new Date(order.created_at).toLocaleTimeString('ar-SA')}
+                              {new Date(order.created_at).toLocaleTimeString('en-US', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
                             </div>
                           </div>
                         </div>
@@ -361,20 +401,17 @@ const AdminOrders = () => {
                           <button
                             onClick={() => navigate(`/admin/orders/${order.id}`)}
                             className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg"
+                            title="عرض/تعديل الطلب"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => navigate(`/admin/orders/${order.id}/edit`)}
-                            className="text-green-600 hover:text-green-900 p-2 hover:bg-green-50 rounded-lg"
+                            onClick={() => handleDeleteOrder(order.id, order.order_number)}
+                            className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg"
+                            title="حذف الطلب"
                           >
-                            <Edit className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
-                          <div className="relative">
-                            <button className="text-gray-600 hover:text-gray-900 p-2 hover:bg-gray-50 rounded-lg">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </button>
-                          </div>
                         </div>
                       </td>
                     </tr>

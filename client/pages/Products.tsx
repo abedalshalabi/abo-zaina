@@ -29,6 +29,7 @@ interface Product {
   brand: string;
   discount?: number;
   inStock: boolean;
+  stockStatus?: string;
   categoryId?: number;
   categoryIds?: number[];
   filterValues?: Record<string, any>;
@@ -530,7 +531,10 @@ const Products = () => {
           category: product.category?.name || '',
           brand: product.brand?.name || '',
           discount: product.discount_percentage,
-          inStock: product.in_stock !== false,
+          inStock: product.stock_status === 'stock_based'
+            ? (product.stock_quantity || 0) > 0
+            : (product.stock_status === 'in_stock' || (product.in_stock !== false && product.stock_status !== 'out_of_stock')),
+          stockStatus: product.stock_status || 'in_stock',
           categoryId:
             normalizedPrimaryCategoryId !== undefined && !Number.isNaN(normalizedPrimaryCategoryId)
               ? normalizedPrimaryCategoryId

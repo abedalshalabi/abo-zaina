@@ -354,6 +354,7 @@ const AdminProductCreate: React.FC = () => {
       uploadFormData.append('cost_price', String(Number(formData.cost_price) || 0));
       uploadFormData.append('discount_percentage', String(Number(formData.discount_percentage) || 0));
       uploadFormData.append('stock_quantity', String(Number(formData.stock_quantity)));
+      uploadFormData.append('stock_status', formData.stock_status);
       uploadFormData.append('weight', String(Number(formData.weight) || 0));
       uploadFormData.append('sort_order', String(Number(formData.sort_order) || 0));
       uploadFormData.append('rating', String(Number(formData.rating) || 0));
@@ -830,6 +831,7 @@ const AdminProductCreate: React.FC = () => {
                       <SelectItem value="in_stock">متوفر</SelectItem>
                       <SelectItem value="out_of_stock">غير متوفر</SelectItem>
                       <SelectItem value="on_backorder">طلب مسبق</SelectItem>
+                      <SelectItem value="stock_based">حسب الكمية المتوفرة</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

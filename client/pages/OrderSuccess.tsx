@@ -1,9 +1,50 @@
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { CheckCircle, Home, Package, Phone } from "lucide-react";
 import Header from "../components/Header";
+import { settingsAPI } from "../services/api";
 
 const OrderSuccess = () => {
-  const orderNumber = `ORD-${Date.now()}`;
+  const location = useLocation();
+  const orderData = location.state?.order || location.state?.orderData;
+  const [headerPhone, setHeaderPhone] = useState<string>("");
+  
+  // Fetch header settings for phone number
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const settingsResponse = await settingsAPI.getSettings('header');
+        if (settingsResponse.data?.header_phone) {
+          setHeaderPhone(settingsResponse.data.header_phone);
+        }
+      } catch (error) {
+        console.error("Error fetching header settings:", error);
+      }
+    };
+    fetchSettings();
+  }, []);
+  
+  // Debug: Log order data
+  console.log('Order Success - Order Data:', orderData);
+  console.log('Order Success - Location State:', location.state);
+  
+  // Extract order details with fallbacks
+  const orderNumber = orderData?.order_number || `ORD-${Date.now()}`;
+  const paymentMethod = orderData?.payment_method === 'cod' ? 'الدفع عند الاستلام' : orderData?.payment_method || 'الدفع عند الاستلام';
+  const orderStatus = orderData?.order_status === 'pending' ? 'قيد التحضير' : 
+                     orderData?.order_status === 'processing' ? 'قيد المعالجة' :
+                     orderData?.order_status === 'shipped' ? 'تم الشحن' :
+                     orderData?.order_status === 'delivered' ? 'تم التسليم' :
+                     orderData?.order_status === 'cancelled' ? 'ملغي' :
+                     orderData?.order_status || 'قيد التحضير';
+  
+  const subtotal = Number(orderData?.subtotal) || 0;
+  const shippingCost = Number(orderData?.shipping_cost) || 0;
+  const total = Number(orderData?.total) || 0;
+  const items = orderData?.items || [];
+  
+  // Get delivery time from city if available (we need to fetch this from cities API or store it in order)
+  const deliveryTime = 2; // Default, can be enhanced later
 
   return (
     <div className="min-h-screen bg-gray-50 arabic">
@@ -29,21 +70,79 @@ const OrderSuccess = () => {
             </div>
 
             <div className="space-y-4 text-right">
-              <div className="flex justify-between py-2 border-b">
-                <span className="font-semibold">رقم الطلب:</span>
-                <span className="text-brand-blue font-mono">{orderNumber}</span>
+              <div className="flex justify-between py-3 border-b">
+                <span className="font-semibold text-gray-700">رقم الطلب:</span>
+                <span className="text-brand-blue font-mono font-bold">{orderNumber}</span>
               </div>
-              <div className="flex justify-between py-2 border-b">
-                <span className="font-semibold">طريقة الدفع:</span>
-                <span>الدفع عند الاستلام</span>
+              
+              {orderData?.customer_name && (
+                <div className="flex justify-between py-3 border-b">
+                  <span className="font-semibold text-gray-700">اسم العميل:</span>
+                  <span className="text-gray-900">{orderData.customer_name}</span>
+                </div>
+              )}
+              
+              {orderData?.customer_phone && (
+                <div className="flex justify-between py-3 border-b">
+                  <span className="font-semibold text-gray-700">رقم الهاتف:</span>
+                  <span className="text-gray-900" dir="ltr">{orderData.customer_phone}</span>
+                </div>
+              )}
+              
+              {orderData?.customer_city && (
+                <div className="flex justify-between py-3 border-b">
+                  <span className="font-semibold text-gray-700">المدينة:</span>
+                  <span className="text-gray-900">{orderData.customer_city}</span>
+                </div>
+              )}
+              
+              {items.length > 0 && (
+                <div className="py-3 border-b">
+                  <span className="font-semibold text-gray-700 block mb-3">عناصر الطلب:</span>
+                  <div className="space-y-2">
+                    {items.map((item: any, index: number) => (
+                      <div key={item.id || index} className="flex justify-between text-sm bg-gray-50 p-2 rounded">
+                        <div>
+                          <span className="font-medium">{item.product_name || item.product?.name}</span>
+                          <span className="text-gray-600 mr-2"> × {item.quantity}</span>
+                        </div>
+                        <span className="font-semibold">{(item.price * item.quantity).toLocaleString()} شيكل</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex justify-between py-3 border-b">
+                <span className="font-semibold text-gray-700">المجموع الفرعي:</span>
+                <span className="text-gray-900">{subtotal.toLocaleString()} شيكل</span>
               </div>
-              <div className="flex justify-between py-2 border-b">
-                <span className="font-semibold">موعد التوصيل المتوقع:</span>
-                <span>2-3 أيام عمل</span>
+              
+              <div className="flex justify-between py-3 border-b">
+                <span className="font-semibold text-gray-700">تكلفة الشحن:</span>
+                <span className={shippingCost === 0 ? "text-green-600" : "text-gray-900"}>
+                  {shippingCost === 0 ? "مجاني" : `${shippingCost.toLocaleString()} شيكل`}
+                </span>
               </div>
-              <div className="flex justify-between py-2">
-                <span className="font-semibold">حالة الطلب:</span>
-                <span className="text-brand-orange">قيد التحضير</span>
+              
+              <div className="flex justify-between py-3 border-b">
+                <span className="font-semibold text-gray-700">طريقة الدفع:</span>
+                <span className="text-gray-900">{paymentMethod}</span>
+              </div>
+              
+              <div className="flex justify-between py-3 border-b">
+                <span className="font-semibold text-gray-700">موعد التوصيل المتوقع:</span>
+                <span className="text-gray-900">{deliveryTime} {deliveryTime === 1 ? 'يوم' : 'أيام'} عمل</span>
+              </div>
+              
+              <div className="flex justify-between py-3">
+                <span className="font-semibold text-gray-700">حالة الطلب:</span>
+                <span className="text-brand-orange font-semibold">{orderStatus}</span>
+              </div>
+              
+              <div className="flex justify-between py-3 border-t-2 border-gray-300 mt-4 pt-4">
+                <span className="text-xl font-bold text-gray-900">المجموع الكلي:</span>
+                <span className="text-2xl font-bold text-brand-green">{total.toLocaleString()} شيكل</span>
               </div>
             </div>
           </div>
@@ -84,7 +183,16 @@ const OrderSuccess = () => {
               <p className="text-sm text-gray-600 mb-3">
                 لأي استفسارات حول طلبك
               </p>
-              <p className="font-semibold text-brand-blue">+966 11 234 5678</p>
+              {headerPhone ? (
+                <a 
+                  href={`tel:${headerPhone.replace(/[^0-9+]/g, '')}`}
+                  className="font-semibold text-brand-blue hover:text-brand-orange transition-colors block"
+                >
+                  <span dir="ltr" className="inline-block">{headerPhone}</span>
+                </a>
+              ) : (
+                <p className="font-semibold text-brand-blue">+966 11 234 5678</p>
+              )}
             </div>
 
             <div className="bg-white rounded-lg shadow-sm p-6">

@@ -1106,7 +1106,7 @@ const AdminProducts = () => {
                       </div>
                       
                       <div className="text-xs text-gray-400">
-                        {new Date(product.created_at).toLocaleDateString('ar-SA')}
+                        {new Date(product.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                       </div>
                     </div>
                   </div>

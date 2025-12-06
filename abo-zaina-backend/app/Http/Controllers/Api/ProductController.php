@@ -472,6 +472,11 @@ class ProductController extends Controller
             $categories = [$validated['category_id']];
         }
 
+        // If stock_status is 'stock_based', update in_stock based on stock_quantity
+        if (isset($validated['stock_status']) && $validated['stock_status'] === 'stock_based') {
+            $validated['in_stock'] = ($validated['stock_quantity'] ?? 0) > 0;
+        }
+
         $product = Product::create($validated);
 
         // Attach categories to product
@@ -703,6 +708,12 @@ class ProductController extends Controller
         } elseif (isset($validated['category_id'])) {
             // Backward compatibility: if only category_id is provided, use it
             $categories = [$validated['category_id']];
+        }
+
+        // If stock_status is 'stock_based', update in_stock based on stock_quantity
+        if (isset($validated['stock_status']) && $validated['stock_status'] === 'stock_based') {
+            $stockQuantity = $validated['stock_quantity'] ?? $product->stock_quantity;
+            $validated['in_stock'] = $stockQuantity > 0;
         }
 
         // Update product

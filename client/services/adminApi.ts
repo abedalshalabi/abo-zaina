@@ -305,6 +305,16 @@ export const adminOrdersAPI = {
   async updateOrder(id: string, orderData: any) {
     const response = await adminApi.put(`/v1/admin/orders/${id}`, orderData);
     return response.data;
+  },
+  
+  async deleteOrder(id: string) {
+    const response = await adminApi.delete(`/v1/admin/orders/${id}`);
+    return response.data;
+  },
+  
+  async getNewOrdersCount() {
+    const response = await adminApi.get('/v1/admin/orders/new-count');
+    return response.data;
   }
 };
 
@@ -430,6 +440,34 @@ export const adminContactMessagesAPI = {
   
   async deleteContactMessage(id: string) {
     const response = await adminApi.delete(`/v1/admin/contact-messages/${id}`);
+    return response.data;
+  }
+};
+
+// Admin Cities API
+export const adminCitiesAPI = {
+  async getCities(filters: any = {}) {
+    const response = await adminApi.get('/v1/admin/cities', { params: filters });
+    return response.data;
+  },
+  
+  async getCity(id: string) {
+    const response = await adminApi.get(`/v1/admin/cities/${id}`);
+    return response.data;
+  },
+  
+  async createCity(cityData: any) {
+    const response = await adminApi.post('/v1/admin/cities', cityData);
+    return response.data;
+  },
+  
+  async updateCity(id: string, cityData: any) {
+    const response = await adminApi.put(`/v1/admin/cities/${id}`, cityData);
+    return response.data;
+  },
+  
+  async deleteCity(id: string) {
+    const response = await adminApi.delete(`/v1/admin/cities/${id}`);
     return response.data;
   }
 };

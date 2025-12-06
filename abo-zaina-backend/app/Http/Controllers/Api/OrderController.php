@@ -7,10 +7,14 @@ use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Models\Cart;
 use App\Models\Product;
+use App\Models\City;
+use App\Models\SiteSetting;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 
 class OrderController extends Controller
 {
@@ -19,41 +23,97 @@ class OrderController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        // Validate basic fields first
         $validated = $request->validate([
             'customer_name' => 'required|string|max:255',
             'customer_email' => 'required|email|max:255',
             'customer_phone' => 'required|string|max:20',
             'customer_city' => 'required|string|max:100',
             'customer_district' => 'required|string|max:100',
-            'customer_street' => 'required|string|max:255',
-            'customer_building' => 'required|string|max:100',
+            'customer_street' => 'nullable|string|max:255',
+            'customer_building' => 'nullable|string|max:100',
             'customer_additional_info' => 'nullable|string',
             'payment_method' => 'required|in:cod,credit_card,paypal',
             'notes' => 'nullable|string',
         ]);
-
-        // Get cart items
-        $query = Cart::with('product');
         
-        if (Auth::check()) {
-            $query->where('user_id', Auth::id());
-        } else {
-            $query->where('session_id', $request->session()->getId());
+        // Validate items separately if provided
+        if ($request->has('items') && is_array($request->input('items'))) {
+            $request->validate([
+                'items' => 'array|min:1',
+                'items.*.product_id' => 'required|exists:products,id',
+                'items.*.quantity' => 'required|integer|min:1',
+                'items.*.price' => 'required|numeric|min:0',
+            ]);
         }
 
-        $cartItems = $query->get();
+        // Get items from request or cart
+        $requestItems = $request->input('items');
+        $itemsFromRequest = !empty($requestItems) && is_array($requestItems) && count($requestItems) > 0;
+        
+        // If items are provided in request, use them; otherwise get from cart
+        if (!$itemsFromRequest) {
+            // Get items from cart
+            $cartQuery = Cart::query()->with('product');
+            
+            if (Auth::check()) {
+                $cartQuery->where('user_id', Auth::id());
+            } else {
+                $sessionId = $request->session()->getId();
+                $cartQuery->where('session_id', $sessionId);
+            }
 
-        if ($cartItems->isEmpty()) {
+            $cartItems = $cartQuery->get();
+
+            if ($cartItems->isEmpty()) {
+                return response()->json([
+                    'message' => 'Cart is empty'
+                ], 400);
+            }
+
+            // Convert cart items to order items format
+            $items = $cartItems->map(function ($item) {
+                return [
+                    'product_id' => $item->product_id,
+                    'quantity' => $item->quantity,
+                    'price' => $item->price,
+                ];
+            })->toArray();
+        } else {
+            // Use items from request
+            $items = $requestItems;
+        }
+        
+        // Ensure $items is an array
+        if (!is_array($items)) {
             return response()->json([
-                'message' => 'Cart is empty'
+                'message' => 'Invalid items format'
             ], 400);
         }
 
         // Check stock availability
-        foreach ($cartItems as $item) {
-            if (!$item->product->in_stock || $item->product->stock_quantity < $item->quantity) {
+        foreach ($items as $itemData) {
+            $product = Product::findOrFail($itemData['product_id']);
+            
+            // Check stock availability based on stock_status
+            $isAvailable = false;
+            if ($product->stock_status === 'out_of_stock') {
+                // For out_of_stock, product is not available regardless of stock quantity
+                $isAvailable = false;
+            } elseif ($product->stock_status === 'in_stock' || $product->stock_status === 'on_backorder') {
+                // For in_stock or on_backorder, allow purchase regardless of stock quantity (can go negative)
+                $isAvailable = true;
+            } elseif ($product->stock_status === 'stock_based') {
+                // For stock_based, check if stock_quantity is sufficient
+                $isAvailable = $product->stock_quantity >= $itemData['quantity'];
+            } else {
+                // Default: not available
+                $isAvailable = false;
+            }
+
+            if (!$isAvailable) {
                 return response()->json([
-                    'message' => "Product {$item->product->name} is out of stock or insufficient quantity"
+                    'message' => "Product {$product->name} is out of stock or insufficient quantity"
                 ], 400);
             }
         }
@@ -61,6 +121,31 @@ class OrderController extends Controller
         DB::beginTransaction();
 
         try {
+            // Calculate totals
+            $subtotal = array_sum(array_map(function ($item) {
+                return $item['price'] * $item['quantity'];
+            }, $items));
+            
+            // Calculate shipping cost based on city
+            $shippingCost = 0;
+            if (isset($validated['customer_city'])) {
+                $city = City::where('name', $validated['customer_city'])
+                    ->where('is_active', true)
+                    ->first();
+                
+                if ($city) {
+                    $shippingCost = $city->shipping_cost;
+                } else {
+                    // Fallback: use old logic if city not found
+                    $shippingCost = $subtotal > 500 ? 0 : 25;
+                }
+            } else {
+                // Fallback: use old logic if city not provided
+                $shippingCost = $subtotal > 500 ? 0 : 25;
+            }
+            
+            $total = $subtotal + $shippingCost;
+
             // Create order
             $order = Order::create([
                 'user_id' => Auth::id(),
@@ -69,50 +154,79 @@ class OrderController extends Controller
                 'customer_phone' => $validated['customer_phone'],
                 'customer_city' => $validated['customer_city'],
                 'customer_district' => $validated['customer_district'],
-                'customer_street' => $validated['customer_street'],
-                'customer_building' => $validated['customer_building'],
-                'customer_additional_info' => $validated['customer_additional_info'],
+                'customer_street' => $validated['customer_street'] ?? null,
+                'customer_building' => $validated['customer_building'] ?? null,
+                'customer_additional_info' => $validated['customer_additional_info'] ?? null,
                 'payment_method' => $validated['payment_method'],
-                'notes' => $validated['notes'],
-                'subtotal' => $cartItems->sum('total'),
-                'shipping_cost' => $cartItems->sum('total') > 500 ? 0 : 25,
-                'total' => $cartItems->sum('total') + ($cartItems->sum('total') > 500 ? 0 : 25),
+                'notes' => $validated['notes'] ?? null,
+                'subtotal' => $subtotal,
+                'shipping_cost' => $shippingCost,
+                'total' => $total,
                 'order_status' => 'pending',
                 'payment_status' => 'pending',
             ]);
 
             // Create order items and update stock
-            foreach ($cartItems as $item) {
+            foreach ($items as $itemData) {
+                $product = Product::findOrFail($itemData['product_id']);
+                $itemTotal = $itemData['price'] * $itemData['quantity'];
+                
                 $order->items()->create([
-                    'product_id' => $item->product_id,
-                    'product_name' => $item->product->name,
-                    'product_sku' => $item->product->sku,
-                    'quantity' => $item->quantity,
-                    'price' => $item->price,
-                    'total' => $item->total,
+                    'product_id' => $itemData['product_id'],
+                    'product_name' => $product->name,
+                    'product_sku' => $product->sku,
+                    'quantity' => $itemData['quantity'],
+                    'price' => $itemData['price'],
+                    'total' => $itemTotal,
                 ]);
 
                 // Update product stock
-                $item->product->decrement('stock_quantity', $item->quantity);
-                $item->product->increment('sales_count', $item->quantity);
+                $product->decrement('stock_quantity', $itemData['quantity']);
+                $product->increment('sales_count', $itemData['quantity']);
+                
+                // If stock_status is 'stock_based', update in_stock based on new stock_quantity
+                if ($product->stock_status === 'stock_based') {
+                    $product->refresh(); // Refresh to get updated stock_quantity
+                    $product->in_stock = $product->stock_quantity > 0;
+                    $product->save();
+                }
             }
 
-            // Clear cart
-            $query->delete();
+            // Clear cart if items were from cart (not from request)
+            if (!$itemsFromRequest) {
+                $query = Cart::query();
+                if (Auth::check()) {
+                    $query->where('user_id', Auth::id());
+                } else {
+                    $query->where('session_id', $request->session()->getId());
+                }
+                $query->delete();
+            }
 
             DB::commit();
 
+            // Send WhatsApp notification
+            $this->sendWhatsAppNotification($order);
+
             return response()->json([
                 'message' => 'Order created successfully',
-                'data' => new OrderResource($order->load('items.product'))
+                'data' => new OrderResource($order->load(['items.product']))
             ], 201);
 
         } catch (\Exception $e) {
             DB::rollBack();
             
+            Log::error('Order creation failed', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all()
+            ]);
+            
             return response()->json([
                 'message' => 'Failed to create order',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
             ], 500);
         }
     }
@@ -170,5 +284,201 @@ class OrderController extends Controller
             'message' => 'Order updated successfully',
             'data' => new OrderResource($order->load('items.product'))
         ]);
+    }
+
+    /**
+     * Send WhatsApp notification for new order
+     */
+    private function sendWhatsAppNotification(Order $order): void
+    {
+        try {
+            $whatsappNumber = SiteSetting::getValue('whatsapp_number');
+            Log::info($whatsappNumber);
+            if (!$whatsappNumber) {
+                Log::info('WhatsApp number not configured, skipping notification');
+                return;
+            }
+
+            // Clean phone number (remove non-numeric characters except +)
+            $phoneNumber = preg_replace('/[^0-9+]/', '', $whatsappNumber);
+            // Remove + if present for CallMeBot
+            $phoneNumberClean = str_replace('+', '', $phoneNumber);
+            
+            // Build message
+            $message = "🛒 طلب جديد!\n\n";
+            $message .= "رقم الطلب: {$order->order_number}\n";
+            $message .= "العميل: {$order->customer_name}\n";
+            $message .= "الهاتف: {$order->customer_phone}\n";
+            $message .= "المدينة: {$order->customer_city}\n";
+            $message .= "المجموع: {$order->total} شيكل\n";
+            $message .= "طريقة الدفع: " . ($order->payment_method === 'cod' ? 'الدفع عند الاستلام' : $order->payment_method) . "\n";
+            $message .= "\n";
+            $message .= "عرض التفاصيل: " . url("/admin/orders/{$order->id}");
+
+            // Try WhatsApp Business Cloud API first (if configured)
+            $useCloudAPI = $this->sendViaWhatsAppCloudAPI($phoneNumberClean, $message, $order);
+            
+            if ($useCloudAPI) {
+                return; // Successfully sent via Cloud API
+            }
+
+            // Fallback to CallMeBot (free service) if enabled
+            $useCallMeBot = config('services.whatsapp.use_callmebot', false);
+            if ($useCallMeBot) {
+                $this->sendViaCallMeBot($phoneNumberClean, $message, $order);
+            } else {
+                // Log WhatsApp URL for manual sending
+                $encodedMessage = urlencode($message);
+                $whatsappUrl = "https://wa.me/{$phoneNumberClean}?text={$encodedMessage}";
+                Log::info('WhatsApp notification URL (manual sending)', [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'whatsapp_url' => $whatsappUrl
+                ]);
+            }
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to send WhatsApp notification', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Send via WhatsApp Business Cloud API
+     */
+    private function sendViaWhatsAppCloudAPI(string $phoneNumber, string $message, Order $order): bool
+    {
+        try {
+            $phoneNumberId = config('services.whatsapp.phone_number_id');
+            $accessToken = config('services.whatsapp.access_token');
+            
+            // Check if both are configured and not empty
+            if (empty($phoneNumberId) || empty(trim($phoneNumberId)) || empty($accessToken) || empty(trim($accessToken))) {
+                Log::info('WhatsApp Cloud API not configured (missing phone_number_id or access_token)');
+                return false; // Cloud API not configured
+            }
+
+            $url = "https://graph.facebook.com/v18.0/{$phoneNumberId}/messages";
+            
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $accessToken,
+                'Content-Type' => 'application/json',
+            ])->post($url, [
+                'messaging_product' => 'whatsapp',
+                'to' => $phoneNumber,
+                'type' => 'text',
+                'text' => [
+                    'body' => $message
+                ]
+            ]);
+
+            if ($response->successful()) {
+                Log::info('WhatsApp message sent via Cloud API', [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number
+                ]);
+                return true;
+            } else {
+                $errorResponse = $response->json();
+                Log::warning('WhatsApp Cloud API failed', [
+                    'order_id' => $order->id,
+                    'error_code' => $errorResponse['error']['code'] ?? 'unknown',
+                    'error_message' => $errorResponse['error']['message'] ?? 'unknown',
+                    'response' => $response->body()
+                ]);
+                
+                // If access token is invalid, don't try again
+                if (isset($errorResponse['error']['code']) && $errorResponse['error']['code'] == 190) {
+                    Log::error('WhatsApp Cloud API: Invalid Access Token. Please check your WHATSAPP_ACCESS_TOKEN in .env file');
+                }
+                
+                return false;
+            }
+        } catch (\Exception $e) {
+            Log::error('WhatsApp Cloud API error', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Send via CallMeBot (free WhatsApp API service)
+     * Note: This requires the recipient to have CallMeBot API key set up
+     * Visit: https://www.callmebot.com/blog/free-api-whatsapp-messages/
+     */
+    private function sendViaCallMeBot(string $phoneNumber, string $message, Order $order): void
+    {
+        try {
+            $apiKey = config('services.whatsapp.api_key');
+            
+            // Log the API key value for debugging
+            Log::info('CallMeBot API Key Check', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'api_key_raw' => $apiKey,
+                'api_key_type' => gettype($apiKey),
+                'api_key_empty' => empty($apiKey),
+                'api_key_trimmed_empty' => empty(trim($apiKey ?? '')),
+                'api_key_length' => strlen($apiKey ?? '')
+            ]);
+            
+            if (!$apiKey || empty(trim($apiKey))) {
+                Log::warning('CallMeBot API key not configured', [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'api_key_received' => $apiKey
+                ]);
+                
+                // Fallback: Log WhatsApp URL for manual sending
+                $encodedMessage = urlencode($message);
+                $whatsappUrl = "https://wa.me/{$phoneNumber}?text={$encodedMessage}";
+                Log::info('WhatsApp notification URL (CallMeBot API key missing)', [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'whatsapp_url' => $whatsappUrl
+                ]);
+                return;
+            }
+
+            // CallMeBot API format: https://api.callmebot.com/whatsapp.php?phone=PHONE&text=MESSAGE&apikey=API_KEY
+            // Note: Phone number should be in international format without + (e.g., 970592221555)
+            //$callMeBotUrl = "https://api.callmebot.com/whatsapp.php?phone={$phoneNumber}&text=" . urlencode($message) . "&apikey={$apiKey}";
+            $callMeBotUrl = "https://api.callmebot.com/whatsapp.php?phone={$phoneNumber}&text=" . urlencode($message) . "&apikey={$apiKey}"   ;
+
+            Log::info('Attempting to send WhatsApp via CallMeBot', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'phone' => $phoneNumber
+            ]);
+            
+            $response = Http::timeout(10)->get($callMeBotUrl);
+            
+            if ($response->successful()) {
+                $responseBody = $response->body();
+                Log::info('WhatsApp message sent via CallMeBot', [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'response' => $responseBody
+                ]);
+            } else {
+                Log::warning('CallMeBot API failed', [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'status' => $response->status(),
+                    'response' => $response->body()
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('CallMeBot error', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
     }
 }

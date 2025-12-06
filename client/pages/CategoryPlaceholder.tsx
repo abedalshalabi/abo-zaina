@@ -25,7 +25,7 @@ const CategoryPlaceholder = ({ categoryName, categoryIcon }: CategoryPlaceholder
           </p>
           
           <div className="bg-white p-8 rounded-2xl shadow-lg">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6">ما يمكنك فعل�� الآن:</h2>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6">ما يمكنك فعله الآن:</h2>
             <div className="space-y-4 text-right">
               <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg">
                 <div className="w-3 h-3 bg-blue-500 rounded-full"></div>

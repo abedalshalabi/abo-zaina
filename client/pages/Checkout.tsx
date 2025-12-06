@@ -1,8 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { MapPin, Phone, User, CreditCard, Truck } from "lucide-react";
 import { useCart } from "../context/CartContext";
+import { ordersAPI, citiesAPI } from "../services/api";
 import Header from "../components/Header";
+
+interface City {
+  id: number;
+  name: string;
+  name_en?: string;
+  shipping_cost: number;
+  delivery_time_days: number;
+  is_active: boolean;
+}
 
 const Checkout = () => {
   const { state, clearCart } = useCart();
@@ -22,9 +32,38 @@ const Checkout = () => {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cities, setCities] = useState<City[]>([]);
+  const [selectedCity, setSelectedCity] = useState<City | null>(null);
+  const [loadingCities, setLoadingCities] = useState(true);
 
-  const shippingCost = state.total > 500 ? 0 : 25;
-  const finalTotal = state.total + shippingCost;
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        setLoadingCities(true);
+        const response = await citiesAPI.getCities();
+        setCities(response.data || []);
+      } catch (error) {
+        console.error("Error fetching cities:", error);
+      } finally {
+        setLoadingCities(false);
+      }
+    };
+    fetchCities();
+  }, []);
+
+  useEffect(() => {
+    if (formData.city && cities.length > 0) {
+      const city = cities.find(c => c.name === formData.city);
+      setSelectedCity(city || null);
+    } else {
+      setSelectedCity(null);
+    }
+  }, [formData.city, cities]);
+
+  // Calculate subtotal from items to ensure accuracy
+  const subtotal = state.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const shippingCost = selectedCity ? Number(selectedCity.shipping_cost) : (subtotal > 500 ? 0 : 25);
+  const finalTotal = Number(subtotal) + Number(shippingCost);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -37,32 +76,47 @@ const Checkout = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      // Prepare order items from cart
+      const orderItems = state.items.map(item => ({
+        product_id: item.id,
+        quantity: item.quantity,
+        price: item.price,
+      }));
 
-    // Clear cart and redirect to success page
-    clearCart();
-    setIsSubmitting(false);
-    navigate("/order-success");
+      // Create order
+      const response = await ordersAPI.createOrder({
+        customer_name: `${formData.firstName} ${formData.lastName}`,
+        customer_email: formData.email || `${formData.phone}@temp.com`,
+        customer_phone: formData.phone,
+        customer_city: formData.city,
+        customer_district: formData.district,
+        customer_street: formData.street || undefined,
+        customer_building: formData.building || undefined,
+        customer_additional_info: formData.additionalInfo || undefined,
+        payment_method: formData.paymentMethod,
+        items: orderItems,
+      });
+
+      // Clear cart and redirect to success page with order data
+      clearCart();
+      navigate("/order-success", { 
+        state: { 
+          order: response.data,
+          orderNumber: response.data?.order_number 
+        } 
+      });
+    } catch (error: any) {
+      console.error("Error creating order:", error);
+      alert(error.message || 'حدث خطأ أثناء إنشاء الطلب. يرجى المحاولة مرة أخرى.');
+      setIsSubmitting(false);
+    }
   };
 
   if (state.items.length === 0) {
     navigate("/cart");
     return null;
   }
-
-  const cities = [
-    "جنين",
-    "نابلس",
-    "طولكرم",
-    "رام الله",
-    "الخليل",
-    "بيت لحم",
-    "قلقيلية",
-    "سلفيت",
-    "أريحا",
-    "القدس"
-  ];
 
   return (
     <div className="min-h-screen bg-gray-50 arabic">
@@ -75,9 +129,9 @@ const Checkout = () => {
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-800 mb-8">إتمام الطلب</h1>
 
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-5 gap-8">
             {/* Checkout Form */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-3 space-y-6">
               {/* Personal Information */}
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -151,20 +205,28 @@ const Checkout = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      ��لمدينة *
+                      المدينة *
                     </label>
                     <select
                       name="city"
                       value={formData.city}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                      disabled={loadingCities}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow disabled:bg-gray-100 disabled:cursor-not-allowed"
                     >
-                      <option value="">اختر المدينة</option>
+                      <option value="">{loadingCities ? 'جاري تحميل المدن...' : 'اختر المدينة'}</option>
                       {cities.map(city => (
-                        <option key={city} value={city}>{city}</option>
+                        <option key={city.id} value={city.name}>
+                          {city.name} {selectedCity?.id === city.id && `(${city.shipping_cost} شيكل - ${city.delivery_time_days} يوم)`}
+                        </option>
                       ))}
                     </select>
+                    {selectedCity && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        تكلفة الشحن: {selectedCity.shipping_cost} شيكل | وقت التوصيل: {selectedCity.delivery_time_days} {selectedCity.delivery_time_days === 1 ? 'يوم' : 'أيام'}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -181,14 +243,13 @@ const Checkout = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      الشارع *
+                      الشارع
                     </label>
                     <input
                       type="text"
                       name="street"
                       value={formData.street}
                       onChange={handleInputChange}
-                      required
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow"
                     />
                   </div>
@@ -267,38 +328,42 @@ const Checkout = () => {
             </div>
 
             {/* Order Summary */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
-                <h2 className="text-xl font-bold text-gray-800 mb-6">ملخص الطلب</h2>
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-lg shadow-sm p-8 sticky top-4">
+                <h2 className="text-2xl font-bold text-gray-800 mb-8">ملخص الطلب</h2>
                 
                 {/* Order Items */}
-                <div className="space-y-3 mb-6">
+                <div className="space-y-4 mb-8">
                   {state.items.map((item) => (
-                    <div key={item.id} className="flex justify-between text-sm">
-                      <div>
-                        <div className="font-medium">{item.name}</div>
-                        <div className="text-gray-600">الكمية: {item.quantity}</div>
+                    <div key={item.id} className="flex justify-between items-start p-4 bg-gray-50 rounded-lg">
+                      <div className="flex-1">
+                        <div className="font-semibold text-base text-gray-900 mb-2">{item.name}</div>
+                        <div className="text-sm text-gray-600">الكمية: {item.quantity}</div>
+                        <div className="text-sm text-gray-500 mt-1">السعر الوحدة: {item.price.toLocaleString()} شيكل</div>
                       </div>
-                      <div className="font-semibold">{item.price * item.quantity} ₪</div>
+                      <div className="text-right mr-4">
+                        <div className="font-bold text-lg text-gray-900">{(item.price * item.quantity).toLocaleString()}</div>
+                        <div className="text-xs text-gray-500">شيكل</div>
+                      </div>
                     </div>
                   ))}
                 </div>
 
                 {/* Totals */}
-                <div className="space-y-2 mb-6 border-t pt-4">
-                  <div className="flex justify-between">
-                    <span>المجموع الفرعي</span>
-                    <span>{state.total} شيكل</span>
+                <div className="space-y-4 mb-8 border-t pt-6">
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-base font-medium text-gray-700">المجموع الفرعي</span>
+                    <span className="text-base font-semibold text-gray-900">{subtotal.toLocaleString()} شيكل</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>الشحن</span>
-                    <span className={shippingCost === 0 ? "text-brand-green" : ""}>
-                      {shippingCost === 0 ? "مجاني" : `${shippingCost} شيكل`}
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-base font-medium text-gray-700">الشحن</span>
+                    <span className={`text-base font-semibold ${shippingCost === 0 ? "text-green-600" : "text-gray-900"}`}>
+                      {shippingCost === 0 ? "مجاني" : `${shippingCost.toLocaleString()} شيكل`}
                     </span>
                   </div>
-                  <div className="border-t pt-2 font-bold text-lg flex justify-between">
-                    <span>المجموع الكلي</span>
-                    <span className="text-brand-green">{finalTotal} شيكل</span>
+                  <div className="border-t-2 border-gray-300 pt-4 mt-4 flex justify-between items-center">
+                    <span className="text-xl font-bold text-gray-900">المجموع الكلي</span>
+                    <span className="text-2xl font-bold text-green-600">{finalTotal.toLocaleString()} شيكل</span>
                   </div>
                 </div>
 

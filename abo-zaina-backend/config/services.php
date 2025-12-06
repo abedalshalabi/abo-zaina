@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'whatsapp' => [
+        'api_key' => env('WHATSAPP_API_KEY'),
+        'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
+        'access_token' => env('WHATSAPP_ACCESS_TOKEN'),
+        'use_callmebot' => env('WHATSAPP_USE_CALLMEBOT', false),
+    ],
+
 ];

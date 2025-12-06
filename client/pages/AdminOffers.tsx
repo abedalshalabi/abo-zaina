@@ -469,8 +469,8 @@ const AdminOffers = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div>{new Date(offer.starts_at).toLocaleDateString('ar-SA')}</div>
-                        <div className="text-xs text-gray-400">إلى {new Date(offer.ends_at).toLocaleDateString('ar-SA')}</div>
+                        <div>{new Date(offer.starts_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                        <div className="text-xs text-gray-400">إلى {new Date(offer.ends_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 text-xs rounded-full ${offer.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>

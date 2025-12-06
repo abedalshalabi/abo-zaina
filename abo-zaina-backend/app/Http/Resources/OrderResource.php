@@ -8,6 +8,35 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class OrderResource extends JsonResource
 {
     /**
+     * Get primary image from product images (handles both array and Collection)
+     */
+    private function getProductPrimaryImage($images)
+    {
+        if (empty($images)) {
+            return null;
+        }
+
+        // Convert to array if it's a Collection
+        $imagesArray = is_array($images) ? $images : $images->toArray();
+
+        // Find primary image
+        foreach ($imagesArray as $image) {
+            $imageData = is_array($image) ? $image : (array) $image;
+            if (isset($imageData['is_primary']) && $imageData['is_primary']) {
+                return $imageData['image_url'] ?? $imageData['image_path'] ?? null;
+            }
+        }
+
+        // If no primary image found, return first image
+        if (!empty($imagesArray)) {
+            $firstImage = is_array($imagesArray[0]) ? $imagesArray[0] : (array) $imagesArray[0];
+            return $firstImage['image_url'] ?? $firstImage['image_path'] ?? null;
+        }
+
+        return null;
+    }
+
+    /**
      * Transform the resource into an array.
      *
      * @return array<string, mixed>
@@ -45,7 +74,7 @@ class OrderResource extends JsonResource
                             'id' => $item->product->id,
                             'name' => $item->product->name,
                             'slug' => $item->product->slug,
-                            'image' => $item->product->images->where('is_primary', true)->first()?->image_path,
+                            'image' => $this->getProductPrimaryImage($item->product->images),
                         ] : null,
                     ];
                 });
