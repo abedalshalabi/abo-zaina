@@ -3,6 +3,32 @@ import type { Config } from "tailwindcss";
 export default {
   darkMode: ["class"],
   content: ["./client/**/*.{ts,tsx}"],
+  safelist: [
+    // Slider gradient colors (from database - dynamically used)
+    'bg-gradient-to-r',
+    'bg-gradient-to-l',
+    'bg-gradient-to-b',
+    'bg-gradient-to-t',
+    // Purple gradient
+    'from-purple-900',
+    'via-purple-800',
+    'to-pink-900',
+    // Green gradient
+    'from-green-900',
+    'via-green-800',
+    'to-teal-900',
+    // Blue gradient (default)
+    'from-blue-900',
+    'via-blue-800',
+    'to-indigo-900',
+    // Button colors for sliders
+    'text-purple-900',
+    'text-green-900',
+    'text-blue-900',
+    'bg-white',
+    'border-2',
+    'border-white',
+  ],
   prefix: "",
   theme: {
     fontFamily: {
