@@ -16,7 +16,9 @@ import {
   ChevronRight,
   Gift,
   MessageSquare,
-  MapPin
+  MapPin,
+  ExternalLink,
+  Image
 } from 'lucide-react';
 import { adminContactMessagesAPI, adminOrdersAPI } from '../services/adminApi';
 
@@ -109,6 +111,11 @@ function AdminLayout({ children }: AdminLayoutProps) {
       title: 'المدن',
       icon: MapPin,
       path: '/admin/cities',
+    },
+    {
+      title: 'السلايدر الرئيسي',
+      icon: Image,
+      path: '/admin/slider',
     },
     {
       title: 'المستخدمين',
@@ -374,8 +381,20 @@ function AdminLayout({ children }: AdminLayoutProps) {
             </h1>
           </div>
 
-          {/* User Info */}
+          {/* User Info & Site Link */}
           <div className="flex items-center gap-3">
+            {/* Site Link */}
+            <a
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-all duration-200 hover:shadow-sm"
+              title="الذهاب إلى الموقع"
+            >
+              <ExternalLink className="w-4 h-4" />
+              <span className="hidden sm:inline">الموقع</span>
+            </a>
+            
             <div className="hidden sm:block text-left">
               <p className="text-sm font-medium text-gray-800">المسؤول</p>
               <p className="text-xs text-gray-600">admin@abozaina.com</p>

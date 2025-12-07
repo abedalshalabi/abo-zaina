@@ -31,6 +31,7 @@ import AdminSiteSettings from "./pages/AdminSiteSettings";
 import AdminOffers from "./pages/AdminOffers";
 import AdminContactMessages from "./pages/AdminContactMessages";
 import AdminCities from "./pages/AdminCities";
+import AdminSlider from "./pages/AdminSlider";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import About from "./pages/About";
@@ -171,6 +172,7 @@ function App() {
         <Route path="/admin/offers" element={<AdminOffers />} />
         <Route path="/admin/contact-messages" element={<AdminContactMessages />} />
         <Route path="/admin/cities" element={<AdminCities />} />
+        <Route path="/admin/slider" element={<AdminSlider />} />
 
         {/* Catch-all route */}
         <Route path="*" element={<NotFound />} />

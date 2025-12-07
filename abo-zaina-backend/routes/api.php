@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\SiteSettingController;
 use App\Http\Controllers\Api\OfferController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\AdminCityController;
+use App\Http\Controllers\Api\AdminSliderController;
 
 /*
 |--------------------------------------------------------------------------
@@ -71,6 +72,15 @@ Route::prefix('v1')->group(function () {
     
     // Public site settings (for frontend)
     Route::get('/settings', [SiteSettingController::class, 'public']);
+    
+    // Public slider route (for frontend)
+    Route::get('/slider', function () {
+        $sliderItems = \App\Models\SliderItem::where('is_active', true)
+            ->orderBy('sort_order', 'asc')
+            ->orderBy('created_at', 'desc')
+            ->get();
+        return response()->json(['data' => $sliderItems]);
+    });
     
     // Contact form route
     Route::post('/contact', [ContactController::class, 'store']);
@@ -171,6 +181,14 @@ Route::prefix('v1')->group(function () {
               Route::get('/admin/cities/{city}', [AdminCityController::class, 'show']);
               Route::put('/admin/cities/{city}', [AdminCityController::class, 'update']);
               Route::delete('/admin/cities/{city}', [AdminCityController::class, 'destroy']);
+
+              // Slider management
+              Route::get('/admin/slider', [AdminSliderController::class, 'index']);
+              Route::post('/admin/slider', [AdminSliderController::class, 'store']);
+              Route::get('/admin/slider/{sliderItem}', [AdminSliderController::class, 'show']);
+              Route::post('/admin/slider/{sliderItem}', [AdminSliderController::class, 'update']); // For FormData with _method=PUT
+              Route::put('/admin/slider/{sliderItem}', [AdminSliderController::class, 'update']);
+              Route::delete('/admin/slider/{sliderItem}', [AdminSliderController::class, 'destroy']);
 
               // Order management
               Route::get('/admin/orders', [AdminController::class, 'orders']);

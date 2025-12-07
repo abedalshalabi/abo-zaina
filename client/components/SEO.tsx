@@ -80,6 +80,18 @@ const SEO = ({
     setMetaTag('property', 'og:type', type);
     setMetaTag('property', 'og:locale', 'ar_SA');
     setMetaTag('property', 'og:site_name', 'أبو زينة للتقنيات');
+    
+    // Logo for search engines (Google)
+    setMetaTag('itemprop', 'logo', fullImageUrl);
+    
+    // Add logo link tag
+    let logoLink = document.querySelector('link[rel="image_src"]') as HTMLLinkElement;
+    if (!logoLink) {
+      logoLink = document.createElement('link');
+      logoLink.setAttribute('rel', 'image_src');
+      document.head.appendChild(logoLink);
+    }
+    logoLink.setAttribute('href', fullImageUrl);
 
     // Twitter Card tags
     setMetaTag('name', 'twitter:card', 'summary_large_image');

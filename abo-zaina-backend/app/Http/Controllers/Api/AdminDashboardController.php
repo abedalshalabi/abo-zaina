@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\User;
 use App\Models\Category;
 use App\Models\Brand;
@@ -58,18 +59,41 @@ class AdminDashboardController extends Controller
                     ];
                 });
 
-            // Top products
-            $top_products = Product::orderBy('sales_count', 'desc')
-                ->limit(10)
-                ->get()
-                ->map(function ($product) {
-                    return [
-                        'id' => $product->id,
-                        'name' => $product->name,
-                        'sales_count' => $product->sales_count,
-                        'price' => $product->price,
-                    ];
-                });
+            // Top products - Calculate from actual order items (excluding cancelled orders)
+            $top_products_query = OrderItem::select('product_id', 'product_name', DB::raw('SUM(quantity) as total_sold'), DB::raw('AVG(price) as avg_price'))
+                ->whereHas('order', function ($query) {
+                    $query->where('order_status', '!=', 'cancelled');
+                })
+                ->groupBy('product_id', 'product_name')
+                ->orderBy('total_sold', 'desc')
+                ->limit(10);
+            
+            $top_products = $top_products_query->get()->map(function ($item) {
+                // Get product details if product still exists
+                $product = Product::find($item->product_id);
+                return [
+                    'id' => $item->product_id,
+                    'name' => $item->product_name ?? 'منتج محذوف',
+                    'sales_count' => (int) $item->total_sold,
+                    'price' => $product ? $product->price : (float) $item->avg_price,
+                ];
+            });
+            
+            // If no products from orders, fallback to products with highest sales_count
+            if ($top_products->isEmpty()) {
+                $top_products = Product::where('is_active', true)
+                    ->orderBy('sales_count', 'desc')
+                    ->limit(10)
+                    ->get()
+                    ->map(function ($product) {
+                        return [
+                            'id' => $product->id,
+                            'name' => $product->name,
+                            'sales_count' => $product->sales_count ?? 0,
+                            'price' => $product->price,
+                        ];
+                    });
+            }
 
             return response()->json([
                 'stats' => $stats,

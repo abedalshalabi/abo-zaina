@@ -466,5 +466,15 @@ export const citiesAPI = {
   },
 };
 
+export const sliderAPI = {
+  getSliderItems: async () => {
+    const response = await fetch(`${API_BASE_URL}/slider`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch slider items');
+    }
+    return response.json();
+  },
+};
+
 // Export types
 export type { User, Product, CartItem, Order };

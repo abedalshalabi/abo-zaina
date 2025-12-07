@@ -21,7 +21,7 @@ import Header from "../components/Header";
 import Carousel from "../components/Carousel";
 import SimpleCarousel3D from "../components/SimpleCarousel3D";
 import SEO from "../components/SEO";
-import { productsAPI, categoriesAPI, brandsAPI, settingsAPI } from "../services/api";
+import { productsAPI, categoriesAPI, brandsAPI, settingsAPI, sliderAPI } from "../services/api";
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -34,6 +34,8 @@ const Index = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
   const [socialSettings, setSocialSettings] = useState<any>({});
+  const [sliderItems, setSliderItems] = useState<any[]>([]);
+  const [headerSettings, setHeaderSettings] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -45,12 +47,13 @@ const Index = () => {
         setError("");
         
         // Load featured and latest products
-        const [featuredResponse, latestResponse, categoriesResponse, brandsResponse, settingsResponse] = await Promise.all([
+        const [featuredResponse, latestResponse, categoriesResponse, brandsResponse, settingsResponse, sliderResponse] = await Promise.all([
           productsAPI.getFeaturedProducts(),
           productsAPI.getLatestProducts(),
           categoriesAPI.getCategories(),
           brandsAPI.getBrands(),
-          settingsAPI.getSettings('header')
+          settingsAPI.getSettings('header'),
+          sliderAPI.getSliderItems().catch(() => ({ data: [] })) // Fallback to empty array if slider API fails
         ]);
         
         setFeaturedProducts(featuredResponse.data || []);
@@ -58,6 +61,8 @@ const Index = () => {
         setCategories(categoriesResponse.data || []);
         setBrands(brandsResponse.data || []);
         setSocialSettings(settingsResponse.data || {});
+        setHeaderSettings(settingsResponse.data || {});
+        setSliderItems(sliderResponse.data || []);
         
         // Debug: Log categories to check show_in_slider
         console.log('Categories loaded:', categoriesResponse.data);
@@ -204,6 +209,13 @@ const Index = () => {
 
   const siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
   
+  // Get logo URL (use header_logo if available, otherwise use placeholder)
+  const logoUrl = headerSettings.header_logo 
+    ? (headerSettings.header_logo.startsWith('http') 
+        ? headerSettings.header_logo 
+        : `${siteUrl}${headerSettings.header_logo.startsWith('/') ? '' : '/'}${headerSettings.header_logo}`)
+    : `${siteUrl}/placeholder.svg`;
+  
   // Structured Data for Homepage
   const structuredData = {
     "@context": "https://schema.org",
@@ -211,8 +223,8 @@ const Index = () => {
     "name": "أبو زينة للتقنيات",
     "description": "متجر متخصص في بيع الأجهزة الكهربائية والإلكترونية في فلسطين",
     "url": siteUrl,
-    "logo": `${siteUrl}/placeholder.svg`,
-    "image": `${siteUrl}/placeholder.svg`,
+    "logo": logoUrl,
+    "image": logoUrl,
     "address": {
       "@type": "PostalAddress",
       "addressCountry": "PS",
@@ -240,6 +252,7 @@ const Index = () => {
         title="أبو زينة للتقنيات - عالم التكنولوجيا والأجهزة الكهربائية"
         description="تسوق أونلاين من أبو زينة للتقنيات - أفضل متجر للأجهزة الكهربائية والإلكترونية في فلسطين. أفران، ثلاجات، غسالات، تلفزيونات، هواتف ذكية وأكثر. توصيل سريع وضمان شامل."
         keywords="أجهزة كهربائية, إلكترونيات, أفران, ثلاجات, غسالات, تلفزيونات, هواتف ذكية, تسوق أونلاين, أبو زينة, فلسطين"
+        image={headerSettings.header_logo || '/placeholder.svg'}
         structuredData={structuredData}
       />
       <Header 
@@ -251,131 +264,132 @@ const Index = () => {
       <section className="relative w-full overflow-hidden">
         <div className="w-full px-4 md:px-0 mt-4 md:mt-0">
           <div className="rounded-2xl md:rounded-none overflow-hidden shadow-md md:shadow-none relative z-0 transform-gpu">
-            <Carousel
-            slidesToShow={{ mobile: 1, tablet: 1, desktop: 1 }}
-            showDots={false}
-            showArrows={true}
-            gap={0}
-            autoplay={true}
-            rtl={true}
-          >
-            {/* Slide 1 */}
-            <div className="relative bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 text-white py-6 sm:py-8 lg:py-4 overflow-hidden min-h-[180px] sm:min-h-[300px] lg:min-h-[180px]">
-              <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute top-4 left-4 sm:top-6 sm:left-6 lg:top-10 lg:left-10 text-xl sm:text-3xl lg:text-6xl opacity-10 animate-pulse">⚡</div>
-                <div className="absolute top-8 right-8 sm:top-12 sm:right-12 lg:top-20 lg:right-20 text-lg sm:text-2xl lg:text-4xl opacity-10 animate-bounce">🔌</div>
-                <div className="absolute bottom-4 left-1/4 text-xl sm:text-3xl lg:text-5xl opacity-10">💡</div>
-                <div className="absolute bottom-8 right-1/3 text-sm sm:text-xl lg:text-3xl opacity-10">📱</div>
-              </div>
-              
-              <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 h-full flex items-center">
-                <div className="max-w-4xl w-full">
-                  <h1 className="text-xl sm:text-4xl lg:text-6xl font-bold mb-2 sm:mb-4 lg:mb-6 leading-loose py-2 sm:py-4">
-                    مرحباً بكم في
-                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-cyan-200 mt-2 sm:mt-6 py-1 sm:py-2">
-                      أبو زينة للتقنيات
-                    </span>
-                  </h1>
-                  <p className="text-[10px] sm:text-sm lg:text-xl mb-3 sm:mb-6 lg:mb-8 text-blue-100 leading-relaxed max-w-2xl mt-2 sm:mt-6">
-                    وجهتكم الأولى للأجهزة الكهربائية والإلكترونية الحديثة. نوفر لكم أحدث التقنيات بأفضل الأسعار.
-                  </p>
-                  <div className="flex flex-row gap-2 sm:gap-3 lg:gap-4 max-w-md">
-                    <Link
-                      to="/products"
-                      className="bg-white text-blue-900 px-3 sm:px-6 lg:px-8 py-1.5 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-1 sm:gap-2 shadow-lg text-[10px] sm:text-sm lg:text-base"
-                    >
-                      تسوق الآن
-                      <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
-                    </Link>
-                    <Link
-                      to="/offers"
-                      className="border-2 border-white text-white px-3 sm:px-6 lg:px-8 py-1.5 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-white hover:text-blue-900 transition-colors text-center text-[10px] sm:text-sm lg:text-base"
-                    >
-                      العروض الخاصة
-                    </Link>
+            {sliderItems.length > 0 ? (
+              <Carousel
+                slidesToShow={{ mobile: 1, tablet: 1, desktop: 1 }}
+                showDots={false}
+                showArrows={true}
+                gap={0}
+                autoplay={true}
+                rtl={true}
+              >
+                {sliderItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`relative ${item.background_color ? `bg-gradient-to-r ${item.background_color}` : ''} ${item.text_color} py-6 sm:py-8 lg:py-4 overflow-hidden min-h-[180px] sm:min-h-[300px] lg:min-h-[180px]`}
+                    style={item.image && !item.background_color ? { 
+                      backgroundImage: `url(${item.image})`, 
+                      backgroundSize: '100% 100%', 
+                      backgroundPosition: 'center',
+                      backgroundRepeat: 'no-repeat',
+                      width: '100%',
+                      height: '100%',
+                      minHeight: 'inherit'
+                    } : {}}
+                  >
+                    {item.image && item.background_color && (
+                      <div className="absolute inset-0 z-0">
+                        <img
+                          src={item.image}
+                          alt={item.title || 'Slider'}
+                          className="w-full h-full opacity-30"
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'fill',
+                            objectPosition: 'center'
+                          }}
+                          onError={(e) => {
+                            // Hide image if it fails to load
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
+                    
+                    <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 h-full flex items-center">
+                      <div className="max-w-4xl w-full">
+                        {item.title && (
+                          <h1 className="text-xl sm:text-4xl lg:text-6xl font-bold mb-2 sm:mb-4 lg:mb-6 leading-loose py-2 sm:py-4">
+                            {item.title}
+                            {item.subtitle && (
+                              <span className="block mt-2 sm:mt-6 py-1 sm:py-2">
+                                {item.subtitle}
+                              </span>
+                            )}
+                          </h1>
+                        )}
+                        {item.description && (
+                          <p className="text-[10px] sm:text-sm lg:text-xl mb-3 sm:mb-6 lg:mb-8 leading-relaxed max-w-2xl mt-2 sm:mt-6 opacity-90">
+                            {item.description}
+                          </p>
+                        )}
+                        <div className="flex flex-row gap-2 sm:gap-3 lg:gap-4 max-w-md">
+                          {item.button1_text && item.button1_link && (
+                            <Link
+                              to={item.button1_link}
+                              className={`${item.button1_color} px-3 sm:px-6 lg:px-8 py-1.5 sm:py-3 lg:py-4 rounded-full font-semibold hover:opacity-90 transition-colors flex items-center justify-center gap-1 sm:gap-2 shadow-lg text-[10px] sm:text-sm lg:text-base`}
+                            >
+                              {item.button1_text}
+                              <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
+                            </Link>
+                          )}
+                          {item.button2_text && item.button2_link && (
+                            <Link
+                              to={item.button2_link}
+                              className={`${item.button2_color} px-3 sm:px-6 lg:px-8 py-1.5 sm:py-3 lg:py-4 rounded-full font-semibold hover:opacity-90 transition-colors text-center text-[10px] sm:text-sm lg:text-base`}
+                            >
+                              {item.button2_text}
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </Carousel>
+            ) : (
+              <Carousel
+                slidesToShow={{ mobile: 1, tablet: 1, desktop: 1 }}
+                showDots={false}
+                showArrows={true}
+                gap={0}
+                autoplay={true}
+                rtl={true}
+              >
+                {/* Default Slide */}
+                <div className="relative bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 text-white py-6 sm:py-8 lg:py-4 overflow-hidden min-h-[180px] sm:min-h-[300px] lg:min-h-[180px]">
+                  <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 h-full flex items-center">
+                    <div className="max-w-4xl w-full">
+                      <h1 className="text-xl sm:text-4xl lg:text-6xl font-bold mb-2 sm:mb-4 lg:mb-6 leading-loose py-2 sm:py-4">
+                        مرحباً بكم في
+                        <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-cyan-200 mt-2 sm:mt-6 py-1 sm:py-2">
+                          أبو زينة للتقنيات
+                        </span>
+                      </h1>
+                      <p className="text-[10px] sm:text-sm lg:text-xl mb-3 sm:mb-6 lg:mb-8 text-blue-100 leading-relaxed max-w-2xl mt-2 sm:mt-6">
+                        وجهتكم الأولى للأجهزة الكهربائية والإلكترونية الحديثة. نوفر لكم أحدث التقنيات بأفضل الأسعار.
+                      </p>
+                      <div className="flex flex-row gap-2 sm:gap-3 lg:gap-4 max-w-md">
+                        <Link
+                          to="/products"
+                          className="bg-white text-blue-900 px-3 sm:px-6 lg:px-8 py-1.5 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-1 sm:gap-2 shadow-lg text-[10px] sm:text-sm lg:text-base"
+                        >
+                          تسوق الآن
+                          <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
+                        </Link>
+                        <Link
+                          to="/offers"
+                          className="border-2 border-white text-white px-3 sm:px-6 lg:px-8 py-1.5 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-white hover:text-blue-900 transition-colors text-center text-[10px] sm:text-sm lg:text-base"
+                        >
+                          العروض الخاصة
+                        </Link>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Slide 2 */}
-            <div className="relative bg-gradient-to-r from-purple-900 via-purple-800 to-pink-900 text-white py-6 sm:py-8 lg:py-4 overflow-hidden min-h-[180px] sm:min-h-[300px] lg:min-h-[180px]">
-              <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute top-4 right-4 sm:top-6 sm:right-6 lg:top-10 lg:right-10 text-xl sm:text-3xl lg:text-6xl opacity-10 animate-spin-slow">🏠</div>
-                <div className="absolute top-10 left-10 sm:top-16 sm:left-16 lg:top-24 lg:left-24 text-lg sm:text-2xl lg:text-4xl opacity-10 animate-pulse">❄️</div>
-                <div className="absolute bottom-4 right-1/4 text-xl sm:text-3xl lg:text-5xl opacity-10">🧺</div>
-                <div className="absolute bottom-10 left-1/3 text-sm sm:text-xl lg:text-3xl opacity-10">🍳</div>
-              </div>
-              
-              <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 h-full flex items-center">
-                <div className="max-w-4xl w-full">
-                  <h1 className="text-xl sm:text-4xl lg:text-6xl font-bold mb-2 sm:mb-4 lg:mb-6 leading-loose py-2 sm:py-4">
-                    أجهزة منزلية
-                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-pink-200 mt-2 sm:mt-6 py-1 sm:py-2">
-                      عصرية وذكية
-                    </span>
-                  </h1>
-                  <p className="text-[10px] sm:text-sm lg:text-xl mb-3 sm:mb-6 lg:mb-8 text-purple-100 leading-relaxed max-w-2xl mt-2 sm:mt-6">
-                    اكتشف مجموعتنا الواسعة من الأجهزة المنزلية الذكية التي تجعل حياتك أسهل وأكثر راحة.
-                  </p>
-                  <div className="flex flex-row gap-2 sm:gap-3 lg:gap-4 max-w-md">
-                    <Link
-                      to="/kitchen"
-                      className="bg-white text-purple-900 px-3 sm:px-6 lg:px-8 py-1.5 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-purple-50 transition-colors flex items-center justify-center gap-1 sm:gap-2 shadow-lg text-[10px] sm:text-sm lg:text-base"
-                    >
-                      أجهزة المطبخ
-                      <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
-                    </Link>
-                    <Link
-                      to="/cooling"
-                      className="border-2 border-white text-white px-3 sm:px-6 lg:px-8 py-1.5 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-white hover:text-purple-900 transition-colors text-center text-[10px] sm:text-sm lg:text-base"
-                    >
-                      التكييف والتبريد
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Slide 3 */}
-            <div className="relative bg-gradient-to-r from-green-900 via-green-800 to-teal-900 text-white py-6 sm:py-8 lg:py-4 overflow-hidden min-h-[180px] sm:min-h-[300px] lg:min-h-[180px]">
-              <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute top-6 left-6 sm:top-8 sm:left-8 lg:top-12 lg:left-12 text-xl sm:text-3xl lg:text-6xl opacity-10 animate-bounce">🎯</div>
-                <div className="absolute top-12 right-12 sm:top-20 sm:right-20 lg:top-32 lg:right-32 text-lg sm:text-2xl lg:text-4xl opacity-10 animate-pulse">💰</div>
-                <div className="absolute bottom-6 left-1/3 text-xl sm:text-3xl lg:text-5xl opacity-10">🏷️</div>
-                <div className="absolute bottom-12 right-1/4 text-sm sm:text-xl lg:text-3xl opacity-10">✨</div>
-              </div>
-              
-              <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 h-full flex items-center">
-                <div className="max-w-4xl w-full">
-                  <h1 className="text-xl sm:text-4xl lg:text-6xl font-bold mb-2 sm:mb-4 lg:mb-6 leading-loose py-2 sm:py-4">
-                    عروض حصرية
-                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-green-200 to-teal-200 mt-2 sm:mt-6 py-1 sm:py-2">
-                      وخصومات مذهلة
-                    </span>
-                  </h1>
-                  <p className="text-[10px] sm:text-sm lg:text-xl mb-3 sm:mb-6 lg:mb-8 text-green-100 leading-relaxed max-w-2xl mt-2 sm:mt-6">
-                    لا تفوت فرصة الحصول على أفضل الأجهزة بأسعار لا تُقاوم. عروض محدودة الوقت.
-                  </p>
-                  <div className="flex flex-row gap-2 sm:gap-3 lg:gap-4 max-w-md">
-                    <Link
-                      to="/offers"
-                      className="bg-white text-green-900 px-3 sm:px-6 lg:px-8 py-1.5 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-green-50 transition-colors flex items-center justify-center gap-1 sm:gap-2 shadow-lg text-[10px] sm:text-sm lg:text-base"
-                    >
-                      تصفح العروض
-                      <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
-                    </Link>
-                    <Link
-                      to="/products"
-                      className="border-2 border-white text-white px-3 sm:px-6 lg:px-8 py-1.5 sm:py-3 lg:py-4 rounded-full font-semibold hover:bg-white hover:text-green-900 transition-colors text-center text-[10px] sm:text-sm lg:text-base"
-                    >
-                      جميع المنتجات
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-            </Carousel>
+              </Carousel>
+            )}
           </div>
         </div>
       </section>

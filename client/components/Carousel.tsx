@@ -1,9 +1,9 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState, Children } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface CarouselProps {
-  children: React.ReactNode[]
+  children: React.ReactNode
   slidesToShow?: {
     mobile: number
     tablet: number
@@ -143,7 +143,7 @@ const Carousel: React.FC<CarouselProps> = ({
       {/* Carousel Container */}
       <div className="w-full overflow-hidden cursor-grab active:cursor-grabbing embla" ref={emblaRef}>
         <div className="flex embla__container w-full" style={{ marginLeft: `-${gap / 2}px`, marginRight: `-${gap / 2}px` }}>
-          {children.map((child, index) => (
+          {Children.toArray(children).map((child, index) => (
             <div
               key={index}
               className="flex-shrink-0 touch-pan-y embla__slide w-full"
@@ -168,7 +168,7 @@ const Carousel: React.FC<CarouselProps> = ({
           <div 
             className="bg-blue-600 h-full transition-all duration-300 ease-out"
             style={{ 
-              width: `${((selectedIndex + 1) / scrollSnaps.length) * 100}%` 
+              width: `${scrollSnaps.length > 0 ? ((selectedIndex + 1) / scrollSnaps.length) * 100 : 0}%` 
             }}
           />
         </div>

@@ -472,4 +472,52 @@ export const adminCitiesAPI = {
   }
 };
 
+export const adminSliderAPI = {
+  async getSliderItems() {
+    const response = await adminApi.get('/v1/admin/slider');
+    return response.data;
+  },
+  
+  async getSliderItem(id: string) {
+    const response = await adminApi.get(`/v1/admin/slider/${id}`);
+    return response.data;
+  },
+  
+  async createSliderItem(sliderData: FormData) {
+    const response = await adminApi.post('/v1/admin/slider', sliderData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+  
+  async updateSliderItem(id: string, sliderData: FormData) {
+    const isFormData = sliderData instanceof FormData;
+    const config: any = {
+      headers: {
+        'Accept': 'application/json',
+      }
+    };
+    
+    // For FormData with file uploads, use POST with _method=PUT
+    // This is because Laravel doesn't handle multipart/form-data well with PUT requests
+    if (isFormData) {
+      // Add _method field to simulate PUT request
+      sliderData.append('_method', 'PUT');
+      const response = await adminApi.post(`/v1/admin/slider/${id}`, sliderData, config);
+      return response.data;
+    } else {
+      config.headers['Content-Type'] = 'application/json';
+      const response = await adminApi.put(`/v1/admin/slider/${id}`, sliderData, config);
+      return response.data;
+    }
+  },
+  
+  async deleteSliderItem(id: string) {
+    const response = await adminApi.delete(`/v1/admin/slider/${id}`);
+    return response.data;
+  }
+};
+
 export default adminApi;
