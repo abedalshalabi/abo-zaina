@@ -255,9 +255,18 @@ const Products = () => {
   
   // Products will be loaded by the filters useEffect below
 
-  // Read category_id and brand_id from URL and set selected values
+  // Read category_id, brand_id, and search from URL and set selected values
   useEffect(() => {
     const params = new URLSearchParams(location.search);
+    
+    // Handle search query from URL
+    const searchFromUrl = params.get('search');
+    if (searchFromUrl) {
+      setSearchQuery(searchFromUrl);
+    } else {
+      // Reset search query if not in URL
+      setSearchQuery("");
+    }
     
     // Handle category_id from URL
     const categoryIdFromUrl = params.get('category_id');

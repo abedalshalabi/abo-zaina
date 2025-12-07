@@ -105,8 +105,11 @@ const Header = ({
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery) {
+      navigate(`/products?search=${encodeURIComponent(trimmedQuery)}`);
+      // Clear search input after navigation
+      setSearchQuery("");
     }
   };
 
