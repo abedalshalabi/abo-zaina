@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Search, Heart, User, ShoppingCart, Menu, Package, Grid3x3, Award } from "lucide-react";
+import { ArrowRight, Search, Heart, User, ShoppingCart, Menu, Package, Grid3x3, Award, Tag } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useState, useEffect } from "react";
 import { settingsAPI } from "../services/api";
@@ -331,27 +331,38 @@ const Header = ({
           <nav className="flex items-center justify-center gap-1 sm:gap-2 md:gap-4 lg:gap-6 overflow-x-auto scrollbar-hide">
             <Link
               to="/products"
-              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 md:px-4 py-1.5 text-[10px] sm:text-xs md:text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-white rounded-md transition-all duration-200 whitespace-nowrap flex-shrink-0"
+              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 md:px-4 py-1.5 text-[10px] sm:text-xs md:text-sm font-medium text-blue-700 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-all duration-200 whitespace-nowrap flex-shrink-0"
             >
               <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
               <span className="hidden xs:inline">عرض جميع المنتجات</span>
               <span className="xs:hidden">المنتجات</span>
             </Link>
+            <div className="h-4 sm:h-5 w-px bg-blue-200 flex-shrink-0"></div>
             <Link
               to="/categories"
-              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 md:px-4 py-1.5 text-[10px] sm:text-xs md:text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-white rounded-md transition-all duration-200 whitespace-nowrap flex-shrink-0"
+              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 md:px-4 py-1.5 text-[10px] sm:text-xs md:text-sm font-medium text-blue-700 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-all duration-200 whitespace-nowrap flex-shrink-0"
             >
               <Grid3x3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
               <span className="hidden xs:inline">عرض جميع التصنيفات</span>
               <span className="xs:hidden">التصنيفات</span>
             </Link>
+            <div className="h-4 sm:h-5 w-px bg-blue-200 flex-shrink-0"></div>
             <Link
               to="/brands"
-              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 md:px-4 py-1.5 text-[10px] sm:text-xs md:text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-white rounded-md transition-all duration-200 whitespace-nowrap flex-shrink-0"
+              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 md:px-4 py-1.5 text-[10px] sm:text-xs md:text-sm font-medium text-blue-700 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-all duration-200 whitespace-nowrap flex-shrink-0"
             >
               <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
               <span className="hidden xs:inline">عرض جميع الماركات</span>
               <span className="xs:hidden">الماركات</span>
+            </Link>
+            <div className="h-4 sm:h-5 w-px bg-blue-200 flex-shrink-0"></div>
+            <Link
+              to="/offers"
+              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 md:px-4 py-1.5 text-[10px] sm:text-xs md:text-sm font-medium text-blue-700 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-all duration-200 whitespace-nowrap flex-shrink-0"
+            >
+              <Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+              <span className="hidden xs:inline">العروض الخاصة</span>
+              <span className="xs:hidden">العروض</span>
             </Link>
           </nav>
         </div>
