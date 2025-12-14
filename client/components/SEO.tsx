@@ -8,7 +8,7 @@ interface SEOProps {
   image?: string;
   type?: string;
   url?: string;
-  structuredData?: object;
+  structuredData?: object | object[];
   noindex?: boolean;
   canonical?: string;
 }
@@ -115,16 +115,31 @@ const SEO = ({
       setMetaTag('name', 'robots', 'index, follow');
     }
 
+    // Geographic Location Meta Tags
+    setMetaTag('name', 'geo.region', 'PS');
+    setMetaTag('name', 'geo.placename', 'جنين');
+    setMetaTag('name', 'geo.position', '32.4609;35.2999');
+    setMetaTag('name', 'ICBM', '32.4609, 35.2999');
+
     // Language and direction
     document.documentElement.setAttribute('lang', 'ar');
     document.documentElement.setAttribute('dir', 'rtl');
 
-    // Add structured data
+    // Add structured data (support both single object and array)
     if (structuredData) {
-      const script = document.createElement('script');
-      script.type = 'application/ld+json';
-      script.text = JSON.stringify(structuredData);
-      document.head.appendChild(script);
+      // Remove all existing structured data scripts
+      const existingScripts = document.querySelectorAll('script[type="application/ld+json"]');
+      existingScripts.forEach(script => script.remove());
+
+      // Handle array of structured data
+      const dataArray = Array.isArray(structuredData) ? structuredData : [structuredData];
+      
+      dataArray.forEach((data) => {
+        const script = document.createElement('script');
+        script.type = 'application/ld+json';
+        script.text = JSON.stringify(data);
+        document.head.appendChild(script);
+      });
     }
   }, [title, description, keywords, image, type, currentUrl, canonicalUrl, fullImageUrl, structuredData, noindex]);
 

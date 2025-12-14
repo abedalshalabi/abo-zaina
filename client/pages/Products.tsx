@@ -943,29 +943,76 @@ const Products = () => {
   // Get category name for SEO
   const categoryName = selectedParentCategory?.name || selectedSubcategory?.name || '';
   const pageTitle = categoryName 
-    ? `${categoryName} - منتجات | أبو زينة للتقنيات`
-    : 'جميع المنتجات | أبو زينة للتقنيات';
+    ? `${categoryName} - منتجات | أبو زينة للتقنيات - أجهزة كهربائية في جنين`
+    : 'جميع المنتجات | أبو زينة للتقنيات - أجهزة كهربائية وإلكترونيات في جنين';
   const pageDescription = categoryName
-    ? `تصفح مجموعة واسعة من منتجات ${categoryName} في أبو زينة للتقنيات. أفضل الأسعار والجودة المضمونة.`
-    : 'تصفح جميع منتجاتنا من الأجهزة الكهربائية والإلكترونية. أفران، ثلاجات، غسالات، تلفزيونات، هواتف ذكية وأكثر.';
+    ? `تصفح مجموعة واسعة من منتجات ${categoryName} في أبو زينة للتقنيات، جنين. أفضل الأسعار والجودة المضمونة. توصيل سريع وضمان شامل.`
+    : 'تصفح جميع منتجاتنا من الأجهزة الكهربائية والإلكترونية في أبو زينة للتقنيات، جنين. أفران، ثلاجات، غسالات، تلفزيونات، هواتف ذكية وأكثر. توصيل سريع وضمان شامل.';
+  
+  // Build breadcrumb items
+  const breadcrumbItems = [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "الرئيسية",
+      "item": siteUrl
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "المنتجات",
+      "item": currentUrl
+    }
+  ];
 
-  // Structured Data for Product Collection
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    "name": pageTitle,
-    "description": pageDescription,
-    "url": currentUrl
-  };
+  if (selectedParentCategory) {
+    breadcrumbItems.push({
+      "@type": "ListItem",
+      "position": breadcrumbItems.length + 1,
+      "name": selectedParentCategory.name,
+      "item": `${siteUrl}/products?category_id=${selectedParentCategory.id}`
+    });
+  }
+
+  if (selectedSubcategory) {
+    breadcrumbItems.push({
+      "@type": "ListItem",
+      "position": breadcrumbItems.length + 1,
+      "name": selectedSubcategory.name,
+      "item": `${siteUrl}/products?category_id=${selectedSubcategory.id}`
+    });
+  }
+  
+  // Structured Data for Product Collection - Multiple Schemas
+  const structuredDataArray = [
+    // CollectionPage Schema
+    {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": pageTitle,
+      "description": pageDescription,
+      "url": currentUrl,
+      "mainEntity": {
+        "@type": "ItemList",
+        "numberOfItems": products.length
+      }
+    },
+    // BreadcrumbList Schema
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": breadcrumbItems
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 arabic">
       <SEO
         title={pageTitle}
         description={pageDescription}
-        keywords={`${categoryName}, منتجات, أجهزة كهربائية, إلكترونيات, تسوق أونلاين`}
+        keywords={`${categoryName}, منتجات, أجهزة كهربائية, إلكترونيات, ثلاجات, غسالات, جنين, أبو زينة, أبو زينة للتقنيات, تسوق أونلاين, تفاصيل المنتجات`}
         url={currentUrl}
-        structuredData={structuredData}
+        structuredData={structuredDataArray}
       />
       <Header 
         showSearch={true}
@@ -1230,16 +1277,6 @@ const Products = () => {
                       )}
                     </div>
                   ))}
-                  
-                  {/* Reset Filters Button */}
-                  <div className="pt-2">
-                    <button
-                      onClick={resetAllFilters}
-                      className="w-full text-sm text-gray-600 hover:text-gray-800 underline"
-                    >
-                      إعادة تعيين الفلاتر
-                    </button>
-                  </div>
                 </div>
               )}
 
@@ -1315,6 +1352,31 @@ const Products = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Reset Filters Button - Show when any filter is active */}
+              {(() => {
+                const hasActiveFilters = 
+                  selectedCategoryId !== null ||
+                  selectedSubcategory !== null ||
+                  selectedBrand !== "الكل" ||
+                  Object.keys(selectedFilters).length > 0 ||
+                  searchQuery !== "" ||
+                  (priceRange[0] !== 0 || priceRange[1] !== 50000) ||
+                  sortBy !== "default" ||
+                  location.search.includes('category_id') ||
+                  location.search.includes('brand_id');
+                
+                return hasActiveFilters ? (
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <button
+                      onClick={resetAllFilters}
+                      className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 px-4 rounded-lg transition-colors text-sm"
+                    >
+                      إعادة تعيين جميع الفلاتر
+                    </button>
+                  </div>
+                ) : null;
+              })()}
             </div>
             </div>
           </div>

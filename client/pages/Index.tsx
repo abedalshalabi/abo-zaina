@@ -216,44 +216,143 @@ const Index = () => {
         : `${siteUrl}${headerSettings.header_logo.startsWith('/') ? '' : '/'}${headerSettings.header_logo}`)
     : `${siteUrl}/placeholder.svg`;
   
-  // Structured Data for Homepage
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "Store",
-    "name": "أبو زينة للتقنيات",
-    "description": "متجر متخصص في بيع الأجهزة الكهربائية والإلكترونية في فلسطين",
-    "url": siteUrl,
-    "logo": logoUrl,
-    "image": logoUrl,
-    "address": {
-      "@type": "PostalAddress",
-      "addressCountry": "PS",
-      "addressLocality": "فلسطين"
-    },
-    "sameAs": [],
-    "potentialAction": {
-      "@type": "SearchAction",
-      "target": {
-        "@type": "EntryPoint",
-        "urlTemplate": `${siteUrl}/products?search={search_term_string}`
+  // Get social media links for sameAs
+  const socialLinks = [
+    socialSettings.social_media_facebook,
+    socialSettings.social_media_twitter,
+    socialSettings.social_media_instagram,
+    socialSettings.social_media_linkedin,
+    socialSettings.social_media_youtube,
+    socialSettings.social_media_telegram
+  ].filter(Boolean);
+
+  // Structured Data for Homepage - Multiple Schemas
+  const structuredDataArray = [
+    // Organization Schema
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "أبو زينة للتقنيات",
+      "alternateName": "أبو زينة",
+      "url": siteUrl,
+      "logo": logoUrl,
+      "image": logoUrl,
+      "description": "متجر متخصص في بيع الأجهزة الكهربائية والإلكترونية في جنين، فلسطين. نوفر ثلاجات، غسالات، أفران، تلفزيونات، هواتف ذكية وأكثر.",
+      "address": {
+        "@type": "PostalAddress",
+        "addressCountry": "PS",
+        "addressLocality": "جنين",
+        "addressRegion": "جنين",
+        "streetAddress": "جنين، فلسطين"
       },
-      "query-input": "required name=search_term_string"
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "telephone": socialSettings.header_phone || "",
+        "contactType": "customer service",
+        "areaServed": "PS",
+        "availableLanguage": ["ar"]
+      },
+      "sameAs": socialLinks,
+      "areaServed": {
+        "@type": "City",
+        "name": "جنين"
+      }
     },
-    "offers": {
-      "@type": "AggregateOffer",
-      "priceCurrency": "ILS",
-      "availability": "https://schema.org/InStock"
+    // LocalBusiness Schema
+    {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      "name": "أبو زينة للتقنيات",
+      "image": logoUrl,
+      "description": "متجر أجهزة كهربائية وإلكترونية في جنين، فلسطين. بالقرب من النمر مول وبنك الاستثمار. نوفر ثلاجات، غسالات، أفران، تلفزيونات، هواتف ذكية وأكثر.",
+      "url": siteUrl,
+      "telephone": socialSettings.header_phone || "",
+      "address": {
+        "@type": "PostalAddress",
+        "addressCountry": "PS",
+        "addressLocality": "جنين",
+        "addressRegion": "جنين",
+        "streetAddress": "جنين، فلسطين"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 32.4609,
+        "longitude": 35.2999
+      },
+      "openingHoursSpecification": {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": [
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday"
+        ],
+        "opens": "09:00",
+        "closes": "18:00"
+      },
+      "priceRange": "$$",
+      "servesCuisine": false,
+      "areaServed": {
+        "@type": "City",
+        "name": "جنين"
+      },
+      "hasMap": "https://www.google.com/maps?q=32.4609,35.2999"
+    },
+    // Store Schema
+    {
+      "@context": "https://schema.org",
+      "@type": "Store",
+      "name": "أبو زينة للتقنيات",
+      "description": "متجر متخصص في بيع الأجهزة الكهربائية والإلكترونية في جنين، فلسطين. نوفر ثلاجات، غسالات، أفران، تلفزيونات، هواتف ذكية وأكثر.",
+      "url": siteUrl,
+      "logo": logoUrl,
+      "image": logoUrl,
+      "address": {
+        "@type": "PostalAddress",
+        "addressCountry": "PS",
+        "addressLocality": "جنين",
+        "addressRegion": "جنين"
+      },
+      "sameAs": socialLinks,
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": `${siteUrl}/products?search={search_term_string}`
+        },
+        "query-input": "required name=search_term_string"
+      },
+      "offers": {
+        "@type": "AggregateOffer",
+        "priceCurrency": "ILS",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    // BreadcrumbList Schema
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "الرئيسية",
+          "item": siteUrl
+        }
+      ]
     }
-  };
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 arabic">
       <SEO
-        title="أبو زينة للتقنيات - عالم التكنولوجيا والأجهزة الكهربائية"
-        description="تسوق أونلاين من أبو زينة للتقنيات - أفضل متجر للأجهزة الكهربائية والإلكترونية في فلسطين. أفران، ثلاجات، غسالات، تلفزيونات، هواتف ذكية وأكثر. توصيل سريع وضمان شامل."
-        keywords="أجهزة كهربائية, إلكترونيات, أفران, ثلاجات, غسالات, تلفزيونات, هواتف ذكية, تسوق أونلاين, أبو زينة, فلسطين"
+        title="أبو زينة للتقنيات - أجهزة كهربائية وإلكترونيات في جنين | ثلاجات، غسالات، أفران"
+        description="تسوق أونلاين من أبو زينة للتقنيات - أفضل متجر للأجهزة الكهربائية والإلكترونية في جنين، فلسطين. أفران، ثلاجات، غسالات، تلفزيونات، هواتف ذكية وأكثر. بالقرب من النمر مول وبنك الاستثمار. توصيل سريع وضمان شامل."
+        keywords="أبو زينة, أبو زينة للتقنيات, أجهزة كهربائية, تقنيات, إلكترونيات, ثلاجات, غسالات, جنين, النمر مول, بنك الاستثمار, أفران, تلفزيونات, هواتف ذكية, تسوق أونلاين, فلسطين, تفاصيل المنتجات"
         image={headerSettings.header_logo || '/placeholder.svg'}
-        structuredData={structuredData}
+        structuredData={structuredDataArray}
       />
       <Header 
         showSearch={true}

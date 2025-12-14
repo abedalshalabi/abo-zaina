@@ -9,3 +9,4 @@ Disallow: /register
 
 # Sitemap
 Sitemap: https://abozaina.ps/sitemap.xml
+Sitemap: https://abozaina.ps/abozaina/public/sitemap.xml

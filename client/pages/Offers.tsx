@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useCart } from "../context/CartContext";
 import { useAnimation } from "../context/AnimationContext";
 import Header from "../components/Header";
+import SEO from "../components/SEO";
 import { offersAPI } from "../services/api";
 
 interface Offer {
@@ -457,8 +458,46 @@ const Offers = () => {
     );
   }
 
+  const siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const currentUrl = `${siteUrl}/offers`;
+
+  // Structured Data for Offers Page
+  const structuredDataArray = [
+    {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": "العروض الخاصة - أبو زينة للتقنيات",
+      "description": "تصفح العروض الخاصة والخصومات الحصرية على الأجهزة الكهربائية والإلكترونية في أبو زينة للتقنيات، جنين. ثلاجات، غسالات، أفران وأكثر بأسعار مميزة.",
+      "url": currentUrl
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "الرئيسية",
+          "item": siteUrl
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "العروض",
+          "item": currentUrl
+        }
+      ]
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50 arabic">
+      <SEO
+        title="العروض الخاصة - أبو زينة للتقنيات - أجهزة كهربائية في جنين"
+        description="تصفح العروض الخاصة والخصومات الحصرية على الأجهزة الكهربائية والإلكترونية في أبو زينة للتقنيات، جنين. ثلاجات، غسالات، أفران، تلفزيونات وأكثر بأسعار مميزة. بالقرب من النمر مول وبنك الاستثمار."
+        keywords="عروض, خصومات, أجهزة كهربائية, إلكترونيات, ثلاجات, غسالات, أفران, تلفزيونات, جنين, أبو زينة, أبو زينة للتقنيات, النمر مول, بنك الاستثمار, تفاصيل المنتجات"
+        structuredData={structuredDataArray}
+      />
       <Header 
         showSearch={true}
         showActions={true}

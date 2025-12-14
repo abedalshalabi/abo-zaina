@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Header from "../components/Header";
+import SEO from "../components/SEO";
 import { categoriesAPI } from "../services/api";
 import { ChevronRight } from "lucide-react";
 
@@ -296,8 +297,46 @@ const CategoriesPage = () => {
     );
   };
 
+  const siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const currentUrl = `${siteUrl}/categories`;
+
+  // Structured Data for Categories Page
+  const structuredDataArray = [
+    {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": "جميع التصنيفات - أبو زينة للتقنيات",
+      "description": "تصفح جميع تصنيفات الأجهزة الكهربائية والإلكترونية في أبو زينة للتقنيات، جنين. ثلاجات، غسالات، أفران، تلفزيونات وأكثر.",
+      "url": currentUrl
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "الرئيسية",
+          "item": siteUrl
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "التصنيفات",
+          "item": currentUrl
+        }
+      ]
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50 arabic">
+      <SEO
+        title="جميع التصنيفات - أبو زينة للتقنيات - أجهزة كهربائية في جنين"
+        description="تصفح جميع تصنيفات الأجهزة الكهربائية والإلكترونية في أبو زينة للتقنيات، جنين. ثلاجات، غسالات، أفران، تلفزيونات، هواتف ذكية وأكثر. بالقرب من النمر مول وبنك الاستثمار."
+        keywords="تصنيفات, أجهزة كهربائية, إلكترونيات, ثلاجات, غسالات, أفران, تلفزيونات, جنين, أبو زينة, أبو زينة للتقنيات, النمر مول, بنك الاستثمار"
+        structuredData={structuredDataArray}
+      />
       <Header showSearch showActions />
 
       <main className="container mx-auto px-4 py-12">

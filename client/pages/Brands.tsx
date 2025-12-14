@@ -54,9 +54,36 @@ const BrandsPage = () => {
     <div className="min-h-screen bg-gray-50 arabic">
       <Header showSearch showActions />
       <SEO
-        title="جميع الماركات - أبو زينة"
-        description="تصفح جميع الماركات المتاحة في متجر أبو زينة. اختر من بين مجموعة متنوعة من العلامات التجارية الموثوقة."
-        keywords="ماركات, علامات تجارية, أبو زينة"
+        title="جميع الماركات - أبو زينة للتقنيات - أجهزة كهربائية في جنين"
+        description="تصفح جميع الماركات المتاحة في متجر أبو زينة للتقنيات، جنين. اختر من بين مجموعة متنوعة من العلامات التجارية الموثوقة للأجهزة الكهربائية والإلكترونية. ثلاجات، غسالات، أفران وأكثر."
+        keywords="ماركات, علامات تجارية, أبو زينة, أبو زينة للتقنيات, أجهزة كهربائية, إلكترونيات, ثلاجات, غسالات, جنين, تفاصيل المنتجات"
+        structuredData={[
+          {
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            "name": "جميع الماركات - أبو زينة للتقنيات",
+            "description": "تصفح جميع الماركات المتاحة في متجر أبو زينة للتقنيات، جنين",
+            "url": typeof window !== 'undefined' ? `${window.location.origin}/brands` : ''
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "الرئيسية",
+                "item": typeof window !== 'undefined' ? window.location.origin : ''
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "الماركات",
+                "item": typeof window !== 'undefined' ? `${window.location.origin}/brands` : ''
+              }
+            ]
+          }
+        ]}
       />
 
       <main className="container mx-auto px-4 py-12">

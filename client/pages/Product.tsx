@@ -481,40 +481,104 @@ const Product = () => {
     }
   }
 
-  // Structured Data for Product
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "Product",
+  // Build breadcrumb items for structured data
+  const breadcrumbStructuredData = [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "الرئيسية",
+      "item": typeof window !== 'undefined' ? window.location.origin : ''
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "المنتجات",
+      "item": `${typeof window !== 'undefined' ? window.location.origin : ''}/products`
+    }
+  ];
+
+  if (breadcrumbCategories.main) {
+    breadcrumbStructuredData.push({
+      "@type": "ListItem",
+      "position": breadcrumbStructuredData.length + 1,
+      "name": breadcrumbCategories.main.name,
+      "item": `${typeof window !== 'undefined' ? window.location.origin : ''}/products?category_id=${breadcrumbCategories.main.id}`
+    });
+  }
+
+  if (breadcrumbCategories.sub) {
+    breadcrumbStructuredData.push({
+      "@type": "ListItem",
+      "position": breadcrumbStructuredData.length + 1,
+      "name": breadcrumbCategories.sub.name,
+      "item": `${typeof window !== 'undefined' ? window.location.origin : ''}/products?category_id=${breadcrumbCategories.sub.id}`
+    });
+  }
+
+  breadcrumbStructuredData.push({
+    "@type": "ListItem",
+    "position": breadcrumbStructuredData.length + 1,
     "name": product.name,
-    "description": product.description || `${product.name} - ${product.brand}`,
-    "image": product.images?.map(img => img.startsWith('http') ? img : `${STORAGE_BASE_URL}/${img}`) || [productImage],
-    "brand": {
-      "@type": "Brand",
-      "name": product.brand
+    "item": productUrl
+  });
+
+  // Structured Data for Product - Multiple Schemas
+  const structuredDataArray = [
+    // Product Schema with enhanced details
+    {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": product.name,
+      "description": product.description || `${product.name} من ${product.brand} - متوفر في أبو زينة للتقنيات، جنين. ${product.category}`,
+      "image": product.images?.map((img: string) => img.startsWith('http') ? img : `${STORAGE_BASE_URL}/${img}`) || [productImage],
+      "brand": {
+        "@type": "Brand",
+        "name": product.brand
+      },
+      "category": product.category,
+      "sku": product.id.toString(),
+      "mpn": product.id.toString(),
+      "offers": {
+        "@type": "Offer",
+        "url": productUrl,
+        "priceCurrency": "ILS",
+        "price": product.price.toString(),
+        "priceValidUntil": new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        "availability": product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+        "itemCondition": "https://schema.org/NewCondition",
+        "seller": {
+          "@type": "Organization",
+          "name": "أبو زينة للتقنيات"
+        }
+      },
+      ...(product.rating > 0 && product.reviews > 0 ? {
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": product.rating.toString(),
+          "reviewCount": product.reviews.toString(),
+          "bestRating": "5",
+          "worstRating": "1"
+        }
+      } : {})
     },
-    "category": product.category,
-    "offers": {
-      "@type": "Offer",
-      "url": productUrl,
-      "priceCurrency": "ILS",
-      "price": product.price,
-      "priceValidUntil": new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      "availability": product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-      "itemCondition": "https://schema.org/NewCondition"
-    },
-    "sku": product.id.toString()
-  };
+    // BreadcrumbList Schema
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": breadcrumbStructuredData
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 arabic">
       <SEO
-        title={`${product.name} - ${product.brand} | أبو زينة للتقنيات`}
-        description={product.description || `${product.name} من ${product.brand} - ${product.price} ₪`}
-        keywords={`${product.name}, ${product.brand}, ${product.category}, أجهزة كهربائية, إلكترونيات`}
+        title={`${product.name} - ${product.brand} | أبو زينة للتقنيات - أجهزة كهربائية في جنين`}
+        description={product.description || `${product.name} من ${product.brand} - ${product.category} متوفر في أبو زينة للتقنيات، جنين. السعر: ${product.price} ₪. توصيل سريع وضمان شامل.`}
+        keywords={`${product.name}, ${product.brand}, ${product.category}, أجهزة كهربائية, إلكترونيات, ثلاجات, غسالات, جنين, أبو زينة, أبو زينة للتقنيات, تفاصيل المنتجات`}
         image={productImage}
         type="product"
         url={productUrl}
-        structuredData={structuredData}
+        structuredData={structuredDataArray}
       />
       <Header 
         showSearch={true}
