@@ -295,6 +295,16 @@ const Products = () => {
       if (brand) {
         setSelectedBrand(brand.name);
       }
+    } else if (!brandIdFromUrl) {
+      setSelectedBrand("الكل");
+    }
+
+    // Handle price range and sort from URL (optional, currently not in URL but good for consistency)
+    if (!params.get('price_min') && !params.get('price_max')) {
+      setPriceRange([0, 50000]);
+    }
+    if (!params.get('sort')) {
+      setSortBy("default");
     }
   }, [location.search, categories, allCategoriesList, allBrands]);
 
