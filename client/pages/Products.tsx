@@ -220,9 +220,9 @@ const Products = () => {
       } catch (err) {
         setError("حدث خطأ في تحميل البيانات");
         console.error("Error loading data:", err);
-      } finally {
-        setLoading(false);
+        setLoading(false); // Only stop loading on error, otherwise wait for product load
       }
+      // Removed finally block to prevent loading flash
     };
 
     loadData();
@@ -1457,7 +1457,13 @@ const Products = () => {
                       <span className="mr-2 text-gray-600">جاري تحميل المزيد...</span>
                     </div>
                   ) : hasMore ? (
-                    <div className="flex flex-col items-center gap-2 cursor-pointer" onClick={() => loadMoreProducts()}>
+                    <div
+                      className="flex flex-col items-center gap-2 cursor-pointer"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        loadMoreProducts();
+                      }}
+                    >
                       <div className="animate-pulse">
                         <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                       </div>
