@@ -318,6 +318,13 @@ const Products = () => {
 
   // Helper function to handle category selection
   const handleCategorySelection = async (category: any) => {
+    // Check if we already have this category selected to avoid redundant fetches
+    const categoryId = Number(category.id);
+    const isAlreadySelected = (selectedCategoryId === categoryId && !category.parent_id) ||
+      (selectedSubcategory && Number(selectedSubcategory.id) === categoryId);
+
+    if (isAlreadySelected) return;
+
     // Check if category is a parent (parent_id is null) or child (parent_id is not null)
     const isChildCategory = category.parent_id !== null && category.parent_id !== undefined;
 
@@ -657,12 +664,11 @@ const Products = () => {
 
   // Reload products when filters change (reset to page 1)
   useEffect(() => {
-    // Wait for categories/brands to be loaded before first load
-    if (!initialLoadRef.current && (categories.length === 0 && brands.length === 0)) {
+    // Prevent initial double-fire
+    if (!initialLoadRef.current) {
+      initialLoadRef.current = true;
       return;
     }
-
-    initialLoadRef.current = true;
 
     // Debounce increased to 500ms to allow user to finish typing/clicking
     const timeoutId = setTimeout(() => {
@@ -673,7 +679,7 @@ const Products = () => {
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, selectedCategoryId, selectedSubcategory, selectedBrand, priceRange, sortBy, selectedFilters, categories.length, brands.length]);
+  }, [searchQuery, selectedCategoryId, selectedSubcategory, selectedBrand, priceRange, sortBy, selectedFilters]);
 
   // Infinity scroll observer - تحميل تلقائي عند التمرير
   useEffect(() => {
