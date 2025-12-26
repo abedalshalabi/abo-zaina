@@ -359,8 +359,10 @@ const Products = () => {
     try {
       if (!append) {
         setLoading(true);
+        loadingRef.current = true;
       } else {
         setLoadingMore(true);
+        loadingRef.current = true;
       }
 
       // Build filters object
@@ -636,16 +638,12 @@ const Products = () => {
     } finally {
       setLoading(false);
       setLoadingMore(false);
+      loadingRef.current = false;
     }
   };
 
   // Track loading state with ref to avoid closure staleness in Observer
   const loadingRef = useRef(false);
-
-  // Sync ref with state
-  useEffect(() => {
-    loadingRef.current = loading || loadingMore;
-  }, [loading, loadingMore]);
 
   // Load more products (for infinity scroll)
   const loadMoreProducts = useCallback(() => {
@@ -668,7 +666,7 @@ const Products = () => {
 
     // Debounce increased to 500ms to allow user to finish typing/clicking
     const timeoutId = setTimeout(() => {
-      setProducts([]);
+      // Don't clear products here, let loadProducts replace them to avoid layout jumps
       setCurrentPage(1);
       setHasMore(true);
       loadProducts(1, false);
