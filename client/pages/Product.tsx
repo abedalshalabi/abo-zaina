@@ -45,6 +45,7 @@ interface ProductDetail {
   specifications: { [key: string]: string };
   warranty: string;
   deliveryTime: string;
+  sku: string;
 }
 
 interface BreadcrumbCategory {
@@ -71,8 +72,8 @@ const deriveBreadcrumbCategories = (
 
   const productCategories: BreadcrumbCategory[] = Array.isArray(apiProduct.categories)
     ? apiProduct.categories
-        .map((cat: any) => categoriesMap.get(Number(cat.id)))
-        .filter((cat): cat is BreadcrumbCategory => Boolean(cat))
+      .map((cat: any) => categoriesMap.get(Number(cat.id)))
+      .filter((cat): cat is BreadcrumbCategory => Boolean(cat))
     : [];
 
   let mainCategory: BreadcrumbCategory | undefined;
@@ -125,7 +126,7 @@ const deriveBreadcrumbCategories = (
 const formatPrice = (price: number | string): string => {
   // Convert to number if it's a string
   const numPrice = typeof price === 'string' ? parseFloat(price) : price;
-  
+
   // Check if it's a whole number
   if (numPrice % 1 === 0) {
     // Return as integer without decimals
@@ -173,7 +174,7 @@ const Product = () => {
               return { data: {} };
             }),
           ]);
-          
+
           // Set WhatsApp number and header settings from settings
           if (settingsResponse.data) {
             if (settingsResponse.data.whatsapp_number) {
@@ -209,10 +210,10 @@ const Product = () => {
 
             categoriesData.forEach(addCategoryToMap);
           }
-          
+
           console.log('Product from API:', apiProduct);
           console.log('Images from API:', apiProduct.images);
-          
+
           // Transform images array from objects to URLs
           const transformedImages: string[] = [];
           if (apiProduct.images && Array.isArray(apiProduct.images)) {
@@ -233,18 +234,18 @@ const Product = () => {
                   const normalizedPath = String(img.image_path)
                     .replace(/^\/?storage\//, '')
                     .replace(/^\//, '');
-                  const imageUrl = img.image_path.startsWith('http') 
-                    ? img.image_path 
+                  const imageUrl = img.image_path.startsWith('http')
+                    ? img.image_path
                     : `${STORAGE_BASE_URL}/${normalizedPath}`;
                   transformedImages.push(imageUrl);
                 }
               }
             });
           }
-          
+
           console.log('Original images from API:', apiProduct.images);
           console.log('Transformed images URLs:', transformedImages);
-          
+
           // Transform API data to match ProductDetail interface
           const transformedProduct: ProductDetail = {
             id: apiProduct.id,
@@ -257,7 +258,7 @@ const Product = () => {
             category: apiProduct.category?.name || '',
             brand: apiProduct.brand?.name || '',
             discount: apiProduct.discount_percentage,
-            inStock: apiProduct.stock_status === 'stock_based' 
+            inStock: apiProduct.stock_status === 'stock_based'
               ? (apiProduct.stock_quantity || 0) > 0
               : (apiProduct.stock_status === 'in_stock' || (apiProduct.in_stock && apiProduct.stock_status !== 'out_of_stock')),
             stockStatus: apiProduct.stock_status || 'in_stock',
@@ -266,12 +267,13 @@ const Product = () => {
             features: apiProduct.features || [],
             specifications: apiProduct.specifications || {},
             warranty: apiProduct.warranty || 'ضمان شامل',
-            deliveryTime: apiProduct.delivery_time || '2-3 أيام عمل'
+            deliveryTime: apiProduct.delivery_time || '2-3 أيام عمل',
+            sku: apiProduct.sku || ''
           };
-          
+
           console.log('Transformed product:', transformedProduct);
           console.log('Transformed images count:', transformedProduct.images.length);
-          
+
           if (categoriesMap.size > 0) {
             setBreadcrumbCategories(deriveBreadcrumbCategories(apiProduct, categoriesMap));
           } else {
@@ -285,20 +287,20 @@ const Product = () => {
         }
       }
     };
-    
+
     loadProduct();
   }, [id, navigate]);
 
   const handleAddToCart = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (product) {
       const buttonElement = event.currentTarget;
-      
+
       // Trigger animation
       triggerAnimation(buttonElement, {
         image: product.images && product.images[0] ? product.images[0] : '/placeholder.svg',
         name: product.name
       });
-      
+
       // Add to cart
       addItem({
         id: product.id,
@@ -323,23 +325,23 @@ const Product = () => {
 
   const handleWhatsAppOrder = () => {
     if (!product) return;
-    
+
     if (!whatsappNumber) {
       alert('رقم الواتساب غير متوفر حالياً');
       return;
     }
-    
+
     // Clean phone number (remove any non-numeric characters)
     const phoneNumber = whatsappNumber.replace(/[^0-9]/g, '');
     const productName = product.name;
     const productPrice = formatPrice(product.price);
     const productUrl = window.location.href;
     const quantityText = quantity > 1 ? `الكمية: ${quantity}` : '';
-    
+
     const message = `مرحباً، أريد طلب المنتج التالي:\n\n${productName}\nالسعر: ${productPrice} ₪\n${quantityText}\n\nرابط المنتج: ${productUrl}`;
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
-    
+
     window.open(whatsappUrl, '_blank');
   };
 
@@ -374,7 +376,7 @@ const Product = () => {
 
   const shareToPlatform = (platform: string) => {
     if (!product) return;
-    
+
     const productUrl = window.location.href;
     const productName = product.name;
     const productPrice = formatPrice(product.price);
@@ -431,8 +433,8 @@ const Product = () => {
           <div className="text-6xl mb-4">📦</div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">المنتج غير موجود</h2>
           <p className="text-gray-600 mb-4">عذراً، لم يتم العثور على المنتج المطلوب</p>
-          <Link 
-            to="/products" 
+          <Link
+            to="/products"
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
             العودة للمنتجات
@@ -580,7 +582,7 @@ const Product = () => {
         url={productUrl}
         structuredData={structuredDataArray}
       />
-      <Header 
+      <Header
         showSearch={true}
         showActions={true}
       />
@@ -611,8 +613,8 @@ const Product = () => {
           <div className="space-y-4">
             {/* Main Image */}
             <div className="relative bg-white rounded-2xl shadow-lg overflow-hidden">
-              <img 
-                src={product.images && product.images[selectedImage] ? product.images[selectedImage] : '/placeholder.svg'} 
+              <img
+                src={product.images && product.images[selectedImage] ? product.images[selectedImage] : '/placeholder.svg'}
                 alt={product.name}
                 className="w-full h-96 object-contain bg-white cursor-pointer hover:opacity-90 transition-opacity"
                 onClick={() => setIsImageModalOpen(true)}
@@ -626,17 +628,17 @@ const Product = () => {
                   خصم {product.discount}%
                 </div>
               )}
-              
+
               {/* Image Navigation */}
               {product.images.length > 1 && (
                 <>
-                  <button 
+                  <button
                     onClick={prevImage}
                     className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full p-2 transition-all"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
-                  <button 
+                  <button
                     onClick={nextImage}
                     className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full p-2 transition-all"
                   >
@@ -645,7 +647,7 @@ const Product = () => {
                 </>
               )}
             </div>
-            
+
             {/* Thumbnail Images */}
             {product.images.length > 1 && (
               <div className="flex gap-2 overflow-x-auto">
@@ -653,13 +655,12 @@ const Product = () => {
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
-                    className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
-                      selectedImage === index ? 'border-blue-500' : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                    className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${selectedImage === index ? 'border-blue-500' : 'border-gray-200 hover:border-gray-300'
+                      }`}
                     type="button"
                   >
-                    <img 
-                      src={image || '/placeholder.svg'} 
+                    <img
+                      src={image || '/placeholder.svg'}
                       alt={`${product.name} ${index + 1}`}
                       className="w-full h-full object-contain bg-white cursor-pointer hover:opacity-90 transition-opacity"
                       onClick={() => {
@@ -679,9 +680,14 @@ const Product = () => {
 
           {/* Product Info */}
           <div className="space-y-6">
-            {/* Brand */}
+            {/* Brand and SKU */}
             <div className="flex items-center justify-between">
               <span className="text-blue-600 font-semibold text-lg">{product.brand}</span>
+              {product.sku && (
+                <span className="text-gray-500 text-sm bg-gray-100 px-3 py-1 rounded-full">
+                  كود المنتج: <span className="font-mono">{product.sku}</span>
+                </span>
+              )}
             </div>
 
             {/* Product Name */}
@@ -697,25 +703,23 @@ const Product = () => {
 
             {/* Stock Status */}
             <div className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${
-                product.stockStatus === 'stock_based' 
-                  ? (product.stockCount > 0 ? 'bg-green-500' : 'bg-red-500')
-                  : (product.stockStatus === 'in_stock' ? 'bg-green-500' : 
-                     product.stockStatus === 'out_of_stock' ? 'bg-red-500' : 
-                     'bg-orange-500')
-              }`}></div>
-              <span className={`font-medium ${
-                product.stockStatus === 'stock_based'
-                  ? (product.stockCount > 0 ? 'text-green-600' : 'text-red-600')
-                  : (product.stockStatus === 'in_stock' ? 'text-green-600' : 
-                     product.stockStatus === 'out_of_stock' ? 'text-red-600' : 
-                     'text-orange-600')
-              }`}>
+              <div className={`w-3 h-3 rounded-full ${product.stockStatus === 'stock_based'
+                ? (product.stockCount > 0 ? 'bg-green-500' : 'bg-red-500')
+                : (product.stockStatus === 'in_stock' ? 'bg-green-500' :
+                  product.stockStatus === 'out_of_stock' ? 'bg-red-500' :
+                    'bg-orange-500')
+                }`}></div>
+              <span className={`font-medium ${product.stockStatus === 'stock_based'
+                ? (product.stockCount > 0 ? 'text-green-600' : 'text-red-600')
+                : (product.stockStatus === 'in_stock' ? 'text-green-600' :
+                  product.stockStatus === 'out_of_stock' ? 'text-red-600' :
+                    'text-orange-600')
+                }`}>
                 {product.stockStatus === 'stock_based'
                   ? (product.stockCount > 0 ? 'متوفر' : 'نفذت الكمية')
-                  : (product.stockStatus === 'in_stock' ? 'متوفر' : 
-                     product.stockStatus === 'out_of_stock' ? 'غير متوفر' : 
-                     'طلب مسبق')}
+                  : (product.stockStatus === 'in_stock' ? 'متوفر' :
+                    product.stockStatus === 'out_of_stock' ? 'غير متوفر' :
+                      'طلب مسبق')}
               </span>
             </div>
 
@@ -738,7 +742,7 @@ const Product = () => {
                 <div className="flex items-center gap-4">
                   <span className="font-medium text-gray-700">الكمية:</span>
                   <div className="flex items-center border border-gray-300 rounded-lg">
-                    <button 
+                    <button
                       onClick={() => handleQuantityChange(-1)}
                       disabled={quantity <= 1}
                       className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -746,7 +750,7 @@ const Product = () => {
                       <Minus className="w-4 h-4" />
                     </button>
                     <span className="px-4 py-2 font-medium">{quantity}</span>
-                    <button 
+                    <button
                       onClick={() => handleQuantityChange(1)}
                       className="p-2 hover:bg-gray-100"
                     >
@@ -757,37 +761,36 @@ const Product = () => {
 
                 <div className="flex flex-col gap-3">
                   <div className="flex gap-4">
-                    <button 
+                    <button
                       onClick={handleAddToCart}
                       className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-semibold"
                     >
                       <ShoppingCart className="w-5 h-5" />
                       إضافة للسلة
                     </button>
-                    <button 
+                    <button
                       onClick={() => setIsWishlisted(!isWishlisted)}
-                      className={`p-3 rounded-lg border-2 transition-colors ${
-                        isWishlisted 
-                          ? 'border-red-500 bg-red-50 text-red-500' 
-                          : 'border-gray-300 hover:border-red-300 hover:bg-red-50 hover:text-red-500'
-                      }`}
+                      className={`p-3 rounded-lg border-2 transition-colors ${isWishlisted
+                        ? 'border-red-500 bg-red-50 text-red-500'
+                        : 'border-gray-300 hover:border-red-300 hover:bg-red-50 hover:text-red-500'
+                        }`}
                     >
                       <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current' : ''}`} />
                     </button>
                     <div className="relative">
-                      <button 
+                      <button
                         onClick={handleShare}
                         className="p-3 rounded-lg border-2 border-gray-300 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-500 transition-colors"
                         aria-label="مشاركة المنتج"
                       >
                         <Share2 className="w-5 h-5" />
                       </button>
-                      
+
                       {/* Share Menu */}
                       {showShareMenu && (
                         <>
-                          <div 
-                            className="fixed inset-0 z-40" 
+                          <div
+                            className="fixed inset-0 z-40"
                             onClick={() => setShowShareMenu(false)}
                           />
                           <div className="absolute left-0 bottom-full mb-2 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50 min-w-[200px]">
@@ -831,8 +834,8 @@ const Product = () => {
                       )}
                     </div>
                   </div>
-                  
-                  <button 
+
+                  <button
                     onClick={handleWhatsAppOrder}
                     className="w-full bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg transition-colors flex items-center justify-center gap-2 font-semibold"
                   >
@@ -882,11 +885,10 @@ const Product = () => {
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key as any)}
-                  className={`px-6 py-4 font-medium transition-colors ${
-                    activeTab === tab.key
-                      ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                      : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
-                  }`}
+                  className={`px-6 py-4 font-medium transition-colors ${activeTab === tab.key
+                    ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                    : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
+                    }`}
                 >
                   {tab.label}
                 </button>
@@ -900,7 +902,7 @@ const Product = () => {
               <div className="space-y-4">
                 <h3 className="text-xl font-bold text-gray-800 mb-4">وصف المنتج</h3>
                 <p className="text-gray-700 leading-relaxed">{product.description}</p>
-                
+
                 <h4 className="text-lg font-semibold text-gray-800 mt-6 mb-3">المميزات:</h4>
                 <ul className="space-y-2">
                   {product.features.map((feature, index) => (
@@ -937,8 +939,8 @@ const Product = () => {
             <p className="text-blue-100 mb-6">فريق خدمة العملاء جاهز لمساعدتك في أي وقت</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               {headerSettings.header_phone && (
-                <a 
-                  href={`tel:${headerSettings.header_phone.replace(/[^0-9+]/g, '')}`} 
+                <a
+                  href={`tel:${headerSettings.header_phone.replace(/[^0-9+]/g, '')}`}
                   className="flex items-center gap-2 bg-white text-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 transition-colors font-semibold"
                 >
                   <Phone className="w-5 h-5" />
@@ -946,9 +948,9 @@ const Product = () => {
                 </a>
               )}
               {whatsappNumber && (
-                <a 
+                <a
                   href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}`}
-                  target="_blank" 
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors font-semibold"
                 >
@@ -963,7 +965,7 @@ const Product = () => {
 
       {/* Image Modal/Lightbox */}
       {isImageModalOpen && product && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-4"
           onClick={() => setIsImageModalOpen(false)}
         >
@@ -1031,11 +1033,10 @@ const Product = () => {
                       e.stopPropagation();
                       setSelectedImage(index);
                     }}
-                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                      selectedImage === index 
-                        ? 'border-white border-opacity-100 scale-110' 
-                        : 'border-white border-opacity-30 hover:border-opacity-60'
-                    }`}
+                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${selectedImage === index
+                      ? 'border-white border-opacity-100 scale-110'
+                      : 'border-white border-opacity-30 hover:border-opacity-60'
+                      }`}
                   >
                     <img
                       src={image || '/placeholder.svg'}

@@ -299,11 +299,23 @@ const Products = () => {
       setSelectedBrand("الكل");
     }
 
-    // Handle price range and sort from URL (optional, currently not in URL but good for consistency)
-    if (!params.get('price_min') && !params.get('price_max')) {
+    // Handle price range from URL
+    const priceMin = params.get('price_min');
+    const priceMax = params.get('price_max');
+    if (priceMin || priceMax) {
+      setPriceRange([
+        priceMin ? parseInt(priceMin) : 0,
+        priceMax ? parseInt(priceMax) : 50000
+      ]);
+    } else {
       setPriceRange([0, 50000]);
     }
-    if (!params.get('sort')) {
+
+    // Handle sort from URL
+    const sortFromUrl = params.get('sort');
+    if (sortFromUrl) {
+      setSortBy(sortFromUrl);
+    } else {
       setSortBy("default");
     }
   }, [location.search, categories, allCategoriesList, allBrands]);
@@ -322,6 +334,10 @@ const Products = () => {
     const params = new URLSearchParams(location.search);
     params.delete("category_id");
     params.delete("brand_id");
+    params.delete("search");
+    params.delete("price_min");
+    params.delete("price_max");
+    params.delete("sort");
     const newUrl = params.toString() ? `${location.pathname}?${params.toString()}` : location.pathname;
     navigate(newUrl, { replace: true });
   }, [location.pathname, location.search, navigate]);
@@ -369,6 +385,66 @@ const Products = () => {
         await loadCategoryFilters(Number(category.id));
       }
     }
+
+    // Update URL to match selected category
+    const params = new URLSearchParams(location.search);
+    params.set('category_id', categoryId.toString());
+    params.delete('brand_id'); // Clear brand when changing category for cleaner transition
+    const newUrl = `${location.pathname}?${params.toString()}`;
+    navigate(newUrl, { replace: true });
+  };
+
+  const handleBrandSelection = (brandName: string) => {
+    setSelectedBrand(brandName);
+    const params = new URLSearchParams(location.search);
+
+    if (brandName === "الكل") {
+      params.delete('brand_id');
+    } else {
+      const brand = allBrands.find(b => b.name === brandName);
+      if (brand) {
+        params.set('brand_id', brand.id.toString());
+      }
+    }
+
+    const newUrl = params.toString()
+      ? `${location.pathname}?${params.toString()}`
+      : location.pathname;
+    navigate(newUrl, { replace: true });
+  };
+
+  const handlePriceChange = (min: number, max: number) => {
+    setPriceRange([min, max]);
+    const params = new URLSearchParams(location.search);
+
+    if (min === 0 && max === 50000) {
+      params.delete('price_min');
+      params.delete('price_max');
+    } else {
+      params.set('price_min', min.toString());
+      params.set('price_max', max.toString());
+    }
+
+    const newUrl = params.toString()
+      ? `${location.pathname}?${params.toString()}`
+      : location.pathname;
+    navigate(newUrl, { replace: true });
+  };
+
+  const handleSortChange = (newSort: string) => {
+    setSortBy(newSort);
+    const params = new URLSearchParams(location.search);
+
+    if (newSort === "default") {
+      params.delete('sort');
+    } else {
+      params.set('sort', newSort);
+    }
+
+    const newUrl = params.toString()
+      ? `${location.pathname}?${params.toString()}`
+      : location.pathname;
+    navigate(newUrl, { replace: true });
   };
 
   // Load products function with pagination support
@@ -1202,19 +1278,7 @@ const Products = () => {
                   <label className="block text-sm font-medium mb-2">العلامة التجارية</label>
                   <select
                     value={selectedBrand}
-                    onChange={(e) => {
-                      setSelectedBrand(e.target.value);
-
-                      // Remove brand_id from URL when brand filter changes
-                      const params = new URLSearchParams(location.search);
-                      if (params.has('brand_id')) {
-                        params.delete('brand_id');
-                        const newUrl = params.toString()
-                          ? `${location.pathname}?${params.toString()}`
-                          : location.pathname;
-                        navigate(newUrl, { replace: true });
-                      }
-                    }}
+                    onChange={(e) => handleBrandSelection(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow"
                   >
                     {brandsList.map(brand => (
@@ -1239,7 +1303,7 @@ const Products = () => {
                           value={priceRange[0]}
                           onChange={(e) => {
                             const minValue = Math.max(0, Math.min(parseInt(e.target.value) || 0, priceRange[1]));
-                            setPriceRange([minValue, priceRange[1]]);
+                            handlePriceChange(minValue, priceRange[1]);
                           }}
                           placeholder="0"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow text-sm"
@@ -1255,7 +1319,7 @@ const Products = () => {
                           value={priceRange[1]}
                           onChange={(e) => {
                             const maxValue = Math.max(priceRange[0], Math.min(parseInt(e.target.value) || 50000, 50000));
-                            setPriceRange([priceRange[0], maxValue]);
+                            handlePriceChange(priceRange[0], maxValue);
                           }}
                           placeholder="50000"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow text-sm"
@@ -1313,7 +1377,7 @@ const Products = () => {
                   {/* Sort */}
                   <select
                     value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
+                    onChange={(e) => handleSortChange(e.target.value)}
                     className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow text-sm"
                   >
                     <option value="default">ترتيب افتراضي</option>
