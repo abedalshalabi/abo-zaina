@@ -15,6 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
         ]);
+        
+        // Log 403 for debugging
+        $middleware->append(\App\Http\Middleware\LogForbiddenResponses::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
