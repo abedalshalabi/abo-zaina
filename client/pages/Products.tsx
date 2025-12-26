@@ -673,43 +673,34 @@ const Products = () => {
   // Infinity scroll observer - تحميل تلقائي عند التمرير
   useEffect(() => {
     let observer: IntersectionObserver | null = null;
-    let loadMoreTrigger: HTMLElement | null = null;
+    const loadMoreTrigger = document.getElementById('load-more-trigger');
 
-    // Wait a bit for DOM to be ready
-    const timer = setTimeout(() => {
+    // Only attach observer if we have more to load and the trigger exists
+    if (loadMoreTrigger && hasMore) {
       observer = new IntersectionObserver(
         (entries) => {
           const target = entries[0];
-          // Check ref instead of state to get fresh value without re-running effect
-          if (target.isIntersecting && hasMore && !loadingRef.current) {
-            console.log('Auto-loading more products...');
+          if (target.isIntersecting && !loadingRef.current) {
+            console.log('Intersection detected, triggering loadMore');
             loadMoreProducts();
           }
         },
         {
           root: null,
-          rootMargin: '100px', // Reduced from 200px to be less aggressive
-          threshold: 0.1, // Increased from 0.01 to require more visibility
+          rootMargin: '200px', // Pre-load well before reaching bottom
+          threshold: 0,
         }
       );
 
-      loadMoreTrigger = document.getElementById('load-more-trigger');
-      if (loadMoreTrigger) {
-        observer.observe(loadMoreTrigger);
-        console.log('Infinity scroll observer attached');
-      }
-    }, 100);
+      observer.observe(loadMoreTrigger);
+    }
 
     return () => {
-      clearTimeout(timer);
-      if (observer && loadMoreTrigger) {
-        observer.unobserve(loadMoreTrigger);
-      }
       if (observer) {
         observer.disconnect();
       }
     };
-  }, [hasMore, loadMoreProducts]); // Removed loading/loadingMore from deps
+  }, [hasMore, loadMoreProducts, products.length]); // Re-attach when products change (position changes)
 
   const brandsList = brands.length > 0 ? ["الكل", ...brands.map(brand => brand.name)] : ["الكل"];
 
@@ -1194,8 +1185,8 @@ const Products = () => {
                               }));
                             }}
                             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow text-sm ${filter.required
-                                ? 'border-red-300 focus:ring-red-500'
-                                : 'border-gray-300'
+                              ? 'border-red-300 focus:ring-red-500'
+                              : 'border-gray-300'
                               }`}
                           >
                             <option value="">
@@ -1227,8 +1218,8 @@ const Products = () => {
                                     }));
                                   }}
                                   className={`rounded text-brand-blue focus:ring-brand-yellow ${filter.required
-                                      ? 'border-red-300 focus:ring-red-500'
-                                      : 'border-gray-300'
+                                    ? 'border-red-300 focus:ring-red-500'
+                                    : 'border-gray-300'
                                     }`}
                                 />
                                 <span className="text-sm text-gray-700">{option}</span>
@@ -1248,8 +1239,8 @@ const Products = () => {
                                 }));
                               }}
                               className={`rounded text-brand-blue focus:ring-brand-yellow ${filter.required
-                                  ? 'border-red-300 focus:ring-red-500'
-                                  : 'border-gray-300'
+                                ? 'border-red-300 focus:ring-red-500'
+                                : 'border-gray-300'
                                 }`}
                             />
                             <span className="text-sm text-gray-700">نعم</span>
@@ -1268,8 +1259,8 @@ const Products = () => {
                               }}
                               placeholder="مثال: 10-15 قدم"
                               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 text-sm ${filter.required
-                                  ? 'border-red-300 focus:ring-red-500'
-                                  : 'border-gray-300 focus:ring-brand-yellow'
+                                ? 'border-red-300 focus:ring-red-500'
+                                : 'border-gray-300 focus:ring-brand-yellow'
                                 }`}
                             />
                             {filter.required && (
@@ -1450,8 +1441,8 @@ const Products = () => {
             ) : productsToShow.length > 0 ? (
               <>
                 <div className={`grid gap-3 md:gap-6 ${viewMode === "grid"
-                    ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-                    : "grid-cols-1"
+                  ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+                  : "grid-cols-1"
                   }`}>
                   {productsToShow.map(product => (
                     <ProductCard key={product.id} product={product} />
@@ -1466,11 +1457,11 @@ const Products = () => {
                       <span className="mr-2 text-gray-600">جاري تحميل المزيد...</span>
                     </div>
                   ) : hasMore ? (
-                    <div className="flex flex-col items-center gap-2">
+                    <div className="flex flex-col items-center gap-2 cursor-pointer" onClick={() => loadMoreProducts()}>
                       <div className="animate-pulse">
                         <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                       </div>
-                      <p className="text-sm text-gray-500">جاري التحميل تلقائياً...</p>
+                      <p className="text-sm text-gray-500 hover:text-blue-600 underline">جاري التحميل... (اضغط هنا للتحميل اليدوي)</p>
                     </div>
                   ) : (
                     <p className="text-gray-500">تم عرض جميع المنتجات</p>
@@ -1510,8 +1501,8 @@ const Products = () => {
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`lg:hidden fixed bottom-6 left-6 z-50 ${hasActiveFilters
-                ? 'bg-orange-500 hover:bg-orange-600'
-                : 'bg-blue-600 hover:bg-blue-700'
+              ? 'bg-orange-500 hover:bg-orange-600'
+              : 'bg-blue-600 hover:bg-blue-700'
               } text-white p-4 rounded-full shadow-lg transition-all duration-300 hover:scale-110 relative flex items-center justify-center`}
             style={{ position: 'fixed', bottom: '24px', left: '24px' }}
             aria-label="فتح الفلاتر"
