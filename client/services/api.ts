@@ -168,8 +168,12 @@ export const productsAPI = {
         params.append(key, value.toString());
       }
     });
-    
-    const response = await fetch(`${API_BASE_URL}/products?${params}`);
+
+    const response = await fetch(`${API_BASE_URL}/products?${params}`, {
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
     return response.json();
   },
 
@@ -288,12 +292,12 @@ export const ordersAPI = {
       credentials: 'include', // Include session cookie
       body: JSON.stringify(orderData),
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'فشل في إنشاء الطلب');
     }
-    
+
     return response.json();
   },
 
@@ -419,8 +423,8 @@ export const reviewsAPI = {
 export const offersAPI = {
   // Get all active offers
   getOffers: async (type?: string) => {
-    const url = type 
-      ? `${API_BASE_URL}/offers?type=${type}` 
+    const url = type
+      ? `${API_BASE_URL}/offers?type=${type}`
       : `${API_BASE_URL}/offers`;
     const response = await fetch(url);
     return response.json();
@@ -445,12 +449,12 @@ export const contactAPI = {
       },
       body: JSON.stringify(formData),
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'حدث خطأ أثناء إرسال الرسالة');
     }
-    
+
     return response.json();
   },
 };
