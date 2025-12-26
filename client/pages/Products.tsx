@@ -39,7 +39,7 @@ interface Product {
 const formatPrice = (price: number | string): string => {
   // Convert to number if it's a string
   const numPrice = typeof price === 'string' ? parseFloat(price) : price;
-  
+
   // Check if it's a whole number
   if (numPrice % 1 === 0) {
     // Return as integer without decimals
@@ -68,7 +68,7 @@ const Products = () => {
   const [sortBy, setSortBy] = useState("default");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showFilters, setShowFilters] = useState(false);
-  
+
   // API State
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -76,33 +76,33 @@ const Products = () => {
   const [subcategories, setSubcategories] = useState<any[]>([]);
   const [selectedSubcategory, setSelectedSubcategory] = useState<any>(null);
   const [categoryFilters, setCategoryFilters] = useState<any[]>([]);
-  const [selectedFilters, setSelectedFilters] = useState<{[key: string]: string}>({});
+  const [selectedFilters, setSelectedFilters] = useState<{ [key: string]: string }>({});
   const [allBrands, setAllBrands] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [wishlistIds, setWishlistIds] = useState<number[]>([]);
   const [wishlistProcessing, setWishlistProcessing] = useState<Record<number, boolean>>({});
-  
+
   const selectedParentCategory = useMemo(() => {
     if (selectedCategoryId === null) {
       return null;
     }
-    
+
     const numericId = Number(selectedCategoryId);
     if (Number.isNaN(numericId)) {
       return null;
     }
-    
+
     const fromMain = categories.find((cat) => Number(cat.id) === numericId);
     if (fromMain) {
       return fromMain;
     }
-    
+
     const fromAll = allCategoriesList.find((cat) => Number(cat.id) === numericId);
     return fromAll || null;
   }, [selectedCategoryId, categories, allCategoriesList]);
-  
+
   // Pagination state for infinity scroll
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -188,34 +188,34 @@ const Products = () => {
       try {
         setLoading(true);
         setError("");
-        
+
         // Load main categories, all categories, and all brands
         const [categoriesResponse, allCategoriesResponse, brandsResponse] = await Promise.all([
           categoriesAPI.getMainCategories(),
           categoriesAPI.getCategories(),
           brandsAPI.getBrands()
         ]);
-        
+
         const mainCategories = categoriesResponse.data || [];
         const allCategoriesData = allCategoriesResponse.data || [];
 
         setCategories(
           Array.isArray(mainCategories)
             ? mainCategories.map((category) => ({
-                ...category,
-                id: Number(category.id),
-                parent_id:
-                  category.parent_id !== undefined && category.parent_id !== null
-                    ? Number(category.parent_id)
-                    : null,
-              }))
+              ...category,
+              id: Number(category.id),
+              parent_id:
+                category.parent_id !== undefined && category.parent_id !== null
+                  ? Number(category.parent_id)
+                  : null,
+            }))
             : []
         );
         setAllCategoriesList(flattenCategories(allCategoriesData));
         const allBrandsData = brandsResponse.data || [];
         setAllBrands(allBrandsData);
         setBrands(allBrandsData);
-        
+
         // Load products (will be triggered by the filters useEffect)
       } catch (err) {
         setError("حدث خطأ في تحميل البيانات");
@@ -224,7 +224,7 @@ const Products = () => {
         setLoading(false);
       }
     };
-    
+
     loadData();
   }, []);
 
@@ -237,12 +237,12 @@ const Products = () => {
           ? response.ids
           : Array.isArray(response?.data)
             ? response.data
-                .map((item: any) =>
-                  typeof item === "number"
-                    ? item
-                    : item?.id ?? item?.product_id ?? item?.product?.id ?? null
-                )
-                .filter((id: number | null) => typeof id === "number")
+              .map((item: any) =>
+                typeof item === "number"
+                  ? item
+                  : item?.id ?? item?.product_id ?? item?.product?.id ?? null
+              )
+              .filter((id: number | null) => typeof id === "number")
             : [];
         setWishlistIds(idsFromResponse.map((id: number) => Number(id)));
       } catch (err) {
@@ -252,13 +252,13 @@ const Products = () => {
 
     loadWishlist();
   }, []);
-  
+
   // Products will be loaded by the filters useEffect below
 
   // Read category_id, brand_id, and search from URL and set selected values
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    
+
     // Handle search query from URL
     const searchFromUrl = params.get('search');
     if (searchFromUrl) {
@@ -267,7 +267,7 @@ const Products = () => {
       // Reset search query if not in URL
       setSearchQuery("");
     }
-    
+
     // Handle category_id from URL
     const categoryIdFromUrl = params.get('category_id');
     if (categoryIdFromUrl && (categories.length > 0 || allCategoriesList.length > 0)) {
@@ -275,7 +275,7 @@ const Products = () => {
       const category =
         categories.find(cat => cat.id === Number(categoryIdFromUrl)) ||
         allCategoriesList.find(cat => cat.id === Number(categoryIdFromUrl));
-      
+
       if (category) {
         handleCategorySelection(category);
       }
@@ -287,7 +287,7 @@ const Products = () => {
       setCategoryFilters([]);
       setSelectedFilters({});
     }
-    
+
     // Handle brand_id from URL
     const brandIdFromUrl = params.get('brand_id');
     if (brandIdFromUrl && allBrands.length > 0) {
@@ -320,7 +320,7 @@ const Products = () => {
   const handleCategorySelection = async (category: any) => {
     // Check if category is a parent (parent_id is null) or child (parent_id is not null)
     const isChildCategory = category.parent_id !== null && category.parent_id !== undefined;
-    
+
     if (isChildCategory) {
       // If it's a child category, find the parent category
       const parentCategoryId = Number(category.parent_id);
@@ -330,10 +330,10 @@ const Products = () => {
       if (parentCategory) {
         setSelectedCategoryId(Number(parentCategory.id));
         setSelectedSubcategory(category);
-        
+
         // Load subcategories for the parent
         await loadSubcategories(Number(parentCategory.id));
-        
+
         // Load filters for the child category
         await loadCategoryFilters(Number(category.id));
       }
@@ -344,7 +344,7 @@ const Products = () => {
       setSubcategories([]);
       setCategoryFilters([]);
       setSelectedFilters({});
-      
+
       // Load subcategories or filters if needed
       if (category.has_children) {
         await loadSubcategories(Number(category.id));
@@ -362,7 +362,7 @@ const Products = () => {
       } else {
         setLoadingMore(true);
       }
-      
+
       // Build filters object
       const filters: any = {
         search: searchQuery || undefined,
@@ -373,26 +373,26 @@ const Products = () => {
         page: page,
         per_page: 15, // Load 15 products per page
       };
-      
+
       // Map sortBy to API sort parameters
       if (sortBy !== "default") {
-    switch (sortBy) {
-      case "price-low":
+        switch (sortBy) {
+          case "price-low":
             filters.sort = 'price';
             filters.order = 'asc';
-        break;
-      case "price-high":
+            break;
+          case "price-high":
             filters.sort = 'price';
             filters.order = 'desc';
-        break;
-      case "rating":
+            break;
+          case "rating":
             filters.sort = 'rating';
             filters.order = 'desc';
-        break;
-      case "name":
+            break;
+          case "name":
             filters.sort = 'name';
             filters.order = 'asc';
-        break;
+            break;
           default:
             filters.sort = 'created_at';
             filters.order = 'desc';
@@ -405,7 +405,7 @@ const Products = () => {
       // Handle category filter - check URL first, then selected values
       const params = new URLSearchParams(location.search);
       const categoryIdFromUrl = params.get('category_id');
-      
+
       if (categoryIdFromUrl) {
         // Prefer using the category ID from the URL directly (could be parent or child)
         filters.category_id = Number(categoryIdFromUrl);
@@ -423,55 +423,55 @@ const Products = () => {
       if (brandIdFromUrl) {
         filters.brand_id = Number(brandIdFromUrl);
       } else if (selectedBrand !== "الكل") {
-        const brand = brands.find(b => b.name === selectedBrand) || 
-                      allBrands.find(b => b.name === selectedBrand);
+        const brand = brands.find(b => b.name === selectedBrand) ||
+          allBrands.find(b => b.name === selectedBrand);
         if (brand) {
           filters.brand_id = brand.id;
         }
       }
 
       console.log('Filters being sent to API:', filters);
-      
+
       const response = await productsAPI.getProducts(filters);
-      
+
       console.log('Raw API response:', response);
       console.log('Response data:', response.data);
       console.log('Response meta:', response.meta);
-      
+
       // Handle paginated response structure
       const productsData = response.data || [];
       const meta = response.meta || {};
       const currentPageNum = meta.current_page || page;
       const lastPageNum = meta.last_page || 1;
-      
+
       console.log('Number of products from API:', productsData.length);
       console.log('Current page:', currentPageNum, 'Last page:', lastPageNum);
-      
+
       // Transform API data to match Product interface
       const transformedProducts = productsData.map((product: any) => {
         const collectedImages: string[] = Array.isArray(product.images)
           ? product.images
-              .map((img: any) => {
-                if (!img) return '';
-                if (typeof img === 'string') {
-                  return img;
+            .map((img: any) => {
+              if (!img) return '';
+              if (typeof img === 'string') {
+                return img;
+              }
+              if (typeof img === 'object') {
+                if (img.image_url) {
+                  return img.image_url;
                 }
-                if (typeof img === 'object') {
-                  if (img.image_url) {
-                    return img.image_url;
-                  }
-                  if (img.image_path) {
-                    const normalizedPath = String(img.image_path)
-                      .replace(/^\/?storage\//, '')
-                      .replace(/^\//, '');
-                    return img.image_path.startsWith('http')
-                      ? img.image_path
-                      : `${STORAGE_BASE_URL}/${normalizedPath}`;
-                  }
+                if (img.image_path) {
+                  const normalizedPath = String(img.image_path)
+                    .replace(/^\/?storage\//, '')
+                    .replace(/^\//, '');
+                  return img.image_path.startsWith('http')
+                    ? img.image_path
+                    : `${STORAGE_BASE_URL}/${normalizedPath}`;
                 }
-                return '';
-              })
-              .filter((url: string) => !!url)
+              }
+              return '';
+            })
+            .filter((url: string) => !!url)
           : [];
 
         let imageUrl = '';
@@ -520,12 +520,12 @@ const Products = () => {
 
         const mappedCategoryIds = Array.isArray(product.categories)
           ? product.categories
-              .map((cat: any) => {
-                const catId = cat?.id;
-                const numericId = catId !== undefined && catId !== null ? Number(catId) : NaN;
-                return Number.isNaN(numericId) ? null : numericId;
-              })
-              .filter((id: number | null): id is number => id !== null)
+            .map((cat: any) => {
+              const catId = cat?.id;
+              const numericId = catId !== undefined && catId !== null ? Number(catId) : NaN;
+              return Number.isNaN(numericId) ? null : numericId;
+            })
+            .filter((id: number | null): id is number => id !== null)
           : [];
 
         return {
@@ -552,9 +552,9 @@ const Products = () => {
           filterValues: product.filter_values || {}
         };
       });
-      
+
       console.log('Transformed products count:', transformedProducts.length);
-      
+
       // Extract unique brands from loaded products (use original product data)
       const uniqueBrands = new Map<string, { id: number; name: string }>();
       productsData.forEach((product: any) => {
@@ -565,7 +565,7 @@ const Products = () => {
           });
         }
       });
-      
+
       // Also check existing products if appending
       if (append) {
         products.forEach((product: any) => {
@@ -580,7 +580,7 @@ const Products = () => {
           }
         });
       }
-      
+
       const isMainCategorySelected = !selectedSubcategory && selectedCategoryId === null;
       const uniqueBrandsArray = Array.from(uniqueBrands.values());
       const brandListForMainCategory = allBrands.length > 0 ? allBrands : uniqueBrandsArray;
@@ -609,7 +609,7 @@ const Products = () => {
           });
         }
       }
-      
+
       if (append) {
         // Append new products to existing ones
         setProducts(prev => [...prev, ...transformedProducts]);
@@ -618,11 +618,11 @@ const Products = () => {
         setProducts(transformedProducts);
         setCurrentPage(1);
       }
-      
+
       // Check if there are more pages
       setHasMore(currentPageNum < lastPageNum);
       setCurrentPage(currentPageNum);
-      
+
     } catch (err) {
       setError("حدث خطأ في تحميل المنتجات");
       console.error("Error loading products:", err);
@@ -631,56 +631,65 @@ const Products = () => {
       setLoadingMore(false);
     }
   };
-  
+
+  // Track loading state with ref to avoid closure staleness in Observer
+  const loadingRef = useRef(false);
+
+  // Sync ref with state
+  useEffect(() => {
+    loadingRef.current = loading || loadingMore;
+  }, [loading, loadingMore]);
+
   // Load more products (for infinity scroll)
-  const loadMoreProducts = () => {
-    if (!loadingMore && hasMore) {
+  const loadMoreProducts = useCallback(() => {
+    if (!loadingRef.current && hasMore) {
       loadProducts(currentPage + 1, true);
     }
-  };
+  }, [currentPage, hasMore]); // Removed loading/loadingMore from deps to avoid recreating function constantly
 
   // Track if initial load has happened
   const initialLoadRef = useRef(false);
-  
+
   // Reload products when filters change (reset to page 1)
   useEffect(() => {
     // Wait for categories/brands to be loaded before first load
     if (!initialLoadRef.current && (categories.length === 0 && brands.length === 0)) {
       return;
     }
-    
+
     initialLoadRef.current = true;
-    
-    // Debounce to avoid too many API calls
+
+    // Debounce increased to 500ms to allow user to finish typing/clicking
     const timeoutId = setTimeout(() => {
       setProducts([]);
       setCurrentPage(1);
       setHasMore(true);
       loadProducts(1, false);
-    }, 300);
-    
+    }, 500);
+
     return () => clearTimeout(timeoutId);
   }, [searchQuery, selectedCategoryId, selectedSubcategory, selectedBrand, priceRange, sortBy, selectedFilters, categories.length, brands.length]);
-  
+
   // Infinity scroll observer - تحميل تلقائي عند التمرير
   useEffect(() => {
     let observer: IntersectionObserver | null = null;
     let loadMoreTrigger: HTMLElement | null = null;
-    
+
     // Wait a bit for DOM to be ready
     const timer = setTimeout(() => {
       observer = new IntersectionObserver(
         (entries) => {
           const target = entries[0];
-          if (target.isIntersecting && hasMore && !loadingMore && !loading) {
+          // Check ref instead of state to get fresh value without re-running effect
+          if (target.isIntersecting && hasMore && !loadingRef.current) {
             console.log('Auto-loading more products...');
             loadMoreProducts();
           }
         },
         {
           root: null,
-          rootMargin: '200px', // Start loading 200px before reaching the trigger
-          threshold: 0.01, // Trigger as soon as any part is visible
+          rootMargin: '100px', // Reduced from 200px to be less aggressive
+          threshold: 0.1, // Increased from 0.01 to require more visibility
         }
       );
 
@@ -688,8 +697,6 @@ const Products = () => {
       if (loadMoreTrigger) {
         observer.observe(loadMoreTrigger);
         console.log('Infinity scroll observer attached');
-      } else {
-        console.warn('load-more-trigger element not found');
       }
     }, 100);
 
@@ -698,8 +705,11 @@ const Products = () => {
       if (observer && loadMoreTrigger) {
         observer.unobserve(loadMoreTrigger);
       }
+      if (observer) {
+        observer.disconnect();
+      }
     };
-  }, [hasMore, loadingMore, loading, currentPage, products.length]);
+  }, [hasMore, loadMoreProducts]); // Removed loading/loadingMore from deps
 
   const brandsList = brands.length > 0 ? ["الكل", ...brands.map(brand => brand.name)] : ["الكل"];
 
@@ -839,116 +849,113 @@ const Products = () => {
         to={`/product/${product.id}`}
         className="product-card p-2 md:p-4 group block hover:transform hover:scale-105 transition-all duration-300"
       >
-      <div className="relative mb-2 md:mb-4">
-        <img
-          src={product.image || product.images?.[0] || "/placeholder.svg"}
-          alt={product.name}
-          className="w-full h-32 md:h-48 object-contain bg-white rounded-lg"
-          onError={(e) => {
-            console.error("Image load error for product", product.id, ":", e.currentTarget.src);
-            e.currentTarget.src = "/placeholder.svg";
-          }}
-        />
-        {product.originalPrice && product.originalPrice > product.price && (
-          <span className="absolute top-1 right-1 md:top-2 md:right-2 bg-red-500 text-white px-2 py-0.5 md:px-3 md:py-1 rounded-full text-xs md:text-sm font-bold">
-            خصم {(product.originalPrice - product.price).toLocaleString()} ₪
-          </span>
-        )}
-        {!product.inStock && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
-            <span className="text-white font-semibold">نفدت الكمية</span>
+        <div className="relative mb-2 md:mb-4">
+          <img
+            src={product.image || product.images?.[0] || "/placeholder.svg"}
+            alt={product.name}
+            className="w-full h-32 md:h-48 object-contain bg-white rounded-lg"
+            onError={(e) => {
+              console.error("Image load error for product", product.id, ":", e.currentTarget.src);
+              e.currentTarget.src = "/placeholder.svg";
+            }}
+          />
+          {product.originalPrice && product.originalPrice > product.price && (
+            <span className="absolute top-1 right-1 md:top-2 md:right-2 bg-red-500 text-white px-2 py-0.5 md:px-3 md:py-1 rounded-full text-xs md:text-sm font-bold">
+              خصم {(product.originalPrice - product.price).toLocaleString()} ₪
+            </span>
+          )}
+          {!product.inStock && (
+            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
+              <span className="text-white font-semibold">نفدت الكمية</span>
+            </div>
+          )}
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (!isProcessingWishlist) {
+                toggleWishlist(product);
+              }
+            }}
+            className={`absolute top-1 left-1 md:top-2 md:left-2 p-1.5 md:p-2 rounded-full shadow-md transition-colors ${isInWishlist ? "bg-red-50 hover:bg-red-100" : "bg-white hover:bg-gray-50"
+              }`}
+            aria-pressed={isInWishlist}
+            aria-label={isInWishlist ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+            disabled={isProcessingWishlist}
+          >
+            <Heart
+              className={`w-3 h-3 md:w-4 md:h-4 ${isInWishlist ? "text-red-500" : "text-gray-600"}`}
+              fill={isInWishlist ? "currentColor" : "none"}
+            />
+          </button>
+        </div>
+
+        <h3 className="font-semibold text-gray-800 mb-1 md:mb-2 group-hover:text-brand-blue transition-colors line-clamp-2 text-sm md:text-base">
+          {product.name}
+        </h3>
+
+        <div className="flex items-center gap-2 mb-1 md:mb-3">
+          <div className="flex items-center">
+            {[...Array(5)].map((_, i) => (
+              <Star
+                key={i}
+                className={`w-3 h-3 md:w-4 md:h-4 ${i < Math.floor(product.rating) ? "text-yellow-400 fill-current" : "text-gray-300"
+                  }`}
+              />
+            ))}
           </div>
-        )}
-        <button 
+          <span className="text-xs md:text-sm text-gray-600">({product.reviews})</span>
+        </div>
+
+        <div className="flex items-center gap-2 mb-2 md:mb-4">
+          <span className="text-lg md:text-xl font-bold text-brand-green">{formatPrice(product.price)} ₪</span>
+          {product.originalPrice && product.originalPrice > 0 && product.originalPrice > product.price && (
+            <span className="text-sm md:text-base text-gray-500 line-through">{formatPrice(product.originalPrice)} ₪</span>
+          )}
+        </div>
+
+        <button
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            if (!isProcessingWishlist) {
-              toggleWishlist(product);
-            }
-          }}
-          className={`absolute top-1 left-1 md:top-2 md:left-2 p-1.5 md:p-2 rounded-full shadow-md transition-colors ${
-            isInWishlist ? "bg-red-50 hover:bg-red-100" : "bg-white hover:bg-gray-50"
-          }`}
-          aria-pressed={isInWishlist}
-          aria-label={isInWishlist ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
-          disabled={isProcessingWishlist}
-        >
-          <Heart
-            className={`w-3 h-3 md:w-4 md:h-4 ${isInWishlist ? "text-red-500" : "text-gray-600"}`}
-            fill={isInWishlist ? "currentColor" : "none"}
-          />
-        </button>
-      </div>
+            if (!product.inStock) return;
 
-      <h3 className="font-semibold text-gray-800 mb-1 md:mb-2 group-hover:text-brand-blue transition-colors line-clamp-2 text-sm md:text-base">
-        {product.name}
-      </h3>
-
-      <div className="flex items-center gap-2 mb-1 md:mb-3">
-        <div className="flex items-center">
-          {[...Array(5)].map((_, i) => (
-            <Star
-              key={i}
-              className={`w-3 h-3 md:w-4 md:h-4 ${
-                i < Math.floor(product.rating) ? "text-yellow-400 fill-current" : "text-gray-300"
-              }`}
-            />
-          ))}
-        </div>
-        <span className="text-xs md:text-sm text-gray-600">({product.reviews})</span>
-      </div>
-
-      <div className="flex items-center gap-2 mb-2 md:mb-4">
-        <span className="text-lg md:text-xl font-bold text-brand-green">{formatPrice(product.price)} ₪</span>
-        {product.originalPrice && product.originalPrice > 0 && product.originalPrice > product.price && (
-                  <span className="text-sm md:text-base text-gray-500 line-through">{formatPrice(product.originalPrice)} ₪</span>
-                )}
-      </div>
-
-      <button
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (!product.inStock) return;
-
-          const imageForAnimation = product.image || product.images?.[0] || "/placeholder.svg";
+            const imageForAnimation = product.image || product.images?.[0] || "/placeholder.svg";
             triggerAnimation(e.currentTarget, {
-            image: imageForAnimation,
+              image: imageForAnimation,
               name: product.name
             });
-            
+
             addItem({
               id: product.id,
               name: product.name,
               price: product.price,
-            image: imageForAnimation,
+              image: imageForAnimation,
               brand: product.brand
             });
-        }}
-        className={`w-full py-1.5 md:py-2 rounded-lg transition-colors text-sm md:text-base ${
-          product.inStock ? "bg-brand-blue text-white hover:bg-blue-700" : "bg-gray-300 text-gray-500 cursor-not-allowed"
-        }`}
-        disabled={!product.inStock}
-      >
-        {product.inStock ? "أضف للسلة" : "نفدت الكمية"}
-      </button>
-    </Link>
-  );
+          }}
+          className={`w-full py-1.5 md:py-2 rounded-lg transition-colors text-sm md:text-base ${product.inStock ? "bg-brand-blue text-white hover:bg-blue-700" : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }`}
+          disabled={!product.inStock}
+        >
+          {product.inStock ? "أضف للسلة" : "نفدت الكمية"}
+        </button>
+      </Link>
+    );
   };
 
   const siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
   const currentUrl = `${siteUrl}${location.pathname}${location.search}`;
-  
+
   // Get category name for SEO
   const categoryName = selectedParentCategory?.name || selectedSubcategory?.name || '';
-  const pageTitle = categoryName 
+  const pageTitle = categoryName
     ? `${categoryName} - منتجات | أبو زينة للتقنيات - أجهزة كهربائية في جنين`
     : 'جميع المنتجات | أبو زينة للتقنيات - أجهزة كهربائية وإلكترونيات في جنين';
   const pageDescription = categoryName
     ? `تصفح مجموعة واسعة من منتجات ${categoryName} في أبو زينة للتقنيات، جنين. أفضل الأسعار والجودة المضمونة. توصيل سريع وضمان شامل.`
     : 'تصفح جميع منتجاتنا من الأجهزة الكهربائية والإلكترونية في أبو زينة للتقنيات، جنين. أفران، ثلاجات، غسالات، تلفزيونات، هواتف ذكية وأكثر. توصيل سريع وضمان شامل.';
-  
+
   // Build breadcrumb items
   const breadcrumbItems = [
     {
@@ -982,7 +989,7 @@ const Products = () => {
       "item": `${siteUrl}/products?category_id=${selectedSubcategory.id}`
     });
   }
-  
+
   // Structured Data for Product Collection - Multiple Schemas
   const structuredDataArray = [
     // CollectionPage Schema
@@ -1014,7 +1021,7 @@ const Products = () => {
         url={currentUrl}
         structuredData={structuredDataArray}
       />
-      <Header 
+      <Header
         showSearch={true}
         showActions={true}
       />
@@ -1025,126 +1032,268 @@ const Products = () => {
           <div className={`${showFilters ? 'block' : 'hidden'} lg:block w-full lg:w-80 space-y-6 ${showFilters ? 'mb-6' : ''} lg:sticky lg:top-28 lg:self-start lg:max-h-[calc(100vh-9rem)] lg:overflow-y-auto lg:scrollbar-hide`}>
             {/* Mobile Overlay */}
             {showFilters && (
-              <div 
+              <div
                 className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
                 onClick={() => setShowFilters(false)}
               />
             )}
-            
+
             {/* Filters Panel */}
-            <div className={`lg:relative fixed lg:top-auto top-32 right-4 lg:right-auto h-[70vh] lg:h-auto w-[75vw] lg:w-auto max-w-xs lg:max-w-none z-50 lg:z-auto transform transition-transform duration-300 ease-in-out ${
-              showFilters ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
-            }`}>
+            <div className={`lg:relative fixed lg:top-auto top-32 right-4 lg:right-auto h-[70vh] lg:h-auto w-[75vw] lg:w-auto max-w-xs lg:max-w-none z-50 lg:z-auto transform transition-transform duration-300 ease-in-out ${showFilters ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
+              }`}>
               <div className="bg-white h-full lg:h-auto p-4 sm:p-6 rounded-xl lg:rounded-lg shadow-2xl lg:shadow-sm overflow-y-auto">
-              <h3 className="font-semibold text-lg mb-4">البحث والفلترة</h3>
-              
-              {/* Search */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">البحث</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="ابحث عن المنتجات..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow"
-                  />
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                </div>
-              </div>
+                <h3 className="font-semibold text-lg mb-4">البحث والفلترة</h3>
 
-              {/* Category Filter */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">الفئة الرئيسية</label>
-                <select
-                  value={selectedCategoryId !== null ? selectedCategoryId.toString() : ""}
-                  onChange={async (e) => {
-                    const categoryIdValue = e.target.value;
-                    
-                    // Reset all filters and selections
-                    setSelectedSubcategory(null);
-                    setSubcategories([]);
-                    setCategoryFilters([]);
-                    setSelectedFilters({});
-                    setSelectedBrand("الكل");
-                    setPriceRange([0, 50000]);
-                    setSearchQuery("");
-                    
-                    // Update URL based on selection
-                    const params = new URLSearchParams(location.search);
-                    if (categoryIdValue) {
-                      const category = categories.find(cat => cat.id.toString() === categoryIdValue);
-                      if (category) {
-                        const numericId = Number(category.id);
-                        setSelectedCategoryId(numericId);
-                        params.set('category_id', numericId.toString());
-                        
-                        // Remove brand_id if exists (reset when category changes)
-                        params.delete('brand_id');
-                        
-                        // Load subcategories or filters
-                        if (category.has_children) {
-                          await loadSubcategories(numericId);
-                        } else {
-                          await loadCategoryFilters(numericId);
-                        }
-                      }
-                    } else {
-                      setSelectedCategoryId(null);
-                      params.delete('category_id');
-                      params.delete('brand_id');
-                    }
-                    
-                    // Update URL
-                    const newUrl = params.toString() 
-                      ? `${location.pathname}?${params.toString()}` 
-                      : location.pathname;
-                    navigate(newUrl, { replace: true });
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow"
-                >
-                  <option value="">الكل</option>
-                  {categories.map(category => (
-                    <option key={category.id} value={category.id.toString()}>{category.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Subcategory Filter */}
-              {subcategories.length > 0 && (
+                {/* Search */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium mb-2">الفئة الفرعية</label>
+                  <label className="block text-sm font-medium mb-2">البحث</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="ابحث عن المنتجات..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                    />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  </div>
+                </div>
+
+                {/* Category Filter */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium mb-2">الفئة الرئيسية</label>
                   <select
-                    value={selectedSubcategory?.id || ''}
+                    value={selectedCategoryId !== null ? selectedCategoryId.toString() : ""}
                     onChange={async (e) => {
-                      const subcategoryId = e.target.value;
-                      if (subcategoryId) {
-                        const subcategory = subcategories.find(sub => sub.id.toString() === subcategoryId);
-                        if (subcategory) {
-                          setSelectedSubcategory(subcategory);
-                          setSelectedFilters({});
-                          // Load filters for this subcategory
-                          await loadCategoryFilters(subcategory.id);
-                          
-                          const params = new URLSearchParams(location.search);
-                          params.set('category_id', subcategory.id.toString());
+                      const categoryIdValue = e.target.value;
+
+                      // Reset all filters and selections
+                      setSelectedSubcategory(null);
+                      setSubcategories([]);
+                      setCategoryFilters([]);
+                      setSelectedFilters({});
+                      setSelectedBrand("الكل");
+                      setPriceRange([0, 50000]);
+                      setSearchQuery("");
+
+                      // Update URL based on selection
+                      const params = new URLSearchParams(location.search);
+                      if (categoryIdValue) {
+                        const category = categories.find(cat => cat.id.toString() === categoryIdValue);
+                        if (category) {
+                          const numericId = Number(category.id);
+                          setSelectedCategoryId(numericId);
+                          params.set('category_id', numericId.toString());
+
+                          // Remove brand_id if exists (reset when category changes)
                           params.delete('brand_id');
+
+                          // Load subcategories or filters
+                          if (category.has_children) {
+                            await loadSubcategories(numericId);
+                          } else {
+                            await loadCategoryFilters(numericId);
+                          }
+                        }
+                      } else {
+                        setSelectedCategoryId(null);
+                        params.delete('category_id');
+                        params.delete('brand_id');
+                      }
+
+                      // Update URL
+                      const newUrl = params.toString()
+                        ? `${location.pathname}?${params.toString()}`
+                        : location.pathname;
+                      navigate(newUrl, { replace: true });
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                  >
+                    <option value="">الكل</option>
+                    {categories.map(category => (
+                      <option key={category.id} value={category.id.toString()}>{category.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Subcategory Filter */}
+                {subcategories.length > 0 && (
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium mb-2">الفئة الفرعية</label>
+                    <select
+                      value={selectedSubcategory?.id || ''}
+                      onChange={async (e) => {
+                        const subcategoryId = e.target.value;
+                        if (subcategoryId) {
+                          const subcategory = subcategories.find(sub => sub.id.toString() === subcategoryId);
+                          if (subcategory) {
+                            setSelectedSubcategory(subcategory);
+                            setSelectedFilters({});
+                            // Load filters for this subcategory
+                            await loadCategoryFilters(subcategory.id);
+
+                            const params = new URLSearchParams(location.search);
+                            params.set('category_id', subcategory.id.toString());
+                            params.delete('brand_id');
+                            const newUrl = params.toString()
+                              ? `${location.pathname}?${params.toString()}`
+                              : location.pathname;
+                            navigate(newUrl, { replace: true });
+                          }
+                        } else {
+                          setSelectedSubcategory(null);
+                          setCategoryFilters([]);
+                          setSelectedFilters({});
+
+                          const params = new URLSearchParams(location.search);
+                          if (selectedParentCategory) {
+                            params.set('category_id', selectedParentCategory.id.toString());
+                          } else {
+                            params.delete('category_id');
+                          }
                           const newUrl = params.toString()
                             ? `${location.pathname}?${params.toString()}`
                             : location.pathname;
                           navigate(newUrl, { replace: true });
                         }
-                      } else {
-                        setSelectedSubcategory(null);
-                        setCategoryFilters([]);
-                        setSelectedFilters({});
-                        
-                        const params = new URLSearchParams(location.search);
-                        if (selectedParentCategory) {
-                          params.set('category_id', selectedParentCategory.id.toString());
-                        } else {
-                          params.delete('category_id');
-                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                    >
+                      <option value="">اختر الفئة الفرعية...</option>
+                      {subcategories.map(subcategory => (
+                        <option key={subcategory.id} value={subcategory.id}>{subcategory.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Dynamic Category Filters */}
+                {categoryFilters.length > 0 && (
+                  <div className="mb-6 space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-md">فلاتر الفئة</h4>
+                      <p className="text-xs text-gray-500 mt-1">
+                        اختر القيم المناسبة لتضييق نتائج البحث
+                      </p>
+                    </div>
+                    {categoryFilters.map((filter, index) => (
+                      <div key={index} className="space-y-2">
+                        <label className="block text-sm font-medium">
+                          {filter.name}
+                          {filter.required && (
+                            <span className="text-red-500 mr-1">*</span>
+                          )}
+                        </label>
+                        {filter.type === 'select' && (
+                          <select
+                            value={selectedFilters[filter.name] || ''}
+                            onChange={(e) => {
+                              setSelectedFilters(prev => ({
+                                ...prev,
+                                [filter.name]: e.target.value
+                              }));
+                            }}
+                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow text-sm ${filter.required
+                                ? 'border-red-300 focus:ring-red-500'
+                                : 'border-gray-300'
+                              }`}
+                          >
+                            <option value="">
+                              {filter.required ? 'اختر...' : 'الكل'}
+                            </option>
+                            {filter.options.map((option: string) => (
+                              <option key={option} value={option}>{option}</option>
+                            ))}
+                          </select>
+                        )}
+                        {filter.type === 'checkbox' && filter.options && filter.options.length > 0 && (
+                          <div className="space-y-2">
+                            {filter.options.map((option: string, optionIndex: number) => (
+                              <label key={optionIndex} className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedFilters[filter.name]?.split(',').includes(option) || false}
+                                  onChange={(e) => {
+                                    const currentValues = selectedFilters[filter.name]?.split(',').filter(v => v.trim()) || [];
+                                    let newValues;
+                                    if (e.target.checked) {
+                                      newValues = [...currentValues, option].filter(v => v.trim());
+                                    } else {
+                                      newValues = currentValues.filter(v => v !== option);
+                                    }
+                                    setSelectedFilters(prev => ({
+                                      ...prev,
+                                      [filter.name]: newValues.join(',')
+                                    }));
+                                  }}
+                                  className={`rounded text-brand-blue focus:ring-brand-yellow ${filter.required
+                                      ? 'border-red-300 focus:ring-red-500'
+                                      : 'border-gray-300'
+                                    }`}
+                                />
+                                <span className="text-sm text-gray-700">{option}</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                        {filter.type === 'checkbox' && (!filter.options || filter.options.length === 0) && (
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedFilters[filter.name] === 'true'}
+                              onChange={(e) => {
+                                setSelectedFilters(prev => ({
+                                  ...prev,
+                                  [filter.name]: e.target.checked ? 'true' : ''
+                                }));
+                              }}
+                              className={`rounded text-brand-blue focus:ring-brand-yellow ${filter.required
+                                  ? 'border-red-300 focus:ring-red-500'
+                                  : 'border-gray-300'
+                                }`}
+                            />
+                            <span className="text-sm text-gray-700">نعم</span>
+                          </label>
+                        )}
+                        {filter.type === 'range' && (
+                          <div className="space-y-2">
+                            <input
+                              type="text"
+                              value={selectedFilters[filter.name] || ''}
+                              onChange={(e) => {
+                                setSelectedFilters(prev => ({
+                                  ...prev,
+                                  [filter.name]: e.target.value
+                                }));
+                              }}
+                              placeholder="مثال: 10-15 قدم"
+                              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 text-sm ${filter.required
+                                  ? 'border-red-300 focus:ring-red-500'
+                                  : 'border-gray-300 focus:ring-brand-yellow'
+                                }`}
+                            />
+                            {filter.required && (
+                              <p className="text-xs text-red-500">هذا الفلتر مطلوب</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Brand Filter */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium mb-2">العلامة التجارية</label>
+                  <select
+                    value={selectedBrand}
+                    onChange={(e) => {
+                      setSelectedBrand(e.target.value);
+
+                      // Remove brand_id from URL when brand filter changes
+                      const params = new URLSearchParams(location.search);
+                      if (params.has('brand_id')) {
+                        params.delete('brand_id');
                         const newUrl = params.toString()
                           ? `${location.pathname}?${params.toString()}`
                           : location.pathname;
@@ -1153,231 +1302,84 @@ const Products = () => {
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow"
                   >
-                    <option value="">اختر الفئة الفرعية...</option>
-                    {subcategories.map(subcategory => (
-                      <option key={subcategory.id} value={subcategory.id}>{subcategory.name}</option>
+                    {brandsList.map(brand => (
+                      <option key={brand} value={brand}>{brand}</option>
                     ))}
                   </select>
                 </div>
-              )}
 
-              {/* Dynamic Category Filters */}
-              {categoryFilters.length > 0 && (
-                <div className="mb-6 space-y-4">
-                  <div>
-                    <h4 className="font-semibold text-md">فلاتر الفئة</h4>
-                    <p className="text-xs text-gray-500 mt-1">
-                      اختر القيم المناسبة لتضييق نتائج البحث
-                    </p>
-                  </div>
-                  {categoryFilters.map((filter, index) => (
-                    <div key={index} className="space-y-2">
-                      <label className="block text-sm font-medium">
-                        {filter.name}
-                        {filter.required && (
-                          <span className="text-red-500 mr-1">*</span>
-                        )}
-                      </label>
-                      {filter.type === 'select' && (
-                        <select
-                          value={selectedFilters[filter.name] || ''}
+                {/* Price Range */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium mb-2">السعر</label>
+                  <div className="space-y-3">
+                    {/* Min and Max Price Inputs */}
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <label className="block text-xs text-gray-600 mb-1">من</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max={priceRange[1]}
+                          step="100"
+                          value={priceRange[0]}
                           onChange={(e) => {
-                            setSelectedFilters(prev => ({
-                              ...prev,
-                              [filter.name]: e.target.value
-                            }));
+                            const minValue = Math.max(0, Math.min(parseInt(e.target.value) || 0, priceRange[1]));
+                            setPriceRange([minValue, priceRange[1]]);
                           }}
-                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow text-sm ${
-                            filter.required 
-                              ? 'border-red-300 focus:ring-red-500' 
-                              : 'border-gray-300'
-                          }`}
-                        >
-                          <option value="">
-                            {filter.required ? 'اختر...' : 'الكل'}
-                          </option>
-                          {filter.options.map((option: string) => (
-                            <option key={option} value={option}>{option}</option>
-                          ))}
-                        </select>
-                      )}
-                      {filter.type === 'checkbox' && filter.options && filter.options.length > 0 && (
-                        <div className="space-y-2">
-                          {filter.options.map((option: string, optionIndex: number) => (
-                            <label key={optionIndex} className="flex items-center gap-2 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={selectedFilters[filter.name]?.split(',').includes(option) || false}
-                                onChange={(e) => {
-                                  const currentValues = selectedFilters[filter.name]?.split(',').filter(v => v.trim()) || [];
-                                  let newValues;
-                                  if (e.target.checked) {
-                                    newValues = [...currentValues, option].filter(v => v.trim());
-                                  } else {
-                                    newValues = currentValues.filter(v => v !== option);
-                                  }
-                                  setSelectedFilters(prev => ({
-                                    ...prev,
-                                    [filter.name]: newValues.join(',')
-                                  }));
-                                }}
-                                className={`rounded text-brand-blue focus:ring-brand-yellow ${
-                                  filter.required 
-                                    ? 'border-red-300 focus:ring-red-500' 
-                                    : 'border-gray-300'
-                                }`}
-                              />
-                              <span className="text-sm text-gray-700">{option}</span>
-                            </label>
-                          ))}
-                        </div>
-                      )}
-                      {filter.type === 'checkbox' && (!filter.options || filter.options.length === 0) && (
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={selectedFilters[filter.name] === 'true'}
-                            onChange={(e) => {
-                              setSelectedFilters(prev => ({
-                                ...prev,
-                                [filter.name]: e.target.checked ? 'true' : ''
-                              }));
-                            }}
-                            className={`rounded text-brand-blue focus:ring-brand-yellow ${
-                              filter.required 
-                                ? 'border-red-300 focus:ring-red-500' 
-                                : 'border-gray-300'
-                            }`}
-                          />
-                          <span className="text-sm text-gray-700">نعم</span>
-                        </label>
-                      )}
-                      {filter.type === 'range' && (
-                        <div className="space-y-2">
-                          <input
-                            type="text"
-                            value={selectedFilters[filter.name] || ''}
-                            onChange={(e) => {
-                              setSelectedFilters(prev => ({
-                                ...prev,
-                                [filter.name]: e.target.value
-                              }));
-                            }}
-                            placeholder="مثال: 10-15 قدم"
-                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 text-sm ${
-                              filter.required 
-                                ? 'border-red-300 focus:ring-red-500' 
-                                : 'border-gray-300 focus:ring-brand-yellow'
-                            }`}
-                          />
-                          {filter.required && (
-                            <p className="text-xs text-red-500">هذا الفلتر مطلوب</p>
-                          )}
-                        </div>
-                      )}
+                          placeholder="0"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow text-sm"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-xs text-gray-600 mb-1">إلى</label>
+                        <input
+                          type="number"
+                          min={priceRange[0]}
+                          max="50000"
+                          step="100"
+                          value={priceRange[1]}
+                          onChange={(e) => {
+                            const maxValue = Math.max(priceRange[0], Math.min(parseInt(e.target.value) || 50000, 50000));
+                            setPriceRange([priceRange[0], maxValue]);
+                          }}
+                          placeholder="50000"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow text-sm"
+                        />
+                      </div>
                     </div>
-                  ))}
-                </div>
-              )}
 
-              {/* Brand Filter */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">العلامة التجارية</label>
-                <select
-                  value={selectedBrand}
-                  onChange={(e) => {
-                    setSelectedBrand(e.target.value);
-                    
-                    // Remove brand_id from URL when brand filter changes
-                    const params = new URLSearchParams(location.search);
-                    if (params.has('brand_id')) {
-                      params.delete('brand_id');
-                      const newUrl = params.toString() 
-                        ? `${location.pathname}?${params.toString()}` 
-                        : location.pathname;
-                      navigate(newUrl, { replace: true });
-                    }
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow"
-                >
-                  {brandsList.map(brand => (
-                    <option key={brand} value={brand}>{brand}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Price Range */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">السعر</label>
-                <div className="space-y-3">
-                  {/* Min and Max Price Inputs */}
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1">
-                      <label className="block text-xs text-gray-600 mb-1">من</label>
-                  <input
-                        type="number"
-                    min="0"
-                        max={priceRange[1]}
-                        step="100"
-                        value={priceRange[0]}
-                        onChange={(e) => {
-                          const minValue = Math.max(0, Math.min(parseInt(e.target.value) || 0, priceRange[1]));
-                          setPriceRange([minValue, priceRange[1]]);
-                        }}
-                        placeholder="0"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow text-sm"
-                      />
+                    {/* Currency Display */}
+                    <div className="text-center text-xs text-gray-500">
+                      <span>النطاق: {priceRange[0]} ₪ - {priceRange[1]} ₪</span>
                     </div>
-                    <div className="flex-1">
-                      <label className="block text-xs text-gray-600 mb-1">إلى</label>
-                      <input
-                        type="number"
-                        min={priceRange[0]}
-                        max="50000"
-                    step="100"
-                    value={priceRange[1]}
-                        onChange={(e) => {
-                          const maxValue = Math.max(priceRange[0], Math.min(parseInt(e.target.value) || 50000, 50000));
-                          setPriceRange([priceRange[0], maxValue]);
-                        }}
-                        placeholder="50000"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow text-sm"
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Currency Display */}
-                  <div className="text-center text-xs text-gray-500">
-                    <span>النطاق: {priceRange[0]} ₪ - {priceRange[1]} ₪</span>
                   </div>
                 </div>
-              </div>
 
-              {/* Reset Filters Button - Show when any filter is active */}
-              {(() => {
-                const hasActiveFilters = 
-                  selectedCategoryId !== null ||
-                  selectedSubcategory !== null ||
-                  selectedBrand !== "الكل" ||
-                  Object.keys(selectedFilters).length > 0 ||
-                  searchQuery !== "" ||
-                  (priceRange[0] !== 0 || priceRange[1] !== 50000) ||
-                  sortBy !== "default" ||
-                  location.search.includes('category_id') ||
-                  location.search.includes('brand_id');
-                
-                return hasActiveFilters ? (
-                  <div className="mt-6 pt-6 border-t border-gray-200">
-                    <button
-                      onClick={resetAllFilters}
-                      className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 px-4 rounded-lg transition-colors text-sm"
-                    >
-                      إعادة تعيين جميع الفلاتر
-                    </button>
-                  </div>
-                ) : null;
-              })()}
-            </div>
+                {/* Reset Filters Button - Show when any filter is active */}
+                {(() => {
+                  const hasActiveFilters =
+                    selectedCategoryId !== null ||
+                    selectedSubcategory !== null ||
+                    selectedBrand !== "الكل" ||
+                    Object.keys(selectedFilters).length > 0 ||
+                    searchQuery !== "" ||
+                    (priceRange[0] !== 0 || priceRange[1] !== 50000) ||
+                    sortBy !== "default" ||
+                    location.search.includes('category_id') ||
+                    location.search.includes('brand_id');
+
+                  return hasActiveFilters ? (
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                      <button
+                        onClick={resetAllFilters}
+                        className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 px-4 rounded-lg transition-colors text-sm"
+                      >
+                        إعادة تعيين جميع الفلاتر
+                      </button>
+                    </div>
+                  ) : null;
+                })()}
+              </div>
             </div>
           </div>
 
@@ -1447,16 +1449,15 @@ const Products = () => {
               </div>
             ) : productsToShow.length > 0 ? (
               <>
-              <div className={`grid gap-3 md:gap-6 ${
-                viewMode === "grid" 
-                  ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" 
-                  : "grid-cols-1"
-              }`}>
+                <div className={`grid gap-3 md:gap-6 ${viewMode === "grid"
+                    ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+                    : "grid-cols-1"
+                  }`}>
                   {productsToShow.map(product => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-                
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+
                 {/* Infinity Scroll Trigger - يتم التحميل تلقائياً عند الوصول لهذا العنصر */}
                 <div id="load-more-trigger" className="py-8 text-center min-h-[100px]">
                   {loadingMore ? (
@@ -1470,7 +1471,7 @@ const Products = () => {
                         <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                       </div>
                       <p className="text-sm text-gray-500">جاري التحميل تلقائياً...</p>
-              </div>
+                    </div>
                   ) : (
                     <p className="text-gray-500">تم عرض جميع المنتجات</p>
                   )}
@@ -1496,7 +1497,7 @@ const Products = () => {
       {/* Floating Filter Button - Mobile Only */}
       {(() => {
         // Check if any filters are applied
-        const hasActiveFilters = 
+        const hasActiveFilters =
           searchQuery.trim() !== "" ||
           selectedCategoryId !== null ||
           selectedSubcategory !== null ||
@@ -1508,11 +1509,10 @@ const Products = () => {
         return (
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`lg:hidden fixed bottom-6 left-6 z-50 ${
-              hasActiveFilters 
-                ? 'bg-orange-500 hover:bg-orange-600' 
+            className={`lg:hidden fixed bottom-6 left-6 z-50 ${hasActiveFilters
+                ? 'bg-orange-500 hover:bg-orange-600'
                 : 'bg-blue-600 hover:bg-blue-700'
-            } text-white p-4 rounded-full shadow-lg transition-all duration-300 hover:scale-110 relative flex items-center justify-center`}
+              } text-white p-4 rounded-full shadow-lg transition-all duration-300 hover:scale-110 relative flex items-center justify-center`}
             style={{ position: 'fixed', bottom: '24px', left: '24px' }}
             aria-label="فتح الفلاتر"
           >
