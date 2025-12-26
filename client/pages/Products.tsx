@@ -411,31 +411,31 @@ const Products = () => {
         filters.order = 'desc';
       }
 
-      // Handle category filter - check URL first, then selected values
-      const params = new URLSearchParams(location.search);
-      const categoryIdFromUrl = params.get('category_id');
-
-      if (categoryIdFromUrl) {
-        // Prefer using the category ID from the URL directly (could be parent or child)
-        filters.category_id = Number(categoryIdFromUrl);
+      // Handle category filter - prioritize state over URL
+      if (selectedSubcategory) {
+        filters.category_id = Number(selectedSubcategory.id);
+      } else if (selectedCategoryId !== null) {
+        filters.category_id = selectedCategoryId;
       } else {
-        // Use subcategory if selected, otherwise use main category
-        if (selectedSubcategory) {
-          filters.category_id = Number(selectedSubcategory.id);
-        } else if (selectedCategoryId !== null) {
-          filters.category_id = selectedCategoryId;
+        const params = new URLSearchParams(location.search);
+        const categoryIdFromUrl = params.get('category_id');
+        if (categoryIdFromUrl) {
+          filters.category_id = Number(categoryIdFromUrl);
         }
       }
 
-      // Add brand filter - check URL first, then selected brand
-      const brandIdFromUrl = params.get('brand_id');
-      if (brandIdFromUrl) {
-        filters.brand_id = Number(brandIdFromUrl);
-      } else if (selectedBrand !== "الكل") {
+      // Add brand filter - prioritize state over URL
+      if (selectedBrand !== "الكل") {
         const brand = brands.find(b => b.name === selectedBrand) ||
           allBrands.find(b => b.name === selectedBrand);
         if (brand) {
           filters.brand_id = brand.id;
+        }
+      } else {
+        const params = new URLSearchParams(location.search);
+        const brandIdFromUrl = params.get('brand_id');
+        if (brandIdFromUrl) {
+          filters.brand_id = Number(brandIdFromUrl);
         }
       }
 

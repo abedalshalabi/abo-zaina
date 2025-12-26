@@ -121,18 +121,13 @@ class ProductController extends Controller
                     $filterValue = 'false';
                 }
                 
-                // Convert filter name to escaped Unicode to match how it's stored in JSON
-                // PHP's json_encode escapes Unicode by default, so we need to match that format
-                $escapedKey = json_encode($filterName);
-                // Remove the surrounding quotes from json_encode result
-                $escapedKey = trim($escapedKey, '"');
+                // Use the raw filter name for the JSON key. 
+                // MySQL's JSON functions handle UTF-8/Arabic keys correctly without Unicode escaping.
+                $escapedKey = $filterName; 
                 
                 // Also try with space replaced by underscore (and vice versa) for compatibility
-                // Some filters may have spaces in the name, others may have underscores
-                $escapedKeyWithSpace = json_encode(str_replace('_', ' ', $filterName));
-                $escapedKeyWithSpace = trim($escapedKeyWithSpace, '"');
-                $escapedKeyWithUnderscore = json_encode(str_replace(' ', '_', $filterName));
-                $escapedKeyWithUnderscore = trim($escapedKeyWithUnderscore, '"');
+                $escapedKeyWithSpace = str_replace('_', ' ', $filterName);
+                $escapedKeyWithUnderscore = str_replace(' ', '_', $filterName);
                 
                 // Check if filter value contains comma (multiple values for checkbox with options)
                 $isMultipleValues = strpos($filterValue, ',') !== false;
