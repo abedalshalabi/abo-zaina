@@ -709,7 +709,6 @@ const Products = () => {
     };
   }, [hasMore, loadMoreProducts, products.length]); // Re-attach when products change (position changes)
 
-  const brandsList = brands.length > 0 ? ["الكل", ...brands.map(brand => brand.name)] : ["الكل"];
 
   const brandsList = brands.length > 0 ? ["الكل", ...brands.map(brand => brand.name)] : ["الكل"];
 
@@ -1292,7 +1291,7 @@ const Products = () => {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <span className="text-gray-600">
-                    {productsToShow.length} منتج
+                    {products.length} منتج
                   </span>
                 </div>
 
@@ -1349,13 +1348,13 @@ const Products = () => {
                   إعادة المحاولة
                 </button>
               </div>
-            ) : productsToShow.length > 0 ? (
+            ) : products.length > 0 ? (
               <>
                 <div className={`grid gap-3 md:gap-6 ${viewMode === "grid"
                   ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
                   : "grid-cols-1"
                   }`}>
-                  {productsToShow.map(product => (
+                  {products.map(product => (
                     <ProductCard key={product.id} product={product} />
                   ))}
                 </div>
