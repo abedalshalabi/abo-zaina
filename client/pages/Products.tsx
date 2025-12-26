@@ -430,6 +430,13 @@ const Products = () => {
         }
       }
 
+      // Add dynamic filters
+      Object.entries(selectedFilters).forEach(([key, value]) => {
+        if (value && value.trim() !== "") {
+          filters[`filter_${key}`] = value;
+        }
+      });
+
       console.log('Filters being sent to API:', filters);
 
       const response = await productsAPI.getProducts(filters);
@@ -704,106 +711,10 @@ const Products = () => {
 
   const brandsList = brands.length > 0 ? ["الكل", ...brands.map(brand => brand.name)] : ["الكل"];
 
-  // Apply additional client-side filtering to ensure subcategory selection is respected
-  const applyAttributeFilters = useCallback(
-    (list: Product[]) => {
-      const activeFilters = Object.entries(selectedFilters).filter(([, value]) => value && value.trim() !== "");
-      if (!activeFilters.length) {
-        return list;
-      }
+  const brandsList = brands.length > 0 ? ["الكل", ...brands.map(brand => brand.name)] : ["الكل"];
 
-      return list.filter((product) => {
-        const productFilterValues = product.filterValues || {};
+  // Client-side filtering removed - now handled by backend
 
-        return activeFilters.some(([filterName, filterValue]) => {
-          const selectedValues = filterValue
-            .split(",")
-            .map((val) => val.trim())
-            .filter(Boolean);
-
-          if (!selectedValues.length) {
-            return true;
-          }
-
-          const productValue = productFilterValues[filterName];
-          if (productValue === undefined || productValue === null) {
-            return false;
-          }
-
-          const productValuesArray = Array.isArray(productValue)
-            ? productValue.map((val) => String(val).trim())
-            : [String(productValue).trim()];
-
-          return selectedValues.some((selectedVal) =>
-            productValuesArray.some((productVal) => productVal.toLowerCase() === selectedVal.toLowerCase())
-          );
-        });
-      });
-    },
-    [selectedFilters]
-  );
-
-  const getDescendantCategoryIds = useCallback(
-    (rootCategoryId: number) => {
-      const result = new Set<number>();
-      const queue: number[] = [rootCategoryId];
-
-      while (queue.length > 0) {
-        const currentId = queue.shift()!;
-        if (result.has(currentId)) {
-          continue;
-        }
-
-        result.add(currentId);
-
-        allCategoriesList
-          .filter((cat) => Number(cat.parent_id) === currentId)
-          .forEach((child) => {
-            const childId = Number(child.id);
-            if (!Number.isNaN(childId) && !result.has(childId)) {
-              queue.push(childId);
-            }
-          });
-      }
-
-      return result;
-    },
-    [allCategoriesList]
-  );
-
-  const productsToShow = useMemo(() => {
-    if (selectedSubcategory) {
-      const subcategoryId = Number(selectedSubcategory.id);
-      const subcategoryProducts = products.filter((product) => {
-        const matchesPrimary = product.categoryId === subcategoryId;
-        const matchesAdditional = Array.isArray(product.categoryIds)
-          ? product.categoryIds.includes(subcategoryId)
-          : false;
-        return matchesPrimary || matchesAdditional;
-      });
-
-      return applyAttributeFilters(subcategoryProducts);
-    }
-
-    if (selectedCategoryId !== null) {
-      const relevantIds = getDescendantCategoryIds(selectedCategoryId);
-
-      const categoryFiltered = products.filter((product) => {
-        const primaryMatches =
-          product.categoryId !== undefined && product.categoryId !== null
-            ? relevantIds.has(Number(product.categoryId))
-            : false;
-        const additionalMatches = Array.isArray(product.categoryIds)
-          ? product.categoryIds.some((id) => relevantIds.has(Number(id)))
-          : false;
-        return primaryMatches || additionalMatches;
-      });
-
-      return applyAttributeFilters(categoryFiltered);
-    }
-
-    return applyAttributeFilters(products);
-  }, [products, selectedSubcategory, selectedCategoryId, getDescendantCategoryIds, applyAttributeFilters]);
 
   const toggleWishlist = useCallback(
     async (product: Product) => {
