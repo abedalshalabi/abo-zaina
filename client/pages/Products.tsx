@@ -160,27 +160,104 @@ const Products = () => {
     return result;
   }, []);
 
-  // Load subcategories when category changes
-  const loadSubcategories = async (categoryId: number) => {
+  // ============================================
+  // FILTERS MANAGEMENT - Rebuilt from scratch
+  // ============================================
+
+  /**
+   * Load subcategories for a given category
+   */
+  const loadSubcategories = useCallback(async (categoryId: number) => {
     try {
       const response = await categoriesAPI.getSubcategories(categoryId);
-      setSubcategories(response.data || []);
+      const subcats = response.data || [];
+      setSubcategories(subcats);
+      return subcats;
     } catch (err) {
       console.error("Error loading subcategories:", err);
       setSubcategories([]);
+      return [];
     }
-  };
+  }, []);
 
-  // Load filters when subcategory changes
-  const loadCategoryFilters = async (categoryId: number) => {
+  /**
+   * Load category filters for a given category
+   */
+  const loadCategoryFilters = useCallback(async (categoryId: number) => {
     try {
+      console.log('Loading category filters for category ID:', categoryId);
       const response = await categoriesAPI.getCategoryFilters(categoryId);
-      setCategoryFilters(response.data.filters || []);
+      console.log('Category filters API response:', response);
+      const filters = response.data?.filters || [];
+      console.log('Parsed filters:', filters);
+      setCategoryFilters(filters);
+      // Clear selected filters when filters change
+      setSelectedFilters({});
+      return filters;
     } catch (err) {
-      console.error("Error loading filters:", err);
+      console.error("Error loading category filters:", err);
       setCategoryFilters([]);
+      setSelectedFilters({});
+      return [];
     }
-  };
+  }, []);
+
+  /**
+   * Initialize category data (subcategories and filters) based on selected category
+   * This is the central function that handles all category-related data loading
+   */
+  const initializeCategoryData = useCallback(async (category: any | null) => {
+    if (!category) {
+      // Reset everything
+      setSelectedCategoryId(null);
+      setSelectedSubcategory(null);
+      setSubcategories([]);
+      setCategoryFilters([]);
+      setSelectedFilters({});
+      return;
+    }
+
+    const categoryId = Number(category.id);
+    const isChildCategory = category.parent_id !== null && category.parent_id !== undefined;
+
+    if (isChildCategory) {
+      // This is a child category (subcategory)
+      const parentId = Number(category.parent_id);
+      
+      // Find parent category
+      const parentCategory = 
+        categories.find(cat => Number(cat.id) === parentId) ||
+        allCategoriesList.find(cat => Number(cat.id) === parentId);
+
+      if (parentCategory) {
+        // Set parent as selected category
+        setSelectedCategoryId(parentId);
+        setSelectedSubcategory(category);
+        
+        // Load subcategories for parent (to show in dropdown)
+        await loadSubcategories(parentId);
+        
+        // Load filters for the child category (this is what we filter by)
+        await loadCategoryFilters(categoryId);
+      }
+    } else {
+      // This is a parent category
+      setSelectedCategoryId(categoryId);
+      setSelectedSubcategory(null);
+      setSelectedFilters({});
+      
+      // Check if category has children
+      if (category.has_children) {
+        // Has subcategories - load them, but no filters yet
+        await loadSubcategories(categoryId);
+        setCategoryFilters([]);
+      } else {
+        // No subcategories - load filters directly for this category
+        setSubcategories([]);
+        await loadCategoryFilters(categoryId);
+      }
+    }
+  }, [categories, allCategoriesList, loadSubcategories, loadCategoryFilters]);
 
   // Load data from API
   useEffect(() => {
@@ -216,17 +293,15 @@ const Products = () => {
         setAllBrands(allBrandsData);
         setBrands(allBrandsData);
 
-        // Load products (will be triggered by the filters useEffect)
       } catch (err) {
         setError("حدث خطأ في تحميل البيانات");
         console.error("Error loading data:", err);
-        setLoading(false); // Only stop loading on error, otherwise wait for product load
+        setLoading(false);
       }
-      // Removed finally block to prevent loading flash
     };
 
     loadData();
-  }, []);
+  }, [flattenCategories]);
 
   // Load wishlist
   useEffect(() => {
@@ -255,70 +330,82 @@ const Products = () => {
 
   // Products will be loaded by the filters useEffect below
 
-  // Read category_id, brand_id, and search from URL and set selected values
+  /**
+   * Sync filters state with URL parameters
+   * This runs when URL changes (browser navigation, back/forward, etc.)
+   */
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
+    const syncFiltersWithUrl = async () => {
+      const params = new URLSearchParams(location.search);
 
-    // Handle search query from URL
-    const searchFromUrl = params.get('search');
-    if (searchFromUrl) {
-      setSearchQuery(searchFromUrl);
-    } else {
-      // Reset search query if not in URL
-      setSearchQuery("");
-    }
-
-    // Handle category_id from URL
-    const categoryIdFromUrl = params.get('category_id');
-    if (categoryIdFromUrl && (categories.length > 0 || allCategoriesList.length > 0)) {
-      // Search in main categories first, then in the full categories list
-      const category =
-        categories.find(cat => cat.id === Number(categoryIdFromUrl)) ||
-        allCategoriesList.find(cat => cat.id === Number(categoryIdFromUrl));
-
-      if (category) {
-        handleCategorySelection(category);
+      // Handle search query
+      const searchFromUrl = params.get('search');
+      if (searchFromUrl !== null) {
+        setSearchQuery(searchFromUrl);
       }
-    } else if (!categoryIdFromUrl) {
-      // Reset to "الكل" if no category_id in URL
-      setSelectedCategoryId(null);
-      setSelectedSubcategory(null);
-      setSubcategories([]);
-      setCategoryFilters([]);
-      setSelectedFilters({});
-    }
 
-    // Handle brand_id from URL
-    const brandIdFromUrl = params.get('brand_id');
-    if (brandIdFromUrl && allBrands.length > 0) {
-      const brand = allBrands.find(b => b.id === Number(brandIdFromUrl));
-      if (brand) {
-        setSelectedBrand(brand.name);
+      // Handle category_id from URL
+      const categoryIdFromUrl = params.get('category_id');
+      
+      // Only process if we have categories loaded
+      if (categories.length > 0 || allCategoriesList.length > 0) {
+        if (categoryIdFromUrl) {
+          const categoryId = Number(categoryIdFromUrl);
+          const category =
+            categories.find(cat => cat.id === categoryId) ||
+            allCategoriesList.find(cat => cat.id === categoryId);
+
+          if (category) {
+            // Check if this is different from current selection
+            const currentCategoryId = selectedSubcategory 
+              ? Number(selectedSubcategory.id) 
+              : selectedCategoryId;
+
+            if (currentCategoryId !== categoryId) {
+              // Initialize category data (loads subcategories and filters)
+              await initializeCategoryData(category);
+            }
+          }
+        } else {
+          // No category_id in URL - reset if we have a selection
+          if (selectedCategoryId !== null || selectedSubcategory !== null) {
+            await initializeCategoryData(null);
+          }
+        }
       }
-    } else if (!brandIdFromUrl) {
-      setSelectedBrand("الكل");
-    }
 
-    // Handle price range from URL
-    const priceMin = params.get('price_min');
-    const priceMax = params.get('price_max');
-    if (priceMin || priceMax) {
-      setPriceRange([
-        priceMin ? parseInt(priceMin) : 0,
-        priceMax ? parseInt(priceMax) : 50000
-      ]);
-    } else {
-      setPriceRange([0, 50000]);
-    }
+      // Handle brand_id
+      const brandIdFromUrl = params.get('brand_id');
+      if (brandIdFromUrl && allBrands.length > 0) {
+        const brand = allBrands.find(b => b.id === Number(brandIdFromUrl));
+        if (brand) {
+          setSelectedBrand(brand.name);
+        }
+      } else if (!brandIdFromUrl && selectedBrand !== "الكل") {
+        setSelectedBrand("الكل");
+      }
 
-    // Handle sort from URL
-    const sortFromUrl = params.get('sort');
-    if (sortFromUrl) {
-      setSortBy(sortFromUrl);
-    } else {
-      setSortBy("default");
-    }
-  }, [location.search, categories, allCategoriesList, allBrands]);
+      // Handle price range
+      const priceMin = params.get('price_min');
+      const priceMax = params.get('price_max');
+      if (priceMin !== null || priceMax !== null) {
+        setPriceRange([
+          priceMin ? parseInt(priceMin) : 0,
+          priceMax ? parseInt(priceMax) : 50000
+        ]);
+      }
+
+      // Handle sort
+      const sortFromUrl = params.get('sort');
+      if (sortFromUrl !== null) {
+        setSortBy(sortFromUrl);
+      } else if (sortBy !== "default") {
+        setSortBy("default");
+      }
+    };
+
+    syncFiltersWithUrl();
+  }, [location.search, categories, allCategoriesList, allBrands, initializeCategoryData, selectedCategoryId, selectedSubcategory, selectedBrand, sortBy]);
 
   const resetAllFilters = useCallback(() => {
     setSelectedFilters({});
@@ -342,57 +429,41 @@ const Products = () => {
     navigate(newUrl, { replace: true });
   }, [location.pathname, location.search, navigate]);
 
-  // Helper function to handle category selection
-  const handleCategorySelection = async (category: any) => {
-    // Check if we already have this category selected to avoid redundant fetches
-    const categoryId = Number(category.id);
-    const isAlreadySelected = (selectedCategoryId === categoryId && !category.parent_id) ||
-      (selectedSubcategory && Number(selectedSubcategory.id) === categoryId);
+  /**
+   * Handle category selection from UI
+   * Updates URL and initializes category data
+   */
+  const handleCategorySelection = useCallback(async (category: any | null) => {
+    const params = new URLSearchParams(location.search);
 
-    if (isAlreadySelected) return;
-
-    // Check if category is a parent (parent_id is null) or child (parent_id is not null)
-    const isChildCategory = category.parent_id !== null && category.parent_id !== undefined;
-
-    if (isChildCategory) {
-      // If it's a child category, find the parent category
-      const parentCategoryId = Number(category.parent_id);
-      const parentCategory =
-        categories.find(cat => Number(cat.id) === parentCategoryId) ||
-        allCategoriesList.find(cat => Number(cat.id) === parentCategoryId);
-      if (parentCategory) {
-        setSelectedCategoryId(Number(parentCategory.id));
-        setSelectedSubcategory(category);
-
-        // Load subcategories for the parent
-        await loadSubcategories(Number(parentCategory.id));
-
-        // Load filters for the child category
-        await loadCategoryFilters(Number(category.id));
-      }
+    if (!category) {
+      // Clear category selection
+      params.delete('category_id');
+      params.delete('brand_id');
+      params.delete('page');
+      
+      // Initialize category data (will reset everything)
+      await initializeCategoryData(null);
     } else {
-      // If it's a parent category
-      setSelectedCategoryId(Number(category.id));
-      setSelectedSubcategory(null);
-      setSubcategories([]);
-      setCategoryFilters([]);
-      setSelectedFilters({});
-
-      // Load subcategories or filters if needed
-      if (category.has_children) {
-        await loadSubcategories(Number(category.id));
-      } else {
-        await loadCategoryFilters(Number(category.id));
-      }
+      const categoryId = Number(category.id);
+      
+      // Update URL
+      params.set('category_id', categoryId.toString());
+      params.delete('brand_id');
+      params.delete('search');
+      params.delete('page');
+      
+      // Initialize category data (loads subcategories and filters)
+      await initializeCategoryData(category);
     }
 
-    // Update URL to match selected category
-    const params = new URLSearchParams(location.search);
-    params.set('category_id', categoryId.toString());
-    params.delete('brand_id'); // Clear brand when changing category for cleaner transition
-    const newUrl = `${location.pathname}?${params.toString()}`;
+    // Update URL
+    const newUrl = params.toString() 
+      ? `${location.pathname}?${params.toString()}` 
+      : location.pathname;
+    
     navigate(newUrl, { replace: true });
-  };
+  }, [location.pathname, location.search, navigate, initializeCategoryData]);
 
   const handleBrandSelection = (brandName: string) => {
     setSelectedBrand(brandName);
@@ -525,20 +596,26 @@ const Products = () => {
         }
       }
 
-      // Add dynamic filters
-      Object.entries(selectedFilters).forEach(([key, value]) => {
-        if (value && value.trim() !== "") {
-          filters[`filter_${key}`] = value;
-        }
-      });
+      // Add dynamic filters as JSON string (filter_values parameter works on backend)
+      if (Object.keys(selectedFilters).length > 0) {
+        const filtersObject: Record<string, string> = {};
+        Object.entries(selectedFilters).forEach(([key, value]) => {
+          if (value && value.trim() !== "") {
+            filtersObject[key] = value;
+          }
+        });
 
-      console.log('Filters being sent to API:', filters);
+        if (Object.keys(filtersObject).length > 0) {
+          (filters as any)['filter_values'] = JSON.stringify(filtersObject);
+          console.log('Sending filter_values to API:', filtersObject);
+        }
+      } else {
+        console.log('No selected filters to send');
+      }
+
 
       const response = await productsAPI.getProducts(filters);
 
-      console.log('Raw API response:', response);
-      console.log('Response data:', response.data);
-      console.log('Response meta:', response.meta);
 
       // Handle paginated response structure
       const productsData = response.data || [];
@@ -546,8 +623,6 @@ const Products = () => {
       const currentPageNum = meta.current_page || page;
       const lastPageNum = meta.last_page || 1;
 
-      console.log('Number of products from API:', productsData.length);
-      console.log('Current page:', currentPageNum, 'Last page:', lastPageNum);
 
       // Transform API data to match Product interface
       const transformedProducts = productsData.map((product: any) => {
@@ -750,12 +825,6 @@ const Products = () => {
 
   // Reload products when filters change (reset to page 1)
   useEffect(() => {
-    // Prevent initial double-fire
-    if (!initialLoadRef.current) {
-      initialLoadRef.current = true;
-      return;
-    }
-
     // Debounce increased to 500ms to allow user to finish typing/clicking
     const timeoutId = setTimeout(() => {
       // Don't clear products here, let loadProducts replace them to avoid layout jumps
@@ -1057,46 +1126,14 @@ const Products = () => {
                     value={selectedCategoryId !== null ? selectedCategoryId.toString() : ""}
                     onChange={async (e) => {
                       const categoryIdValue = e.target.value;
-
-                      // Reset all filters and selections
-                      setSelectedSubcategory(null);
-                      setSubcategories([]);
-                      setCategoryFilters([]);
-                      setSelectedFilters({});
-                      setSelectedBrand("الكل");
-                      setPriceRange([0, 50000]);
-                      setSearchQuery("");
-
-                      // Update URL based on selection
-                      const params = new URLSearchParams(location.search);
-                      if (categoryIdValue) {
+                      if (!categoryIdValue) {
+                        await handleCategorySelection(null);
+                      } else {
                         const category = categories.find(cat => cat.id.toString() === categoryIdValue);
                         if (category) {
-                          const numericId = Number(category.id);
-                          setSelectedCategoryId(numericId);
-                          params.set('category_id', numericId.toString());
-
-                          // Remove brand_id if exists (reset when category changes)
-                          params.delete('brand_id');
-
-                          // Load subcategories or filters
-                          if (category.has_children) {
-                            await loadSubcategories(numericId);
-                          } else {
-                            await loadCategoryFilters(numericId);
-                          }
+                          await handleCategorySelection(category);
                         }
-                      } else {
-                        setSelectedCategoryId(null);
-                        params.delete('category_id');
-                        params.delete('brand_id');
                       }
-
-                      // Update URL
-                      const newUrl = params.toString()
-                        ? `${location.pathname}?${params.toString()}`
-                        : location.pathname;
-                      navigate(newUrl, { replace: true });
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow"
                   >
@@ -1115,37 +1152,20 @@ const Products = () => {
                       value={selectedSubcategory?.id || ''}
                       onChange={async (e) => {
                         const subcategoryId = e.target.value;
-                        if (subcategoryId) {
-                          const subcategory = subcategories.find(sub => sub.id.toString() === subcategoryId);
-                          if (subcategory) {
-                            setSelectedSubcategory(subcategory);
-                            setSelectedFilters({});
-                            // Load filters for this subcategory
-                            await loadCategoryFilters(subcategory.id);
-
-                            const params = new URLSearchParams(location.search);
-                            params.set('category_id', subcategory.id.toString());
-                            params.delete('brand_id');
-                            const newUrl = params.toString()
-                              ? `${location.pathname}?${params.toString()}`
-                              : location.pathname;
-                            navigate(newUrl, { replace: true });
+                        if (!subcategoryId) {
+                          // If subcategory is cleared, return to parent category view
+                          const parent = categories.find(cat => cat.id === selectedCategoryId) ||
+                                        allCategoriesList.find(cat => cat.id === selectedCategoryId);
+                          if (parent) {
+                            await handleCategorySelection(parent);
+                          } else {
+                            await handleCategorySelection(null);
                           }
                         } else {
-                          setSelectedSubcategory(null);
-                          setCategoryFilters([]);
-                          setSelectedFilters({});
-
-                          const params = new URLSearchParams(location.search);
-                          if (selectedParentCategory) {
-                            params.set('category_id', selectedParentCategory.id.toString());
-                          } else {
-                            params.delete('category_id');
+                          const subcategory = subcategories.find(sub => sub.id.toString() === subcategoryId);
+                          if (subcategory) {
+                            await handleCategorySelection(subcategory);
                           }
-                          const newUrl = params.toString()
-                            ? `${location.pathname}?${params.toString()}`
-                            : location.pathname;
-                          navigate(newUrl, { replace: true });
                         }
                       }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow"
@@ -1159,7 +1179,10 @@ const Products = () => {
                 )}
 
                 {/* Dynamic Category Filters */}
-                {categoryFilters.length > 0 && (
+                {(() => {
+                  console.log('Rendering filters section. categoryFilters:', categoryFilters, 'length:', categoryFilters.length);
+                  return categoryFilters.length > 0;
+                })() && (
                   <div className="mb-6 space-y-4">
                     <div>
                       <h4 className="font-semibold text-md">فلاتر الفئة</h4>
@@ -1167,8 +1190,13 @@ const Products = () => {
                         اختر القيم المناسبة لتضييق نتائج البحث
                       </p>
                     </div>
-                    {categoryFilters.map((filter, index) => (
-                      <div key={index} className="space-y-2">
+                    {categoryFilters.map((filter, index) => {
+                      console.log('Rendering filter:', filter);
+                      // Use filter name as key if available, otherwise use index
+                      const filterKey = filter.name || `filter-${index}`;
+                      
+                      return (
+                        <div key={filterKey} className="space-y-2">
                         <label className="block text-sm font-medium">
                           {filter.name}
                           {filter.required && (
@@ -1192,7 +1220,7 @@ const Products = () => {
                             <option value="">
                               {filter.required ? 'اختر...' : 'الكل'}
                             </option>
-                            {filter.options.map((option: string) => (
+                            {Array.isArray(filter.options) && filter.options.map((option: string) => (
                               <option key={option} value={option}>{option}</option>
                             ))}
                           </select>
@@ -1268,8 +1296,9 @@ const Products = () => {
                             )}
                           </div>
                         )}
-                      </div>
-                    ))}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 
@@ -1520,3 +1549,5 @@ const Products = () => {
 };
 
 export default Products;
+
+

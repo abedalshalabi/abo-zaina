@@ -161,6 +161,7 @@ export const productsAPI = {
     price_min?: number;
     price_max?: number;
     sort?: string;
+    order?: string;
   } = {}) => {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
