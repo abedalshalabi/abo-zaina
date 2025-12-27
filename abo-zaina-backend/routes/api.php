@@ -31,8 +31,8 @@ use App\Http\Controllers\Api\AdminSliderController;
 */
 
 // Public routes
-Route::prefix('v1')->group(function () {
 
+Route::prefix('v1')->group(function () {
     // Authentication routes
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);

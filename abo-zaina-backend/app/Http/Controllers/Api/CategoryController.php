@@ -17,10 +17,14 @@ class CategoryController extends Controller
 {
     public function index(): JsonResponse
     {
-        // Get main categories (parent_id is null) with their children
+        // Get main categories (parent_id is null) with their children AND grandchildren
         $categories = Category::where('is_active', true)
             ->with(['children' => function ($query) {
-                $query->where('is_active', true)->orderBy('sort_order');
+                $query->where('is_active', true)
+                    ->orderBy('sort_order')
+                    ->with(['children' => function ($q) {
+                        $q->where('is_active', true)->orderBy('sort_order');
+                    }]);
             }])
             ->whereNull('parent_id')
             ->orderBy('sort_order')

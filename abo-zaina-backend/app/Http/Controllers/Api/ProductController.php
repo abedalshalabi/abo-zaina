@@ -58,7 +58,6 @@ class ProductController extends Controller
             ->with(['category', 'categories', 'brand']);
 
         // Apply search filter FIRST (before QueryBuilder)
-        // Important: Keep is_active check outside the search group to ensure all results are active
         if ($request->has('search') && !empty($request->search)) {
             $searchTerm = $request->search;
             $query->where(function ($q) use ($searchTerm) {
@@ -77,9 +76,13 @@ class ProductController extends Controller
 
         // Apply category filter - include products from this category and all its subcategories
         if ($request->has('category_id') && $request->category_id) {
-            $categoryIds = Category::getAllDescendantIdsFor($request->category_id);
+            $categoryId = $request->category_id;
+            $categoryIds = Category::getAllDescendantIdsFor($categoryId);
+            
             $query->where(function($q) use ($categoryIds) {
+                // Check direct category_id column
                 $q->whereIn('category_id', $categoryIds)
+                  // OR check many-to-many categories relationship
                   ->orWhereHas('categories', function($categoryQuery) use ($categoryIds) {
                       $categoryQuery->whereIn('categories.id', $categoryIds);
                   });
@@ -99,283 +102,109 @@ class ProductController extends Controller
             ]);
         }
 
-        // Apply dynamic filter values
-        // Check individual filter parameters (e.g., filter_السعة, filter_النوع)
-        $appliedFilters = [];
+        // Apply dynamic filter values (category-specific attributes)
+        // Handle both formats: filters[AttributeName]=value OR filter_values as JSON string
         
-        foreach ($request->all() as $key => $value) {
-            // Check if this is a filter parameter (starts with 'filter_')
-            if (strpos($key, 'filter_') === 0 && !empty($value) && $value !== '' && $value !== null) {
-                $filterName = substr($key, 7); // Remove 'filter_' prefix
-                $filterValue = trim((string)$value);
-                
-                // Skip if value is empty after trimming
-                if (empty($filterValue)) {
-                    continue;
-                }
-                
-                // Handle checkbox values - convert boolean to string
-                if ($filterValue === 'true' || $filterValue === '1') {
-                    $filterValue = 'true';
-                } elseif ($filterValue === 'false' || $filterValue === '0') {
-                    $filterValue = 'false';
-                }
-                
-                // Use the raw filter name for the JSON key. 
-                // MySQL's JSON functions handle UTF-8/Arabic keys correctly without Unicode escaping.
-                $escapedKey = $filterName; 
-                
-                // Also try with space replaced by underscore (and vice versa) for compatibility
-                $escapedKeyWithSpace = str_replace('_', ' ', $filterName);
-                $escapedKeyWithUnderscore = str_replace(' ', '_', $filterName);
-                
-                // Check if filter value contains comma (multiple values for checkbox with options)
-                $isMultipleValues = strpos($filterValue, ',') !== false;
-                
-                // Try both versions (with space and with underscore)
-                $query->where(function ($q) use ($escapedKey, $escapedKeyWithSpace, $escapedKeyWithUnderscore, $filterValue, $isMultipleValues) {
-                    if ($isMultipleValues) {
-                        // Multiple values: split and search for any match
-                        $values = array_map('trim', explode(',', $filterValue));
-                        $values = array_filter($values); // Remove empty values
-                        
-                        foreach ($values as $singleValue) {
-                            // Original key
-                            $q->orWhereRaw(
-                                "JSON_UNQUOTE(JSON_EXTRACT(COALESCE(filter_values, '{}'), CONCAT('$.', CHAR(34), ?, CHAR(34)))) LIKE ?",
-                                [$escapedKey, '%' . $singleValue . '%']
-                            );
-                            
-                            // If key contains underscore, also try with space
-                            if ($escapedKey !== $escapedKeyWithSpace) {
-                                $q->orWhereRaw(
-                                    "JSON_UNQUOTE(JSON_EXTRACT(COALESCE(filter_values, '{}'), CONCAT('$.', CHAR(34), ?, CHAR(34)))) LIKE ?",
-                                    [$escapedKeyWithSpace, '%' . $singleValue . '%']
-                                );
-                            }
-                            
-                            // If key contains space, also try with underscore
-                            if ($escapedKey !== $escapedKeyWithUnderscore) {
-                                $q->orWhereRaw(
-                                    "JSON_UNQUOTE(JSON_EXTRACT(COALESCE(filter_values, '{}'), CONCAT('$.', CHAR(34), ?, CHAR(34)))) LIKE ?",
-                                    [$escapedKeyWithUnderscore, '%' . $singleValue . '%']
-                                );
-                            }
-                        }
-                    } else {
-                        // Single value: exact match or LIKE for comma-separated values
-                        // Original key - try exact match first
-                        $q->whereRaw(
-                            "JSON_UNQUOTE(JSON_EXTRACT(COALESCE(filter_values, '{}'), CONCAT('$.', CHAR(34), ?, CHAR(34)))) = ?",
-                            [$escapedKey, $filterValue]
-                        );
-                        
-                        // Also try LIKE for comma-separated values (in case stored value contains multiple)
-                        $q->orWhereRaw(
-                            "JSON_UNQUOTE(JSON_EXTRACT(COALESCE(filter_values, '{}'), CONCAT('$.', CHAR(34), ?, CHAR(34)))) LIKE ?",
-                            [$escapedKey, '%' . $filterValue . '%']
-                        );
-                        
-                        // If key contains underscore, also try with space
-                        if ($escapedKey !== $escapedKeyWithSpace) {
-                            $q->orWhereRaw(
-                                "JSON_UNQUOTE(JSON_EXTRACT(COALESCE(filter_values, '{}'), CONCAT('$.', CHAR(34), ?, CHAR(34)))) = ?",
-                                [$escapedKeyWithSpace, $filterValue]
-                            );
-                            $q->orWhereRaw(
-                                "JSON_UNQUOTE(JSON_EXTRACT(COALESCE(filter_values, '{}'), CONCAT('$.', CHAR(34), ?, CHAR(34)))) LIKE ?",
-                                [$escapedKeyWithSpace, '%' . $filterValue . '%']
-                            );
-                        }
-                        
-                        // If key contains space, also try with underscore
-                        if ($escapedKey !== $escapedKeyWithUnderscore) {
-                            $q->orWhereRaw(
-                                "JSON_UNQUOTE(JSON_EXTRACT(COALESCE(filter_values, '{}'), CONCAT('$.', CHAR(34), ?, CHAR(34)))) = ?",
-                                [$escapedKeyWithUnderscore, $filterValue]
-                            );
-                            $q->orWhereRaw(
-                                "JSON_UNQUOTE(JSON_EXTRACT(COALESCE(filter_values, '{}'), CONCAT('$.', CHAR(34), ?, CHAR(34)))) LIKE ?",
-                                [$escapedKeyWithUnderscore, '%' . $filterValue . '%']
-                            );
-                        }
-                    }
-                });
-                
-                $appliedFilters[$filterName] = $filterValue;
-                
-                // Log for debugging
-                Log::info('Applying filter', [
-                    'filter_name' => $filterName,
-                    'filter_value' => $filterValue,
-                    'json_path' => "filter_values->{$filterName}",
-                    'original_value' => $value,
-                    'type' => gettype($value)
-                ]);
-            }
+        // Collect all filters from both possible sources
+        $allFilters = [];
+        
+        // Source 1: filters parameter (array format)
+        if ($request->has('filters') && is_array($request->input('filters'))) {
+            $allFilters = array_merge($allFilters, $request->input('filters'));
         }
         
-        // Also support filter_values as JSON object
+        // Source 2: filter_values parameter (JSON string format)
         if ($request->has('filter_values')) {
             $filterValues = is_string($request->filter_values) 
                 ? json_decode($request->filter_values, true) 
                 : $request->filter_values;
                 
-            if (is_array($filterValues) && count($filterValues) > 0) {
-                foreach ($filterValues as $filterName => $filterValue) {
-                    if (!empty($filterValue) && $filterValue !== '' && $filterValue !== null) {
-                        $filterValueStr = (string)$filterValue;
-                        
-                        // Handle checkbox values
-                        if ($filterValueStr === 'true' || $filterValueStr === '1') {
-                            $filterValueStr = 'true';
-                        } elseif ($filterValueStr === 'false' || $filterValueStr === '0') {
-                            $filterValueStr = 'false';
-                        }
-                        
-                        // Convert filter name to escaped Unicode to match how it's stored in JSON
-                        $escapedKey = json_encode($filterName);
-                        $escapedKey = trim($escapedKey, '"');
-                        
-                        // Also try with space replaced by underscore (and vice versa) for compatibility
-                        $escapedKeyWithSpace = json_encode(str_replace('_', ' ', $filterName));
-                        $escapedKeyWithSpace = trim($escapedKeyWithSpace, '"');
-                        $escapedKeyWithUnderscore = json_encode(str_replace(' ', '_', $filterName));
-                        $escapedKeyWithUnderscore = trim($escapedKeyWithUnderscore, '"');
-                        
-                        // Check if filter value contains comma (multiple values for checkbox with options)
-                        $isMultipleValues = strpos($filterValueStr, ',') !== false;
-                        
-                        // Try both versions (with space and with underscore)
-                        $query->where(function ($q) use ($escapedKey, $escapedKeyWithSpace, $escapedKeyWithUnderscore, $filterValueStr, $isMultipleValues) {
-                            if ($isMultipleValues) {
-                                // Multiple values: split and search for any match
-                                $values = array_map('trim', explode(',', $filterValueStr));
-                                $values = array_filter($values); // Remove empty values
-                                
-                                foreach ($values as $singleValue) {
-                                    // Original key
-                                    $q->orWhereRaw(
-                                        "JSON_UNQUOTE(JSON_EXTRACT(COALESCE(filter_values, '{}'), CONCAT('$.', CHAR(34), ?, CHAR(34)))) LIKE ?",
-                                        [$escapedKey, '%' . $singleValue . '%']
-                                    );
-                                    
-                                    // If key contains underscore, also try with space
-                                    if ($escapedKey !== $escapedKeyWithSpace) {
-                                        $q->orWhereRaw(
-                                            "JSON_UNQUOTE(JSON_EXTRACT(COALESCE(filter_values, '{}'), CONCAT('$.', CHAR(34), ?, CHAR(34)))) LIKE ?",
-                                            [$escapedKeyWithSpace, '%' . $singleValue . '%']
-                                        );
-                                    }
-                                    
-                                    // If key contains space, also try with underscore
-                                    if ($escapedKey !== $escapedKeyWithUnderscore) {
-                                        $q->orWhereRaw(
-                                            "JSON_UNQUOTE(JSON_EXTRACT(COALESCE(filter_values, '{}'), CONCAT('$.', CHAR(34), ?, CHAR(34)))) LIKE ?",
-                                            [$escapedKeyWithUnderscore, '%' . $singleValue . '%']
-                                        );
-                                    }
-                                }
-                            } else {
-                                // Single value: exact match or LIKE for comma-separated values
-                                // Original key - try exact match first
-                                $q->whereRaw(
-                                    "JSON_UNQUOTE(JSON_EXTRACT(COALESCE(filter_values, '{}'), CONCAT('$.', CHAR(34), ?, CHAR(34)))) = ?",
-                                    [$escapedKey, trim($filterValueStr)]
-                                );
-                                
-                                // Also try LIKE for comma-separated values (in case stored value contains multiple)
-                                $q->orWhereRaw(
-                                    "JSON_UNQUOTE(JSON_EXTRACT(COALESCE(filter_values, '{}'), CONCAT('$.', CHAR(34), ?, CHAR(34)))) LIKE ?",
-                                    [$escapedKey, '%' . trim($filterValueStr) . '%']
-                                );
-                                
-                                // If key contains underscore, also try with space
-                                if ($escapedKey !== $escapedKeyWithSpace) {
-                                    $q->orWhereRaw(
-                                        "JSON_UNQUOTE(JSON_EXTRACT(COALESCE(filter_values, '{}'), CONCAT('$.', CHAR(34), ?, CHAR(34)))) = ?",
-                                        [$escapedKeyWithSpace, trim($filterValueStr)]
-                                    );
-                                    $q->orWhereRaw(
-                                        "JSON_UNQUOTE(JSON_EXTRACT(COALESCE(filter_values, '{}'), CONCAT('$.', CHAR(34), ?, CHAR(34)))) LIKE ?",
-                                        [$escapedKeyWithSpace, '%' . trim($filterValueStr) . '%']
-                                    );
-                                }
-                                
-                                // If key contains space, also try with underscore
-                                if ($escapedKey !== $escapedKeyWithUnderscore) {
-                                    $q->orWhereRaw(
-                                        "JSON_UNQUOTE(JSON_EXTRACT(COALESCE(filter_values, '{}'), CONCAT('$.', CHAR(34), ?, CHAR(34)))) = ?",
-                                        [$escapedKeyWithUnderscore, trim($filterValueStr)]
-                                    );
-                                    $q->orWhereRaw(
-                                        "JSON_UNQUOTE(JSON_EXTRACT(COALESCE(filter_values, '{}'), CONCAT('$.', CHAR(34), ?, CHAR(34)))) LIKE ?",
-                                        [$escapedKeyWithUnderscore, '%' . trim($filterValueStr) . '%']
-                                    );
-                                }
-                            }
-                        });
-                        $appliedFilters[$filterName] = $filterValueStr;
-                    }
-                }
+            if (is_array($filterValues)) {
+                $allFilters = array_merge($allFilters, $filterValues);
             }
         }
         
-        // Log all applied filters for debugging
-        if (count($appliedFilters) > 0) {
-            Log::info('All applied filters', [
-                'filters' => $appliedFilters,
-                'category_id' => $request->get('category_id'),
-                'total_filters' => count($appliedFilters)
-            ]);
-            
-            // Log the SQL query to see what's being executed
-            Log::info('Products query with filters', [
-                'sql' => $query->toSql(),
-                'bindings' => $query->getBindings()
-            ]);
+        // Debug: Log what we're receiving
+        \Log::info('Filter request data:', [
+            'has_filters' => $request->has('filters'),
+            'has_filter_values' => $request->has('filter_values'),
+            'merged_filters' => $allFilters,
+            'filter_count' => count($allFilters)
+        ]);
+        
+        // Apply all collected filters
+        if (!empty($allFilters)) {
+            foreach ($allFilters as $filterKey => $filterValue) {
+                if (empty($filterValue)) continue;
+                
+                $filterValue = trim($filterValue);
+                
+                // Handle multiple values separated by comma (for checkbox filters)
+                $values = explode(',', $filterValue);
+                $values = array_map('trim', $values);
+                $values = array_filter($values); // Remove empty values
+                
+                if (empty($values)) continue;
+                
+                // Each filter must match (AND between filters)
+                // But within a filter, any value can match (OR between values)
+                $query->where(function($q) use ($filterKey, $values) {
+                    // Correct JSON path extraction for MySQL: '$."Key Name"'
+                    // Note: No backslash escaping needed for the double quotes inside the single-quoted string
+                    $jsonPath = '$."' . $filterKey . '"';
+                    
+                    // For each value in the filter, check if it matches
+                    foreach ($values as $value) {
+                        $q->orWhere(function($subQ) use ($jsonPath, $value, $filterKey) {
+                            // Validated JSON_CONTAINS logic
+                            $jsonVal = json_encode([$filterKey => $value], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                            
+                            // Exact match using JSON_CONTAINS
+                            $subQ->whereRaw(
+                                "JSON_CONTAINS(filter_values, ?)",
+                                [$jsonVal]
+                            );
+                            
+                            // OR partial match (fallback)
+                            $subQ->orWhereRaw(
+                                "JSON_UNQUOTE(JSON_EXTRACT(filter_values, ?)) LIKE ?",
+                                [$jsonPath, '%' . $value . '%']
+                            );
+
+                            // OR Raw text match (Last resort for encoding/path issues)
+                            // Matches "key":"value" patterns directly in the string
+                            // OR Raw text match (Last resort for encoding/path issues)
+                            // Matches "key":"value" patterns directly in the string
+                            // Using standard JSON format variations (with and without space after colon)
+                            $subQ->orWhereRaw("filter_values LIKE ?", ['%"' . $filterKey . '":"' . $value . '"%']);
+                            $subQ->orWhereRaw("filter_values LIKE ?", ['%"' . $filterKey . '": "' . $value . '"%']);
+
+                            // OR Escaped Unicode match (handles raw storage of \uXXXX)
+                            // We must double backslashes for LIKE pattern matching if backslash is the escape char
+                            $keyEscaped = substr(json_encode($filterKey), 1, -1);
+                            $valueEscaped = substr(json_encode($value), 1, -1);
+                            
+                            // Escape backslashes for LIKE ( \ -> \\ )
+                            $keyEscapedLike = str_replace('\\', '\\\\', $keyEscaped);
+                            $valueEscapedLike = str_replace('\\', '\\\\', $valueEscaped);
+                            
+                            $subQ->orWhereRaw("filter_values LIKE ?", ['%"' . $keyEscapedLike . '":"' . $valueEscapedLike . '"%']);
+                            $subQ->orWhereRaw("filter_values LIKE ?", ['%"' . $keyEscapedLike . '": "' . $valueEscapedLike . '"%']);
+                        });
+                    }
+                });
+            }
         }
 
         // Apply sorting
         $sortBy = $request->get('sort', 'created_at');
         $sortOrder = $request->get('order', 'desc');
-        
-        // Map sort values
-        $sortMap = [
-            'name' => 'name',
-            'price' => 'price',
-            'created_at' => 'created_at',
-            'rating' => 'rating',
-            'sales_count' => 'sales_count',
-        ];
-        
+        $sortMap = ['name' => 'name', 'price' => 'price', 'created_at' => 'created_at', 'rating' => 'rating', 'sales_count' => 'sales_count'];
         $sortField = $sortMap[$sortBy] ?? 'created_at';
         $query->orderBy($sortField, $sortOrder);
 
         $perPage = $request->get('per_page', 15);
-        
-        // Log the query for debugging
-        if ($request->has('search') && !empty($request->search)) {
-            Log::info('Products search query', [
-                'search_term' => $request->search,
-                'sql' => $query->toSql(),
-                'bindings' => $query->getBindings(),
-            ]);
-        }
-        
         $products = $query->paginate($perPage);
-        
-        // Log results for debugging when filters or search are applied
-        if (count($appliedFilters) > 0 || ($request->has('search') && !empty($request->search))) {
-            Log::info('Products query results', [
-                'search_term' => $request->get('search'),
-                'applied_filters' => $appliedFilters,
-                'category_id' => $request->get('category_id'),
-                'total_found' => $products->total(),
-                'current_page' => $products->currentPage(),
-                'products_count' => $products->count(),
-            ]);
-        }
 
         return response()->json([
             'data' => ProductResource::collection($products),
