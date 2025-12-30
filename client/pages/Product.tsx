@@ -31,6 +31,7 @@ interface ProductDetail {
   name: string;
   price: number;
   originalPrice?: number;
+  comparePrice?: number;
   images: string[];
   rating: number;
   reviews: number;
@@ -252,12 +253,19 @@ const Product = () => {
             name: apiProduct.name,
             price: apiProduct.price,
             originalPrice: apiProduct.original_price,
+            comparePrice: apiProduct.compare_price,
             images: transformedImages.length > 0 ? transformedImages : ['/placeholder.svg'],
             rating: apiProduct.rating || 0,
             reviews: apiProduct.reviews_count || 0,
             category: apiProduct.category?.name || '',
             brand: apiProduct.brand?.name || '',
-            discount: apiProduct.discount_percentage,
+            discount: (function () {
+              const referencePrice = apiProduct.compare_price || apiProduct.original_price;
+              if (referencePrice && apiProduct.price) {
+                return Math.max(0, referencePrice - apiProduct.price);
+              }
+              return 0;
+            })(),
             inStock: apiProduct.stock_status === 'stock_based'
               ? (apiProduct.stock_quantity || 0) > 0
               : (apiProduct.stock_status === 'in_stock' || (apiProduct.in_stock && apiProduct.stock_status !== 'out_of_stock')),
@@ -623,9 +631,9 @@ const Product = () => {
                   e.currentTarget.src = '/placeholder.svg';
                 }}
               />
-              {product.discount && (
+              {product.discount > 0 && (
                 <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                  خصم {product.discount}%
+                  خصم {product.discount} ₪
                 </div>
               )}
 
@@ -696,8 +704,8 @@ const Product = () => {
             {/* Price */}
             <div className="flex items-center gap-4">
               <span className="text-3xl font-bold text-blue-600">{formatPrice(product.price)} ₪</span>
-              {product.originalPrice && product.originalPrice > 0 && product.originalPrice > product.price && (
-                <span className="text-xl text-gray-500 line-through">{formatPrice(product.originalPrice)} ₪</span>
+              {(product.comparePrice || product.originalPrice) && (product.comparePrice || product.originalPrice)! > 0 && (product.comparePrice || product.originalPrice)! > product.price && (
+                <span className="text-xl text-gray-500 line-through">{formatPrice(product.comparePrice || product.originalPrice!)} ₪</span>
               )}
             </div>
 
@@ -723,17 +731,10 @@ const Product = () => {
               </span>
             </div>
 
-            {/* Features */}
+            {/* Description */}
             <div>
-              <h3 className="font-semibold text-gray-800 mb-3">المميزات الرئيسية:</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {product.features.map((feature, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-blue-500" />
-                    <span className="text-sm text-gray-700">{feature}</span>
-                  </div>
-                ))}
-              </div>
+              <h3 className="font-semibold text-gray-800 mb-3">وصف المنتج:</h3>
+              <p className="text-gray-700 leading-relaxed text-sm">{product.description}</p>
             </div>
 
             {/* Quantity and Add to Cart */}
@@ -900,10 +901,7 @@ const Product = () => {
           <div className="p-6">
             {activeTab === 'description' && (
               <div className="space-y-4">
-                <h3 className="text-xl font-bold text-gray-800 mb-4">وصف المنتج</h3>
-                <p className="text-gray-700 leading-relaxed">{product.description}</p>
-
-                <h4 className="text-lg font-semibold text-gray-800 mt-6 mb-3">المميزات:</h4>
+                <h3 className="text-xl font-bold text-gray-800 mb-4">المميزات الرئيسية</h3>
                 <ul className="space-y-2">
                   {product.features.map((feature, index) => (
                     <li key={index} className="flex items-center gap-2">
