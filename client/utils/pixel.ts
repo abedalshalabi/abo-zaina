@@ -20,7 +20,11 @@ export const initPixel = () => {
     }
     window._pixelInitialized = true;
 
-    if (window.fbq) return;
+    if (window.fbq) {
+        console.log('[Pixel] Already initialized externally.');
+        window._pixelInitialized = true;
+        return;
+    }
 
     /* eslint-disable */
     (function (f: any, b: any, e: any, v: any, n?: any, t?: any, s?: any) {
