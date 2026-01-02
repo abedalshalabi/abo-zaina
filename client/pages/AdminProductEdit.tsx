@@ -1,4 +1,32 @@
 import React, { useState, useEffect } from 'react';
+import { CKEditor } from '@ckeditor/ckeditor5-react';
+import {
+  ClassicEditor,
+  Essentials,
+  Bold,
+  Italic,
+  Underline,
+  Paragraph,
+  Link,
+  List,
+  BlockQuote,
+  Heading,
+  Indent,
+  Autoformat,
+  Undo,
+  Image,
+  ImageCaption,
+  ImageStyle,
+  ImageToolbar,
+  ImageUpload,
+  Base64UploadAdapter,
+  Table,
+  TableToolbar,
+  Alignment,
+  LinkImage,
+  ImageResize
+} from 'ckeditor5';
+import 'ckeditor5/ckeditor5.css';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, X, Upload, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -76,7 +104,7 @@ interface Brand {
 const AdminProductEdit: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  
+
   const [product, setProduct] = useState<Product | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -142,7 +170,7 @@ const AdminProductEdit: React.FC = () => {
       setProduct(productResponse.data);
       setCategories(categoriesResponse.data);
       setBrands(brandsResponse.data);
-      
+
       console.log('Categories loaded:', categoriesResponse.data);
       console.log('Product category_id:', productResponse.data.category_id);
 
@@ -182,9 +210,9 @@ const AdminProductEdit: React.FC = () => {
         specifications: productResponse.data.specifications || {},
         filter_values: productResponse.data.filter_values || {}
       };
-      
+
       setFormData(formDataToSet);
-      
+
       const existingImageUrls = (formDataToSet.images || [])
         .map((img: any) => {
           if (typeof img === 'string') {
@@ -197,7 +225,7 @@ const AdminProductEdit: React.FC = () => {
         })
         .filter((url): url is string => !!url && (url.startsWith('http://') || url.startsWith('https://')));
       setImageUrlsText(existingImageUrls.join('\n'));
-      
+
       // تحميل الفلاتر المتاحة للفئات المختارة
       // Merge filters from all selected categories
       const loadFiltersFromCategories = (categoryIds: number[]) => {
@@ -242,9 +270,9 @@ const AdminProductEdit: React.FC = () => {
         // Backward compatibility: use category_id if no categories array
         console.log('Available categories from response:', categoriesResponse.data);
         console.log('Looking for category_id:', formDataToSet.category_id);
-        
+
         const selectedCategory = categoriesResponse.data.find(cat => cat.id === formDataToSet.category_id);
-        
+
         console.log('Selected category for filters:', selectedCategory);
         console.log('Category filters:', selectedCategory?.filters);
         if (selectedCategory && selectedCategory.filters) {
@@ -257,14 +285,14 @@ const AdminProductEdit: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Error loading data:', err);
-      
+
       // عرض السبب التفصيلي للخطأ
       let errorMessage = 'فشل في تحميل بيانات المنتج';
-      
+
       if (err.response) {
         const status = err.response.status;
         const data = err.response.data;
-        
+
         if (status === 404) {
           errorMessage = 'المنتج غير موجود أو تم حذفه';
         } else if (status === 500) {
@@ -277,7 +305,7 @@ const AdminProductEdit: React.FC = () => {
       } else {
         errorMessage = `خطأ غير متوقع: ${err.message || 'خطأ غير معروف'}`;
       }
-      
+
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -294,7 +322,7 @@ const AdminProductEdit: React.FC = () => {
 
   const handleCategoryChange = (categoryId: number) => {
     setFormData(prev => ({ ...prev, category_id: categoryId }));
-    
+
     // تحميل الفلاتر المتاحة للفئة المختارة
     const selectedCategory = categories.find(cat => cat.id === categoryId);
     console.log('Category changed to:', categoryId);
@@ -398,7 +426,7 @@ const AdminProductEdit: React.FC = () => {
   const handleRemoveImage = (index: number) => {
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
     setImageFiles(prev => prev.filter((_, i) => i !== index));
-    
+
     // Remove from formData.images as well (only remove data URLs, not regular URLs or existing objects)
     setFormData(prev => {
       const existingImages = prev.images.filter((img): img is { image_url: string; alt_text?: string; is_primary?: boolean; sort_order?: number } =>
@@ -406,9 +434,9 @@ const AdminProductEdit: React.FC = () => {
       );
       const dataUrls = prev.images.filter(img => typeof img === 'string' && img.startsWith('data:'));
       const regularUrls = prev.images.filter(img => typeof img === 'string' && (img.startsWith('http://') || img.startsWith('https://')));
-      
+
       const updatedDataUrls = dataUrls.filter((_, i) => i !== index);
-      
+
       return {
         ...prev,
         images: [...existingImages, ...updatedDataUrls, ...regularUrls]
@@ -452,7 +480,7 @@ const AdminProductEdit: React.FC = () => {
     const value = e.target.value;
     setImageUrlsText(value);
     const imageUrls = parseImageUrls(value);
-    
+
     setFormData(prev => ({
       ...prev,
       images: [
@@ -474,21 +502,21 @@ const AdminProductEdit: React.FC = () => {
 
   const validateFilters = () => {
     const errors: string[] = [];
-    
+
     availableFilters.forEach(filter => {
       const value = formData.filter_values[filter.name];
-      
+
       if (filter.required && (!value || value.trim() === '')) {
         errors.push(`الفلتر "${filter.name}" مطلوب`);
         return;
       }
-      
+
       if (value && filter.type === 'select' && filter.options) {
         if (!filter.options.includes(value)) {
           errors.push(`القيمة "${value}" غير صحيحة للفلتر "${filter.name}". القيم المتاحة: ${filter.options.join(', ')}`);
         }
       }
-      
+
       // Checkbox with options (multiple values)
       if (value && filter.type === 'checkbox' && filter.options && filter.options.length > 0) {
         const selectedValues = value.split(',').map(v => v.trim()).filter(v => v);
@@ -497,7 +525,7 @@ const AdminProductEdit: React.FC = () => {
           errors.push(`القيم "${invalidValues.join(', ')}" غير صحيحة للفلتر "${filter.name}". القيم المتاحة: ${filter.options.join(', ')}`);
         }
       }
-      
+
       // Checkbox without options (true/false only)
       if (value && filter.type === 'checkbox' && (!filter.options || filter.options.length === 0)) {
         if (value !== 'true' && value !== 'false') {
@@ -505,7 +533,7 @@ const AdminProductEdit: React.FC = () => {
         }
       }
     });
-    
+
     return errors;
   };
 
@@ -514,29 +542,29 @@ const AdminProductEdit: React.FC = () => {
     console.log('=== Form Submit Started ===');
     console.log('FormData state:', formData);
     console.log('Category ID in formData:', formData.category_id, 'Type:', typeof formData.category_id);
-    
+
     try {
       setSaving(true);
       setError(null);
       setSuccess(null);
-      
+
       // التحقق من صحة الفلاتر
       console.log('Validating filters...');
       const filterErrors = validateFilters();
       console.log('Filter errors:', filterErrors);
-      
+
       if (filterErrors.length > 0) {
         console.log('Filter validation failed, stopping submit');
         setError(filterErrors.join('\n'));
         setSaving(false);
         return;
       }
-      
+
       console.log('Filter validation passed, creating FormData...');
-      
+
       // Create FormData for file uploads
       const uploadFormData = new FormData();
-      
+
       // Add all product data
       uploadFormData.append('name', formData.name);
       uploadFormData.append('slug', formData.slug);
@@ -556,7 +584,7 @@ const AdminProductEdit: React.FC = () => {
       uploadFormData.append('dimensions', formData.dimensions);
       uploadFormData.append('warranty', formData.warranty);
       uploadFormData.append('delivery_time', formData.delivery_time);
-      
+
       // Send categories (multiple) - prefer categories array over category_id
       console.log('Categories before sending:', formData.categories, 'Category ID:', formData.category_id);
       if (formData.categories && formData.categories.length > 0) {
@@ -571,70 +599,70 @@ const AdminProductEdit: React.FC = () => {
       } else {
         console.log('No categories or category_id in formData');
       }
-      
+
       // Add brand_id if it has a value
       if (formData.brand_id) {
         uploadFormData.append('brand_id', String(formData.brand_id));
       }
-      
+
       // Convert boolean fields to strings ('true' or 'false')
       // Always send these values, even if false, to ensure they are updated
       const boolToString = (value: boolean): string => value ? 'true' : 'false';
-      
+
       console.log('Boolean values before sending:', {
         manage_stock: formData.manage_stock,
         in_stock: formData.in_stock,
         is_active: formData.is_active,
         is_featured: formData.is_featured
       });
-      
+
       uploadFormData.append('manage_stock', boolToString(formData.manage_stock));
       uploadFormData.append('in_stock', boolToString(formData.in_stock));
       uploadFormData.append('is_active', boolToString(formData.is_active));
       uploadFormData.append('is_featured', boolToString(formData.is_featured));
-      
+
       console.log('Boolean values sent as strings:', {
         manage_stock: boolToString(formData.manage_stock),
         in_stock: boolToString(formData.in_stock),
         is_active: boolToString(formData.is_active),
         is_featured: boolToString(formData.is_featured)
       });
-      
+
       // Convert array/object fields to JSON strings
       uploadFormData.append('features', JSON.stringify(formData.features));
       uploadFormData.append('specifications', JSON.stringify(formData.specifications));
       uploadFormData.append('filter_values', JSON.stringify(formData.filter_values));
-      
+
       // Handle images: send current images (those that should be kept) and new image files
       // formData.images contains both existing images (objects) and new image URLs (strings)
       // We need to separate them and send correctly
-      
+
       // Extract existing images (objects) that should be kept
-      const existingImages = formData.images.filter((img): img is Exclude<typeof img, string> => 
+      const existingImages = formData.images.filter((img): img is Exclude<typeof img, string> =>
         typeof img === 'object' && img !== null && !Array.isArray(img) && 'image_url' in img
       ) as Array<{ image_url: string; alt_text?: string; is_primary?: boolean; sort_order?: number }>;
-      
+
       // Extract new image URLs (strings that are URLs)
-      const newImageUrls = formData.images.filter(img => 
+      const newImageUrls = formData.images.filter(img =>
         typeof img === 'string' && (img.startsWith('http://') || img.startsWith('https://'))
       );
-      
+
       // Send existing images that should be kept as JSON
       if (existingImages.length > 0) {
         uploadFormData.append('existing_images', JSON.stringify(existingImages));
       }
-      
+
       // Send new image URLs
       if (newImageUrls.length > 0) {
         uploadFormData.append('image_urls', JSON.stringify(newImageUrls));
       }
-      
+
       // Add new image files
       console.log('Image files state:', imageFiles);
       console.log('Image files length:', imageFiles.length);
       console.log('Existing images to keep:', existingImages.length);
       console.log('New image URLs:', newImageUrls.length);
-      
+
       if (imageFiles.length > 0) {
         console.log('Adding', imageFiles.length, 'image files to FormData');
         imageFiles.forEach((file, index) => {
@@ -646,16 +674,16 @@ const AdminProductEdit: React.FC = () => {
       } else {
         console.log('No new image files to upload');
       }
-      
+
       console.log('Sending update request with FormData...');
       console.log('FormData keys:', Array.from(uploadFormData.keys()));
       console.log('Product ID:', id);
-      
+
       console.log('Calling updateProduct API...');
       const response = await adminProductsAPI.updateProduct(Number(id).toString(), uploadFormData);
       console.log('Update response received:', response);
       console.log('=== Update Successful ===');
-      
+
       // Show success toast
       Swal.fire({
         icon: 'success',
@@ -667,33 +695,33 @@ const AdminProductEdit: React.FC = () => {
         timer: 3000,
         timerProgressBar: true,
       });
-      
+
       setSuccess(null);
       setError(null);
-      
+
       // Clear new image files and previews
       setImageFiles([]);
       setImagePreviews([]);
-      
+
       // Reload product data and categories to reflect changes (without showing loading)
       console.log('Reloading product data and categories...');
-      
+
       try {
         // Reload both product and categories to ensure filters are available
         const [productResponse, categoriesResponse] = await Promise.all([
           adminProductsAPI.getProduct(Number(id).toString()),
           adminCategoriesAPI.getCategories()
         ]);
-        
+
         console.log('Product response after save:', {
           category_id: productResponse.data.category_id,
           is_active: productResponse.data.is_active,
           is_featured: productResponse.data.is_featured,
         });
-        
+
         setProduct(productResponse.data);
         setCategories(categoriesResponse.data);
-        
+
         // Update formData with new product data
         const formDataToSet = {
           name: productResponse.data.name || '',
@@ -732,18 +760,18 @@ const AdminProductEdit: React.FC = () => {
           filter_values: productResponse.data.filter_values || {},
         };
         setFormData(formDataToSet);
-        
+
         // تحميل الفلاتر المتاحة للفئة المختارة (نفس المنطق المستخدم في loadData)
         if (formDataToSet.category_id) {
           console.log('Available categories from response:', categoriesResponse.data);
           console.log('Looking for category_id:', formDataToSet.category_id);
           console.log('Category ID type:', typeof formDataToSet.category_id);
-          
+
           const selectedCategory = categoriesResponse.data.find(cat => {
             console.log('Comparing category:', cat.id, 'with', formDataToSet.category_id, 'match:', cat.id === formDataToSet.category_id);
             return cat.id === formDataToSet.category_id;
           });
-          
+
           console.log('Selected category for filters:', selectedCategory);
           console.log('Category filters:', selectedCategory?.filters);
           if (selectedCategory && selectedCategory.filters) {
@@ -762,7 +790,7 @@ const AdminProductEdit: React.FC = () => {
         console.error('Error reloading product data:', reloadErr);
         // Don't show error, just log it
       }
-      
+
     } catch (err: any) {
       console.error('=== Error in handleSubmit ===');
       console.error('Error updating product:', err);
@@ -771,17 +799,17 @@ const AdminProductEdit: React.FC = () => {
         response: err.response,
         request: err.request
       });
-      
+
       // Show error toast
       let errorMessage = 'فشل في تحديث المنتج';
-      
+
       if (err.response) {
         // خطأ من الخادم
         const status = err.response.status;
         const data = err.response.data;
-        
+
         console.log('Server error response:', data);
-        
+
         if (status === 422) {
           // خطأ في التحقق من صحة البيانات
           errorMessage = 'خطأ في البيانات المدخلة:\n';
@@ -808,7 +836,7 @@ const AdminProductEdit: React.FC = () => {
         // خطأ آخر
         errorMessage = `خطأ غير متوقع: ${err.message || 'خطأ غير معروف'}`;
       }
-      
+
       // Show error toast
       Swal.fire({
         icon: 'error',
@@ -820,7 +848,7 @@ const AdminProductEdit: React.FC = () => {
         timer: 5000,
         timerProgressBar: true,
       });
-      
+
       setSuccess(null);
       setError(null);
     } finally {
@@ -944,7 +972,7 @@ const AdminProductEdit: React.FC = () => {
                                     categories: newCategories,
                                     category_id: prev.category_id || category.id // Set category_id to first if not set
                                   }));
-                                  
+
                                   // Update filters by merging all selected categories
                                   updateFiltersFromCategories(newCategories);
                                 } else {
@@ -954,7 +982,7 @@ const AdminProductEdit: React.FC = () => {
                                     categories: newCategories,
                                     category_id: newCategories.length > 0 ? newCategories[0] : null
                                   }));
-                                  
+
                                   // Update filters based on remaining categories
                                   if (newCategories.length > 0) {
                                     updateFiltersFromCategories(newCategories);
@@ -1240,20 +1268,60 @@ const AdminProductEdit: React.FC = () => {
 
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="description">الوصف التفصيلي</Label>
-                  <Textarea
-                    id="description"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    rows={4}
-                    placeholder="وصف تفصيلي للمنتج"
-                  />
+                  <div className="prose max-w-none" dir="ltr">
+                    <CKEditor
+                      editor={ClassicEditor}
+                      data={formData.description}
+                      onChange={(event, editor) => {
+                        const data = editor.getData();
+                        setFormData(prev => ({ ...prev, description: data }));
+                      }}
+                      config={{
+                        licenseKey: 'GPL',
+                        language: 'ar',
+                        plugins: [
+                          Essentials, Bold, Italic, Underline, Paragraph,
+                          Link, List, BlockQuote, Heading, Indent,
+                          Autoformat, Undo,
+                          Image, ImageCaption, ImageStyle, ImageToolbar, ImageUpload, Base64UploadAdapter, LinkImage,
+                          Table, TableToolbar,
+                          Alignment,
+                          ImageResize
+                        ],
+                        toolbar: [
+                          'undo', 'redo', '|',
+                          'heading', '|',
+                          'bold', 'italic', 'underline', 'link', '|',
+                          'bulletedList', 'numberedList', 'outdent', 'indent', '|',
+                          'alignment', '|',
+                          'imageUpload', 'insertTable', 'blockQuote'
+                        ],
+                        image: {
+                          toolbar: [
+                            'imageTextAlternative',
+                            'toggleImageCaption',
+                            'imageStyle:inline',
+                            'imageStyle:block',
+                            'imageStyle:side',
+                            'linkImage'
+                          ]
+                        },
+                        table: {
+                          contentToolbar: [
+                            'tableColumn',
+                            'tableRow',
+                            'mergeTableCells'
+                          ]
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
 
                 {/* Images */}
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="images">صور المنتج</Label>
-                  
+
                   {/* Current Images from API */}
                   {formData.images && formData.images.length > 0 && (
                     <div className="mb-4">
@@ -1263,23 +1331,23 @@ const AdminProductEdit: React.FC = () => {
                           const imageUrl = typeof image === 'string' ? image : (image as { image_url: string; alt_text?: string }).image_url;
                           const imageAlt = typeof image === 'string' ? `صورة المنتج الحالية ${index + 1}` : ((image as { alt_text?: string }).alt_text || `صورة المنتج الحالية ${index + 1}`);
                           return (
-                          <div key={`current-${index}`} className="relative w-24 h-24 border rounded-lg overflow-hidden">
-                            <img
-                              src={imageUrl}
-                              alt={imageAlt}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.src = '/placeholder.svg';
-                              }}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveCurrentImage(index)}
-                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
-                          </div>
+                            <div key={`current-${index}`} className="relative w-24 h-24 border rounded-lg overflow-hidden">
+                              <img
+                                src={imageUrl}
+                                alt={imageAlt}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.src = '/placeholder.svg';
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveCurrentImage(index)}
+                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </div>
                           );
                         })}
                       </div>
@@ -1310,7 +1378,7 @@ const AdminProductEdit: React.FC = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Image Upload */}
                   <div className="space-y-2">
                     <Input
@@ -1333,7 +1401,7 @@ const AdminProductEdit: React.FC = () => {
                         <span>إضافة صور</span>
                       </Button>
                     </div>
-                    
+
                     {/* URL Input as fallback */}
                     <div className="mt-2">
                       <Label htmlFor="images_url" className="text-sm text-gray-500">
@@ -1359,7 +1427,7 @@ const AdminProductEdit: React.FC = () => {
                       أضف المميزات الرئيسية للمنتج
                     </p>
                   </div>
-                  
+
                   {/* Current Features Display */}
                   {formData.features.length > 0 && (
                     <div className="mb-4">
@@ -1383,7 +1451,7 @@ const AdminProductEdit: React.FC = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Add New Feature */}
                   <div className="flex gap-2">
                     <input
@@ -1421,7 +1489,7 @@ const AdminProductEdit: React.FC = () => {
                       إضافة
                     </button>
                   </div>
-                  
+
                   {/* Bulk Add Features */}
                   <div className="mt-4">
                     <Label className="text-sm font-medium text-gray-700 mb-2">أو أضف عدة مميزات مرة واحدة:</Label>
@@ -1444,7 +1512,7 @@ const AdminProductEdit: React.FC = () => {
                       أضف المواصفات التقنية للمنتج
                     </p>
                   </div>
-                  
+
                   {/* Current Specifications Display */}
                   {Object.keys(formData.specifications).length > 0 && (
                     <div className="mb-4">
@@ -1474,7 +1542,7 @@ const AdminProductEdit: React.FC = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Add New Specification */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <input
@@ -1497,7 +1565,7 @@ const AdminProductEdit: React.FC = () => {
                           const valueInput = document.getElementById('spec_value') as HTMLInputElement;
                           const key = keyInput.value.trim();
                           const value = valueInput.value.trim();
-                          
+
                           if (key && value) {
                             setFormData(prev => ({
                               ...prev,
@@ -1516,7 +1584,7 @@ const AdminProductEdit: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                  
+
                   {/* JSON Editor for Advanced Users */}
                   <div className="mt-4">
                     <Label className="text-sm font-medium text-gray-700 mb-2">محرر JSON متقدم:</Label>
@@ -1550,12 +1618,12 @@ const AdminProductEdit: React.FC = () => {
                         اختر القيم المناسبة من الفلاتر المتاحة للفئة المختارة
                       </p>
                     </div>
-                    
+
                     <div className="space-y-4">
                       {availableFilters.map((filter, index) => {
                         const currentValue = formData.filter_values[filter.name];
                         const hasValue = currentValue && currentValue !== '';
-                        
+
                         return (
                           <div key={index} className={`border rounded-lg p-4 ${hasValue ? 'border-blue-300 bg-blue-50' : 'border-gray-200'}`}>
                             <div className="flex items-center justify-between mb-3">
@@ -1574,215 +1642,215 @@ const AdminProductEdit: React.FC = () => {
                                 </span>
                               </div>
                             </div>
-                          
-                          {filter.type === 'select' && filter.options && (
-                            <div className="space-y-2">
-                              <Select
-                                value={formData.filter_values[filter.name] || ''}
-                                onValueChange={(value) => handleFilterValueChange(filter.name, value)}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="اختر قيمة..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="__clear__">إزالة التحديد</SelectItem>
-                                  {filter.options.map((option, optionIndex) => (
-                                    <SelectItem key={optionIndex} value={option}>
-                                      {option}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              {formData.filter_values[filter.name] && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleFilterValueChange(filter.name, '')}
-                                  className="text-sm text-red-600 hover:text-red-800"
+
+                            {filter.type === 'select' && filter.options && (
+                              <div className="space-y-2">
+                                <Select
+                                  value={formData.filter_values[filter.name] || ''}
+                                  onValueChange={(value) => handleFilterValueChange(filter.name, value)}
                                 >
-                                  حذف التحديد
-                                </button>
-                              )}
-                              {!formData.filter_values[filter.name] && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    // إضافة الفلتر بقيمة فارغة للبدء
-                                    setFormData(prev => ({
-                                      ...prev,
-                                      filter_values: {
-                                        ...prev.filter_values,
-                                        [filter.name]: ''
-                                      }
-                                    }));
-                                  }}
-                                  className="text-sm text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1 rounded"
-                                >
-                                  إضافة هذا الفلتر
-                                </button>
-                              )}
-                            </div>
-                          )}
-                          
-                          {filter.type === 'checkbox' && filter.options && filter.options.length > 0 && (
-                            <div className="space-y-2">
-                              {filter.options.map((option, optionIndex) => (
-                                <label key={optionIndex} className="flex items-center">
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="اختر قيمة..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="__clear__">إزالة التحديد</SelectItem>
+                                    {filter.options.map((option, optionIndex) => (
+                                      <SelectItem key={optionIndex} value={option}>
+                                        {option}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                {formData.filter_values[filter.name] && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleFilterValueChange(filter.name, '')}
+                                    className="text-sm text-red-600 hover:text-red-800"
+                                  >
+                                    حذف التحديد
+                                  </button>
+                                )}
+                                {!formData.filter_values[filter.name] && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      // إضافة الفلتر بقيمة فارغة للبدء
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        filter_values: {
+                                          ...prev.filter_values,
+                                          [filter.name]: ''
+                                        }
+                                      }));
+                                    }}
+                                    className="text-sm text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1 rounded"
+                                  >
+                                    إضافة هذا الفلتر
+                                  </button>
+                                )}
+                              </div>
+                            )}
+
+                            {filter.type === 'checkbox' && filter.options && filter.options.length > 0 && (
+                              <div className="space-y-2">
+                                {filter.options.map((option, optionIndex) => (
+                                  <label key={optionIndex} className="flex items-center">
+                                    <input
+                                      type="checkbox"
+                                      checked={formData.filter_values[filter.name]?.includes(option) || false}
+                                      onChange={(e) => {
+                                        const currentValues = formData.filter_values[filter.name]?.split(',') || [];
+                                        let newValues;
+                                        if (e.target.checked) {
+                                          newValues = [...currentValues, option].filter(v => v.trim());
+                                        } else {
+                                          newValues = currentValues.filter(v => v !== option);
+                                        }
+                                        handleFilterValueChange(filter.name, newValues.join(','));
+                                      }}
+                                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                    />
+                                    <span className="mr-2 text-sm text-gray-700">{option}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            )}
+
+                            {filter.type === 'checkbox' && (!filter.options || filter.options.length === 0) && (
+                              <div className="space-y-2">
+                                <label className="flex items-center">
                                   <input
                                     type="checkbox"
-                                    checked={formData.filter_values[filter.name]?.includes(option) || false}
+                                    checked={formData.filter_values[filter.name] === 'true'}
                                     onChange={(e) => {
-                                      const currentValues = formData.filter_values[filter.name]?.split(',') || [];
-                                      let newValues;
-                                      if (e.target.checked) {
-                                        newValues = [...currentValues, option].filter(v => v.trim());
-                                      } else {
-                                        newValues = currentValues.filter(v => v !== option);
-                                      }
-                                      handleFilterValueChange(filter.name, newValues.join(','));
+                                      handleFilterValueChange(filter.name, e.target.checked ? 'true' : 'false');
                                     }}
                                     className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                                   />
-                                  <span className="mr-2 text-sm text-gray-700">{option}</span>
+                                  <span className="mr-2 text-sm text-gray-700">نعم</span>
                                 </label>
-                              ))}
-                            </div>
-                          )}
-                          
-                          {filter.type === 'checkbox' && (!filter.options || filter.options.length === 0) && (
-                            <div className="space-y-2">
-                              <label className="flex items-center">
-                                <input
-                                  type="checkbox"
-                                  checked={formData.filter_values[filter.name] === 'true'}
-                                  onChange={(e) => {
-                                    handleFilterValueChange(filter.name, e.target.checked ? 'true' : 'false');
-                                  }}
-                                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                                />
-                                <span className="mr-2 text-sm text-gray-700">نعم</span>
-                              </label>
-                              {formData.filter_values[filter.name] === 'true' && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleFilterValueChange(filter.name, 'false')}
-                                  className="text-sm text-red-600 hover:text-red-800"
-                                >
-                                  حذف التحديد
-                                </button>
-                              )}
-                              {formData.filter_values[filter.name] !== 'true' && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    // إضافة الفلتر بقيمة true للبدء
-                                    setFormData(prev => ({
-                                      ...prev,
-                                      filter_values: {
-                                        ...prev.filter_values,
-                                        [filter.name]: 'true'
-                                      }
-                                    }));
-                                  }}
-                                  className="text-sm text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1 rounded"
-                                >
-                                  إضافة هذا الفلتر
-                                </button>
-                              )}
-                            </div>
-                          )}
-                          
-                          {filter.type === 'range' && (
-                            <div className="space-y-2">
-                              <div className="flex gap-2">
-                                <input
-                                  type="text"
-                                  value={formData.filter_values[filter.name] || ''}
-                                  onChange={(e) => handleFilterValueChange(filter.name, e.target.value)}
-                                  placeholder="مثال: 10-15 قدم"
-                                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                                {formData.filter_values[filter.name] && (
+                                {formData.filter_values[filter.name] === 'true' && (
                                   <button
                                     type="button"
-                                    onClick={() => handleFilterValueChange(filter.name, '')}
-                                    className="px-3 py-2 text-red-600 hover:text-red-800 border border-red-300 rounded-lg hover:bg-red-50"
-                                    title="حذف قيمة الفلتر"
+                                    onClick={() => handleFilterValueChange(filter.name, 'false')}
+                                    className="text-sm text-red-600 hover:text-red-800"
                                   >
-                                    حذف
+                                    حذف التحديد
                                   </button>
                                 )}
-                                {!formData.filter_values[filter.name] && (
+                                {formData.filter_values[filter.name] !== 'true' && (
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      // إضافة الفلتر بقيمة فارغة للبدء
+                                      // إضافة الفلتر بقيمة true للبدء
                                       setFormData(prev => ({
                                         ...prev,
                                         filter_values: {
                                           ...prev.filter_values,
-                                          [filter.name]: ''
+                                          [filter.name]: 'true'
                                         }
                                       }));
                                     }}
-                                    className="px-3 py-2 text-blue-600 hover:text-blue-800 border border-blue-300 rounded-lg hover:bg-blue-50"
-                                    title="إضافة هذا الفلتر"
+                                    className="text-sm text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1 rounded"
                                   >
-                                    إضافة
+                                    إضافة هذا الفلتر
                                   </button>
                                 )}
                               </div>
-                              <p className="text-xs text-gray-500">
-                                أدخل النطاق بصيغة: من - إلى (مثال: 10-15 قدم)
-                              </p>
-                            </div>
-                          )}
-                          
-                          {filter.type === 'text' && (
-                            <div className="space-y-2">
-                              <div className="flex gap-2">
-                                <input
-                                  type="text"
-                                  value={formData.filter_values[filter.name] || ''}
-                                  onChange={(e) => handleFilterValueChange(filter.name, e.target.value)}
-                                  placeholder="أدخل النص..."
-                                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                                {formData.filter_values[filter.name] && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleFilterValueChange(filter.name, '')}
-                                    className="px-3 py-2 text-red-600 hover:text-red-800 border border-red-300 rounded-lg hover:bg-red-50"
-                                    title="حذف النص"
-                                  >
-                                    حذف
-                                  </button>
-                                )}
-                                {!formData.filter_values[filter.name] && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      // إضافة الفلتر بقيمة فارغة للبدء
-                                      setFormData(prev => ({
-                                        ...prev,
-                                        filter_values: {
-                                          ...prev.filter_values,
-                                          [filter.name]: ''
-                                        }
-                                      }));
-                                    }}
-                                    className="px-3 py-2 text-blue-600 hover:text-blue-800 border border-blue-300 rounded-lg hover:bg-blue-50"
-                                    title="إضافة هذا الفلتر"
-                                  >
-                                    إضافة
-                                  </button>
-                                )}
+                            )}
+
+                            {filter.type === 'range' && (
+                              <div className="space-y-2">
+                                <div className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    value={formData.filter_values[filter.name] || ''}
+                                    onChange={(e) => handleFilterValueChange(filter.name, e.target.value)}
+                                    placeholder="مثال: 10-15 قدم"
+                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  />
+                                  {formData.filter_values[filter.name] && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleFilterValueChange(filter.name, '')}
+                                      className="px-3 py-2 text-red-600 hover:text-red-800 border border-red-300 rounded-lg hover:bg-red-50"
+                                      title="حذف قيمة الفلتر"
+                                    >
+                                      حذف
+                                    </button>
+                                  )}
+                                  {!formData.filter_values[filter.name] && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        // إضافة الفلتر بقيمة فارغة للبدء
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          filter_values: {
+                                            ...prev.filter_values,
+                                            [filter.name]: ''
+                                          }
+                                        }));
+                                      }}
+                                      className="px-3 py-2 text-blue-600 hover:text-blue-800 border border-blue-300 rounded-lg hover:bg-blue-50"
+                                      title="إضافة هذا الفلتر"
+                                    >
+                                      إضافة
+                                    </button>
+                                  )}
+                                </div>
+                                <p className="text-xs text-gray-500">
+                                  أدخل النطاق بصيغة: من - إلى (مثال: 10-15 قدم)
+                                </p>
                               </div>
-                              <p className="text-xs text-gray-500">
-                                أدخل النص المطلوب
-                              </p>
-                            </div>
-                          )}
-                        </div>
+                            )}
+
+                            {filter.type === 'text' && (
+                              <div className="space-y-2">
+                                <div className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    value={formData.filter_values[filter.name] || ''}
+                                    onChange={(e) => handleFilterValueChange(filter.name, e.target.value)}
+                                    placeholder="أدخل النص..."
+                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  />
+                                  {formData.filter_values[filter.name] && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleFilterValueChange(filter.name, '')}
+                                      className="px-3 py-2 text-red-600 hover:text-red-800 border border-red-300 rounded-lg hover:bg-red-50"
+                                      title="حذف النص"
+                                    >
+                                      حذف
+                                    </button>
+                                  )}
+                                  {!formData.filter_values[filter.name] && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        // إضافة الفلتر بقيمة فارغة للبدء
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          filter_values: {
+                                            ...prev.filter_values,
+                                            [filter.name]: ''
+                                          }
+                                        }));
+                                      }}
+                                      className="px-3 py-2 text-blue-600 hover:text-blue-800 border border-blue-300 rounded-lg hover:bg-blue-50"
+                                      title="إضافة هذا الفلتر"
+                                    >
+                                      إضافة
+                                    </button>
+                                  )}
+                                </div>
+                                <p className="text-xs text-gray-500">
+                                  أدخل النص المطلوب
+                                </p>
+                              </div>
+                            )}
+                          </div>
                         );
                       })}
                     </div>

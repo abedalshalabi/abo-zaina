@@ -756,7 +756,10 @@ const Product = () => {
             {/* Description */}
             <div>
               <h3 className="font-semibold text-gray-800 mb-3">وصف المنتج:</h3>
-              <p className="text-gray-700 leading-relaxed text-sm">{product.description}</p>
+              <div
+                className="text-gray-700 leading-relaxed text-sm prose max-w-none"
+                dangerouslySetInnerHTML={{ __html: product.description || '' }}
+              />
             </div>
 
             {/* Quantity and Add to Cart */}

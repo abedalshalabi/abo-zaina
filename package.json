@@ -21,7 +21,9 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@ckeditor/ckeditor5-react": "^11.0.1",
     "axios": "^1.12.2",
+    "ckeditor5": "^47.3.0",
     "dotenv": "^17.2.0",
     "express": "^4.18.2",
     "sweetalert2": "^11.26.3",
