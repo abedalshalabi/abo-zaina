@@ -4,6 +4,7 @@ declare global {
     interface Window {
         fbq: any;
         _fbq: any;
+        _pixelInitialized?: boolean;
     }
 }
 
@@ -12,6 +13,12 @@ export const initPixel = () => {
         console.warn('Facebook Pixel ID not found in environment variables');
         return;
     }
+
+    if (window._pixelInitialized) {
+        // console.log('[Pixel] Already initialized, skipping init.');
+        return;
+    }
+    window._pixelInitialized = true;
 
     if (window.fbq) return;
 
@@ -29,33 +36,41 @@ export const initPixel = () => {
         'https://connect.facebook.net/en_US/fbevents.js');
     /* eslint-enable */
 
+    console.log('[Pixel] Initializing with ID:', FACEBOOK_PIXEL_ID);
     window.fbq('init', FACEBOOK_PIXEL_ID);
 };
 
-let lastEvent: { name: string; data: string; time: number } | null = null;
+// Store last occurrence of EACH event type
+const lastEvents: Record<string, { data: string; time: number }> = {};
 
 export const trackEvent = (event: string, data?: any) => {
     if (!FACEBOOK_PIXEL_ID) return;
 
-    // Prevent duplicate events within 1 second (fixes StrictMode double firing)
     const now = Date.now();
-    const dataString = JSON.stringify(data);
+    const dataString = JSON.stringify(data || {});
 
-    if (
-        lastEvent &&
-        lastEvent.name === event &&
-        lastEvent.data === dataString &&
-        (now - lastEvent.time) < 1000
-    ) {
-        return;
+    // Check against the last occurrence of THIS specific event
+    const lastOccurrence = lastEvents[event];
+
+    if (lastOccurrence) {
+        const timeDiff = now - lastOccurrence.time;
+        const isSameData = lastOccurrence.data === dataString;
+
+        // Blocking duplicate within 5 seconds to be safe against slow API double-fetches
+        if (isSameData && timeDiff < 5000) {
+            console.warn(`[Pixel] Duplicate event blocked: ${event} (diff: ${timeDiff}ms)`);
+            return;
+        }
     }
 
-    lastEvent = { name: event, data: dataString, time: now };
+    // Update the record for this event type
+    lastEvents[event] = { data: dataString, time: now };
+
+    console.log(`[Pixel] Tracking event: ${event}`, data);
 
     if (window.fbq) {
         window.fbq('track', event, data);
     } else {
-        // Retry once after a slight delay if script is still loading
         setTimeout(() => {
             if (window.fbq) {
                 window.fbq('track', event, data);
