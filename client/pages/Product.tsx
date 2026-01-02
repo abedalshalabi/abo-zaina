@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useAnimation } from "../context/AnimationContext";
+import { trackEvent } from "../utils/pixel";
 import Header from "../components/Header";
 import SEO from "../components/SEO";
 import { productsAPI, categoriesAPI, settingsAPI } from "../services/api";
@@ -289,6 +290,17 @@ const Product = () => {
           }
 
           setProduct(transformedProduct);
+          setQuantity(1); // Set initial quantity to 1
+
+          // Track ViewContent event
+          trackEvent('ViewContent', {
+            content_name: transformedProduct.name,
+            content_ids: [transformedProduct.id],
+            content_type: 'product',
+            value: transformedProduct.price,
+            currency: 'ILS'
+          });
+
         } catch (err) {
           console.error('Error loading product from API:', err);
           navigate('/products');
@@ -321,6 +333,16 @@ const Product = () => {
       if (quantity > 1) {
         updateQuantity(product.id, quantity);
       }
+
+      // Track AddToCart event
+      trackEvent('AddToCart', {
+        content_name: product.name,
+        content_ids: [product.id],
+        content_type: 'product',
+        value: product.price * quantity,
+        currency: 'ILS',
+        quantity: quantity
+      });
     }
   };
 

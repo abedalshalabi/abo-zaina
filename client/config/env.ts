@@ -11,3 +11,4 @@ const DEFAULT_STORAGE_BASE_URL = import.meta.env.DEV
   : 'https://abozaina.ps/abozaina/public/storage';
 
 export const STORAGE_BASE_URL = (import.meta.env.VITE_STORAGE_BASE_URL || DEFAULT_STORAGE_BASE_URL).replace(/\/$/, '');
+export const FACEBOOK_PIXEL_ID = import.meta.env.VITE_FACEBOOK_PIXEL_ID || '';
