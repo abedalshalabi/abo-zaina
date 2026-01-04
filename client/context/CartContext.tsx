@@ -8,6 +8,7 @@ interface CartItem {
   image: string;
   quantity: number;
   brand: string;
+  type?: 'product' | 'offer';
 }
 
 interface CartState {
@@ -16,7 +17,7 @@ interface CartState {
   itemCount: number;
 }
 
-type CartAction = 
+type CartAction =
   | { type: "ADD_ITEM"; payload: Omit<CartItem, "quantity"> }
   | { type: "REMOVE_ITEM"; payload: number }
   | { type: "UPDATE_QUANTITY"; payload: { id: number; quantity: number } }
@@ -32,7 +33,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
     case "ADD_ITEM": {
       const existingItem = state.items.find(item => item.id === action.payload.id);
-      
+
       let newItems: CartItem[];
       if (existingItem) {
         newItems = state.items.map(item =>

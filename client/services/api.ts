@@ -282,6 +282,7 @@ export const ordersAPI = {
       product_id: number;
       quantity: number;
       price: number;
+      type?: 'product' | 'offer';
     }>;
   }) => {
     const response = await fetch(`${API_BASE_URL}/orders`, {

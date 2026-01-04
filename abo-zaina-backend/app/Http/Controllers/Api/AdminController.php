@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Http\Resources\OrderResource;
 use App\Http\Resources\BrandResource;
 use App\Http\Resources\ReviewResource;
+use App\Models\Offer;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
@@ -211,20 +212,44 @@ class AdminController extends Controller
         $order->load('items.product');
 
         foreach ($order->items as $item) {
-            if ($item->product) {
+            // Regular Product
+            if ($item->product_id) {
                 $product = $item->product;
+                if ($product) {
+                    $product->increment('stock_quantity', $item->quantity);
+                    $product->decrement('sales_count', $item->quantity);
+                    
+                    if ($product->stock_status === 'stock_based') {
+                        $product->refresh();
+                        $product->in_stock = $product->stock_quantity > 0;
+                        $product->save();
+                    }
+                }
+            } 
+            // Bundle Offer
+            elseif (str_starts_with($item->product_sku, 'BUNDLE-')) {
+                $offerId = (int) str_replace('BUNDLE-', '', $item->product_sku);
+                $offer = Offer::find($offerId);
                 
-                // Restore stock quantity
-                $product->increment('stock_quantity', $item->quantity);
-                
-                // Decrease sales count
-                $product->decrement('sales_count', $item->quantity);
-                
-                // If stock_status is 'stock_based', update in_stock based on new stock_quantity
-                if ($product->stock_status === 'stock_based') {
-                    $product->refresh(); // Refresh to get updated stock_quantity
-                    $product->in_stock = $product->stock_quantity > 0;
-                    $product->save();
+                if ($offer) {
+                    $offer->decrement('sold_count', $item->quantity);
+
+                    if (!empty($offer->bundle_items) && is_array($offer->bundle_items)) {
+                        foreach ($offer->bundle_items as $bundleItem) {
+                            $product = Product::find($bundleItem['product_id']);
+                            if ($product) {
+                                $qtyToRestore = $bundleItem['quantity'] * $item->quantity;
+                                $product->increment('stock_quantity', $qtyToRestore);
+                                $product->decrement('sales_count', $qtyToRestore);
+
+                                if ($product->stock_status === 'stock_based') {
+                                    $product->refresh();
+                                    $product->in_stock = $product->stock_quantity > 0;
+                                    $product->save();
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -238,30 +263,57 @@ class AdminController extends Controller
         $order->load('items.product');
 
         foreach ($order->items as $item) {
-            if ($item->product) {
+            // Regular Product
+            if ($item->product_id) {
                 $product = $item->product;
-                
-                // Check stock availability based on stock_status
+                if (!$product) continue;
+
                 $isAvailable = false;
                 if ($product->stock_status === 'out_of_stock') {
-                    // For out_of_stock, product is not available regardless of stock quantity
                     $isAvailable = false;
                 } elseif ($product->stock_status === 'in_stock' || $product->stock_status === 'on_backorder') {
-                    // For in_stock or on_backorder, allow purchase regardless of stock quantity (can go negative)
                     $isAvailable = true;
                 } elseif ($product->stock_status === 'stock_based') {
-                    // For stock_based, check if stock_quantity is sufficient
                     $isAvailable = $product->stock_quantity >= $item->quantity;
-                } else {
-                    // Default: not available
-                    $isAvailable = false;
                 }
-
+                
                 if (!$isAvailable) {
                     return [
                         'available' => false,
                         'message' => "Product {$product->name} is out of stock or insufficient quantity"
                     ];
+                }
+            } 
+            // Bundle Offer
+            elseif (str_starts_with($item->product_sku, 'BUNDLE-')) {
+                $offerId = (int) str_replace('BUNDLE-', '', $item->product_sku);
+                $offer = Offer::find($offerId);
+                
+                if (!$offer) continue;
+
+                if (!empty($offer->bundle_items) && is_array($offer->bundle_items)) {
+                    foreach ($offer->bundle_items as $bundleItem) {
+                        $product = Product::find($bundleItem['product_id']);
+                        if (!$product) continue;
+
+                        $requiredQuantity = $bundleItem['quantity'] * $item->quantity;
+                        
+                        $isAvailable = false;
+                        if ($product->stock_status === 'out_of_stock') {
+                            $isAvailable = false;
+                        } elseif ($product->stock_status === 'in_stock' || $product->stock_status === 'on_backorder') {
+                            $isAvailable = true;
+                        } elseif ($product->stock_status === 'stock_based') {
+                            $isAvailable = $product->stock_quantity >= $requiredQuantity;
+                        }
+
+                        if (!$isAvailable) {
+                            return [
+                                'available' => false,
+                                'message' => "Product {$product->name} in bundle is out of stock"
+                            ];
+                        }
+                    }
                 }
             }
         }
@@ -277,20 +329,44 @@ class AdminController extends Controller
         $order->load('items.product');
 
         foreach ($order->items as $item) {
-            if ($item->product) {
+            // Regular Product
+            if ($item->product_id) {
                 $product = $item->product;
+                if ($product) {
+                    $product->decrement('stock_quantity', $item->quantity);
+                    $product->increment('sales_count', $item->quantity);
+                    
+                    if ($product->stock_status === 'stock_based') {
+                        $product->refresh();
+                        $product->in_stock = $product->stock_quantity > 0;
+                        $product->save();
+                    }
+                }
+            } 
+            // Bundle Offer
+            elseif (str_starts_with($item->product_sku, 'BUNDLE-')) {
+                $offerId = (int) str_replace('BUNDLE-', '', $item->product_sku);
+                $offer = Offer::find($offerId);
                 
-                // Deduct stock quantity
-                $product->decrement('stock_quantity', $item->quantity);
-                
-                // Increase sales count
-                $product->increment('sales_count', $item->quantity);
-                
-                // If stock_status is 'stock_based', update in_stock based on new stock_quantity
-                if ($product->stock_status === 'stock_based') {
-                    $product->refresh(); // Refresh to get updated stock_quantity
-                    $product->in_stock = $product->stock_quantity > 0;
-                    $product->save();
+                if ($offer) {
+                    $offer->increment('sold_count', $item->quantity);
+
+                    if (!empty($offer->bundle_items) && is_array($offer->bundle_items)) {
+                        foreach ($offer->bundle_items as $bundleItem) {
+                            $product = Product::find($bundleItem['product_id']);
+                            if ($product) {
+                                $qtyToDeduct = $bundleItem['quantity'] * $item->quantity;
+                                $product->decrement('stock_quantity', $qtyToDeduct);
+                                $product->increment('sales_count', $qtyToDeduct);
+
+                                if ($product->stock_status === 'stock_based') {
+                                    $product->refresh();
+                                    $product->in_stock = $product->stock_quantity > 0;
+                                    $product->save();
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

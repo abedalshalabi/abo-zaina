@@ -327,7 +327,8 @@ const Product = () => {
         name: product.name,
         price: product.price,
         image: product.images && product.images[0] ? product.images[0] : '/placeholder.svg',
-        brand: product.brand || ''
+        brand: product.brand || '',
+        type: 'product'
       });
       // Update quantity after adding
       if (quantity > 1) {

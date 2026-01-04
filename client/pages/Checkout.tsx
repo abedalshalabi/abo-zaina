@@ -17,7 +17,7 @@ interface City {
 const Checkout = () => {
   const { state, clearCart } = useCart();
   const navigate = useNavigate();
-  
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -82,6 +82,7 @@ const Checkout = () => {
         product_id: item.id,
         quantity: item.quantity,
         price: item.price,
+        type: item.type || 'product',
       }));
 
       // Create order
@@ -100,11 +101,11 @@ const Checkout = () => {
 
       // Clear cart and redirect to success page with order data
       clearCart();
-      navigate("/order-success", { 
-        state: { 
+      navigate("/order-success", {
+        state: {
           order: response.data,
-          orderNumber: response.data?.order_number 
-        } 
+          orderNumber: response.data?.order_number
+        }
       });
     } catch (error: any) {
       console.error("Error creating order:", error);
@@ -120,7 +121,7 @@ const Checkout = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 arabic">
-      <Header 
+      <Header
         showSearch={true}
         showActions={true}
       />
@@ -138,7 +139,7 @@ const Checkout = () => {
                   <User className="w-5 h-5" />
                   البيانات الشخصية
                 </h2>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -201,7 +202,7 @@ const Checkout = () => {
                   <MapPin className="w-5 h-5" />
                   عنوان التوصيل
                 </h2>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -287,7 +288,7 @@ const Checkout = () => {
                   <CreditCard className="w-5 h-5" />
                   طريقة الدفع
                 </h2>
-                
+
                 <div className="space-y-3">
                   <label className="flex items-center p-4 border border-brand-yellow bg-brand-yellow bg-opacity-10 rounded-lg cursor-pointer">
                     <input
@@ -306,7 +307,7 @@ const Checkout = () => {
                       </div>
                     </div>
                   </label>
-                  
+
                   <label className="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer opacity-50">
                     <input
                       type="radio"
@@ -331,7 +332,7 @@ const Checkout = () => {
             <div className="lg:col-span-2">
               <div className="bg-white rounded-lg shadow-sm p-8 sticky top-4">
                 <h2 className="text-2xl font-bold text-gray-800 mb-8">ملخص الطلب</h2>
-                
+
                 {/* Order Items */}
                 <div className="space-y-4 mb-8">
                   {state.items.map((item) => (

@@ -85,7 +85,7 @@ const Offers = () => {
       const response = await offersAPI.getOffers();
       if (response.success && response.data) {
         setOffers(response.data);
-        
+
         // Set initial time left for hero section
         const flashDeal = response.data.find((o: Offer) => o.type === 'flash_deal');
         if (flashDeal && flashDeal.remaining_time > 0) {
@@ -111,10 +111,10 @@ const Offers = () => {
     const product = offer.products?.[0];
     if (!product) return null;
 
-    const progressPercentage = offer.stock_limit 
-      ? offer.progress_percentage 
+    const progressPercentage = offer.stock_limit
+      ? offer.progress_percentage
       : 0;
-    
+
     const calculatePrice = () => {
       if (offer.discount_percentage) {
         const originalPrice = product.original_price || product.price;
@@ -144,8 +144,8 @@ const Offers = () => {
       <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group border-2 border-red-200">
         <div className="relative">
           <Link to={`/product/${product.id}`}>
-            <img 
-              src={product.image || '/placeholder-product.jpg'} 
+            <img
+              src={product.image || '/placeholder-product.jpg'}
               alt={product.name}
               className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer"
               onError={(e) => {
@@ -172,7 +172,7 @@ const Offers = () => {
                 </div>
               </div>
               <div className="w-full bg-gray-600 rounded-full h-2 mb-2">
-                <div 
+                <div
                   className="bg-red-500 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${progressPercentage}%` }}
                 ></div>
@@ -183,7 +183,7 @@ const Offers = () => {
             </div>
           )}
         </div>
-        
+
         <div className="p-6">
           <div className="flex items-center gap-2 mb-2">
             {product.brand && (
@@ -199,13 +199,13 @@ const Offers = () => {
               </div>
             )}
           </div>
-          
+
           <Link to={`/product/${product.id}`}>
             <h3 className="text-lg font-bold text-gray-800 mb-3 line-clamp-2 hover:text-blue-600 transition-colors cursor-pointer">
               {product.name}
             </h3>
           </Link>
-          
+
           <div className="flex items-center justify-between mb-4">
             <div>
               <div className="flex items-center gap-2">
@@ -217,8 +217,8 @@ const Offers = () => {
               </div>
             </div>
           </div>
-          
-          <button 
+
+          <button
             onClick={(e) => {
               triggerAnimation(e.currentTarget, {
                 image: product.image,
@@ -266,8 +266,8 @@ const Offers = () => {
       <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group">
         <div className="relative">
           <Link to={`/product/${product.id}`}>
-            <img 
-              src={product.image || '/placeholder-product.jpg'} 
+            <img
+              src={product.image || '/placeholder-product.jpg'}
               alt={product.name}
               className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer"
               onError={(e) => {
@@ -295,7 +295,7 @@ const Offers = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="p-6">
           <div className="flex items-center gap-2 mb-2">
             {product.brand && (
@@ -311,13 +311,13 @@ const Offers = () => {
               </div>
             )}
           </div>
-          
+
           <Link to={`/product/${product.id}`}>
             <h3 className="text-lg font-bold text-gray-800 mb-3 line-clamp-2 hover:text-blue-600 transition-colors cursor-pointer">
               {product.name}
             </h3>
           </Link>
-          
+
           <div className="flex items-center justify-between mb-4">
             <div>
               <div className="flex items-center gap-2">
@@ -329,8 +329,8 @@ const Offers = () => {
               </div>
             </div>
           </div>
-          
-          <button 
+
+          <button
             onClick={(e) => {
               triggerAnimation(e.currentTarget, {
                 image: product.image,
@@ -366,8 +366,8 @@ const Offers = () => {
       <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border-2 border-purple-200">
         <div className="relative">
           {offer.image ? (
-            <img 
-              src={offer.image} 
+            <img
+              src={offer.image}
               alt={offer.title}
               className="w-full h-48 object-cover"
               onError={(e) => {
@@ -389,20 +389,20 @@ const Offers = () => {
             -{discountPercent}%
           </div>
         </div>
-        
+
         <div className="p-6">
           <h3 className="text-xl font-bold text-gray-800 mb-3">{offer.title}</h3>
           {offer.description && (
             <p className="text-sm text-gray-600 mb-4">{offer.description}</p>
           )}
-          
+
           <div className="mb-4">
             <p className="text-sm text-gray-600 mb-2">يشمل:</p>
             <ul className="space-y-1">
               {offer.bundle_items.map((item, index) => (
                 <li key={index} className="text-sm text-gray-700 flex items-center gap-2">
                   <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                  <Link 
+                  <Link
                     to={`/product/${item.product_id}`}
                     className="hover:text-purple-600 transition-colors"
                   >
@@ -412,7 +412,7 @@ const Offers = () => {
               ))}
             </ul>
           </div>
-          
+
           <div className="mb-4">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-2xl font-bold text-purple-600">{bundlePrice.toFixed(2)} شيكل</span>
@@ -422,8 +422,8 @@ const Offers = () => {
               وفر {discount.toFixed(2)} شيكل
             </div>
           </div>
-          
-          <button 
+
+          <button
             onClick={(e) => {
               triggerAnimation(e.currentTarget, {
                 image: offer.image,
@@ -434,7 +434,8 @@ const Offers = () => {
                 name: offer.title,
                 price: bundlePrice,
                 image: offer.image || '',
-                brand: "باقة"
+                brand: "باقة",
+                type: 'offer'
               });
             }}
             className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-colors font-semibold flex items-center justify-center gap-2"
@@ -498,7 +499,7 @@ const Offers = () => {
         keywords="عروض, خصومات, أجهزة كهربائية, إلكترونيات, ثلاجات, غسالات, أفران, تلفزيونات, جنين, أبو زينة, أبو زينة للتقنيات, النمر مول, بنك الاستثمار, تفاصيل المنتجات"
         structuredData={structuredDataArray}
       />
-      <Header 
+      <Header
         showSearch={true}
         showActions={true}
       />
@@ -508,7 +509,7 @@ const Offers = () => {
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl font-bold mb-4">العروض الحصرية</h1>
           <p className="text-xl text-red-200 mb-8">اكتشف أفضل العروض والخصومات على جميع المنتجات</p>
-          
+
           {/* Countdown Timer */}
           {timeLeft.days > 0 || timeLeft.hours > 0 || timeLeft.minutes > 0 || timeLeft.seconds > 0 ? (
             <div className="max-w-md mx-auto bg-black bg-opacity-30 rounded-2xl p-6">
@@ -557,7 +558,7 @@ const Offers = () => {
                 <p className="text-gray-600">خصومات محدودة الوقت - اسرع قبل انتهاء الكمية!</p>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {flashDeals.map(offer => (
                 <FlashDealCard key={offer.id} offer={offer} />
@@ -578,7 +579,7 @@ const Offers = () => {
                 <p className="text-gray-600">خصومات مميزة تستمر طوال الأسبوع</p>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {weeklyDeals.map(offer => (
                 <ProductCard key={offer.id} offer={offer} />
@@ -599,7 +600,7 @@ const Offers = () => {
                 <p className="text-gray-600">وفر أكثر مع باقاتنا المتكاملة</p>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {bundleOffers.map(offer => (
                 <BundleCard key={offer.id} offer={offer} />
@@ -619,8 +620,8 @@ const Offers = () => {
           <h2 className="text-2xl font-bold mb-4">لا تفوت العروض القادمة!</h2>
           <p className="text-blue-100 mb-6">اشترك في نشرتنا البريدية لتصلك أحدث العروض والخصومات</p>
           <div className="max-w-md mx-auto flex gap-4">
-            <input 
-              type="email" 
+            <input
+              type="email"
               placeholder="أدخل بريدك الإلكتروني"
               className="flex-1 px-4 py-3 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-white"
             />

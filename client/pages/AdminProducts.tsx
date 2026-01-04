@@ -103,7 +103,7 @@ const AdminProducts = () => {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [viewMode, setViewMode] = useState<"grid" | "list" | "table">("table"); 
+  const [viewMode, setViewMode] = useState<"grid" | "list" | "table">("table");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
@@ -111,7 +111,12 @@ const AdminProducts = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  
+
+  // Inline Editing State
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState({ price: '', original_price: '', compare_price: '' });
+  const [isSaving, setIsSaving] = useState(false);
+
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     category: null,
@@ -126,7 +131,7 @@ const AdminProducts = () => {
   });
 
   const [searchInput, setSearchInput] = useState("");
-  
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -154,7 +159,7 @@ const AdminProducts = () => {
         adminCategoriesAPI.getCategories(),
         adminBrandsAPI.getBrands()
       ]);
-      
+
       setCategories(categoriesData.data || []);
       setBrands(brandsData.data || []);
     } catch (err: any) {
@@ -167,7 +172,7 @@ const AdminProducts = () => {
     try {
       setLoading(true);
       setError("");
-      
+
       const queryParams = {
         search: filters.search,
         category_id: filters.category,
@@ -182,24 +187,24 @@ const AdminProducts = () => {
         page: currentPage,
         per_page: perPage
       };
-      
+
       // إزالة القيم الفارغة
       Object.keys(queryParams).forEach(key => {
-        if (queryParams[key as keyof typeof queryParams] === undefined || 
-            queryParams[key as keyof typeof queryParams] === null || 
-            queryParams[key as keyof typeof queryParams] === '') {
+        if (queryParams[key as keyof typeof queryParams] === undefined ||
+          queryParams[key as keyof typeof queryParams] === null ||
+          queryParams[key as keyof typeof queryParams] === '') {
           delete queryParams[key as keyof typeof queryParams];
         }
       });
-      
+
       console.log('Filter Debug:', {
         filters,
         queryParams,
         currentPage
       });
-      
+
       const data = await adminProductsAPI.getProducts(queryParams);
-      
+
       setProducts(data.data || []);
       setTotalPages(data.meta?.last_page || 1);
       setTotalProducts(data.meta?.total || 0);
@@ -226,7 +231,7 @@ const AdminProducts = () => {
 
   const handleBulkDelete = async () => {
     if (selectedProducts.length === 0) return;
-    
+
     if (window.confirm(`هل أنت متأكد من حذف ${selectedProducts.length} منتج؟`)) {
       try {
         await Promise.all(
@@ -241,8 +246,8 @@ const AdminProducts = () => {
   };
 
   const toggleProductSelection = (id: number) => {
-    setSelectedProducts(prev => 
-      prev.includes(id) 
+    setSelectedProducts(prev =>
+      prev.includes(id)
         ? prev.filter(p => p !== id)
         : [...prev, id]
     );
@@ -295,7 +300,7 @@ const AdminProducts = () => {
     // Scroll to top when page changes
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-  
+
   const handlePerPageChange = (newPerPage: number) => {
     setPerPage(newPerPage);
     setCurrentPage(1); // Reset to first page when changing per page
@@ -347,48 +352,110 @@ const AdminProducts = () => {
     return { status: 'in', label: 'متوفر', color: 'text-green-600' };
   };
 
+  // Inline Editing Handlers
+  const handleStartEdit = (product: Product) => {
+    setEditingId(product.id);
+    setEditForm({
+      price: product.price.toString(),
+      original_price: product.original_price ? product.original_price.toString() : '',
+      compare_price: product.compare_price ? product.compare_price.toString() : ''
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditForm({ price: '', original_price: '', compare_price: '' });
+  };
+
+  const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setEditForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSaveEdit = async (id: number) => {
+    try {
+      setIsSaving(true);
+
+      const price = parseFloat(editForm.price);
+      const originalPrice = editForm.original_price ? parseFloat(editForm.original_price) : null;
+      const comparePrice = editForm.compare_price ? parseFloat(editForm.compare_price) : null;
+
+      if (isNaN(price) || price < 0) {
+        alert("الرجاء إدخال سعر صحيح (0 أو أكبر)"); // Simple alert or use your toast/error state
+        return;
+      }
+
+      await adminProductsAPI.updateProduct(id.toString(), {
+        price: price,
+        original_price: originalPrice,
+        compare_price: comparePrice
+      });
+
+      // Update local state immediately
+      setProducts(prev => prev.map(p => {
+        if (p.id === id) {
+          return {
+            ...p,
+            price: price,
+            original_price: originalPrice || undefined,
+            compare_price: comparePrice || undefined
+          };
+        }
+        return p;
+      }));
+
+      setEditingId(null);
+      // Optional: Show success message/toast
+    } catch (err: any) {
+      console.error("Failed to update price", err);
+      alert("فشل تحديث السعر: " + (err.response?.data?.message || err.message));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
 
   return (
     <AdminLayout>
       <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <button
-                onClick={() => navigate("/admin/dashboard")}
-                className="p-2 rounded-lg hover:bg-gray-100 mr-4"
-              >
-                <ArrowLeft className="w-6 h-6" />
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">إدارة المنتجات</h1>
-                <p className="text-sm text-gray-600 mt-1">
-                  إجمالي المنتجات: {totalProducts.toLocaleString()} منتج
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-3 space-x-reverse">
-              <button
-                onClick={refreshProducts}
-                disabled={isRefreshing}
-                className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 disabled:opacity-50"
-                title="تحديث"
-              >
-                <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
-              </button>
-              
-              <button
-                onClick={() => navigate("/admin/products/create")}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                إضافة منتج
-              </button>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <button
+              onClick={() => navigate("/admin/dashboard")}
+              className="p-2 rounded-lg hover:bg-gray-100 mr-4"
+            >
+              <ArrowLeft className="w-6 h-6" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">إدارة المنتجات</h1>
+              <p className="text-sm text-gray-600 mt-1">
+                إجمالي المنتجات: {totalProducts.toLocaleString()} منتج
+              </p>
             </div>
           </div>
-        </div>
 
-        <div className="mt-6">
+          <div className="flex items-center space-x-3 space-x-reverse">
+            <button
+              onClick={refreshProducts}
+              disabled={isRefreshing}
+              className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 disabled:opacity-50"
+              title="تحديث"
+            >
+              <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </button>
+
+            <button
+              onClick={() => navigate("/admin/products/create")}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              إضافة منتج
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6">
         {/* Search and Quick Filters */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
@@ -405,7 +472,7 @@ const AdminProducts = () => {
                 />
               </div>
             </div>
-            
+
             {/* Per Page Selector */}
             <div className="flex items-center space-x-2 space-x-reverse">
               <label className="text-sm text-gray-600 whitespace-nowrap">عدد الصفوف:</label>
@@ -426,35 +493,32 @@ const AdminProducts = () => {
             <div className="flex items-center space-x-2 space-x-reverse">
               <button
                 onClick={() => handleFilterChange('status', filters.status === 'active' ? 'all' : 'active')}
-                className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                  filters.status === 'active' 
-                    ? 'bg-green-100 text-green-700 border border-green-200' 
-                    : 'bg-gray-100 text-gray-700 border border-gray-200'
-                }`}
+                className={`px-3 py-2 rounded-lg text-sm font-medium ${filters.status === 'active'
+                  ? 'bg-green-100 text-green-700 border border-green-200'
+                  : 'bg-gray-100 text-gray-700 border border-gray-200'
+                  }`}
               >
                 <CheckCircle className="w-4 h-4 inline ml-1" />
                 نشط فقط
               </button>
-              
+
               <button
                 onClick={() => handleFilterChange('featured', filters.featured === 'featured' ? 'all' : 'featured')}
-                className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                  filters.featured === 'featured' 
-                    ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' 
-                    : 'bg-gray-100 text-gray-700 border border-gray-200'
-                }`}
+                className={`px-3 py-2 rounded-lg text-sm font-medium ${filters.featured === 'featured'
+                  ? 'bg-yellow-100 text-yellow-700 border border-yellow-200'
+                  : 'bg-gray-100 text-gray-700 border border-gray-200'
+                  }`}
               >
                 <Star className="w-4 h-4 inline ml-1" />
                 مميز
               </button>
-              
+
               <button
                 onClick={() => handleFilterChange('stockStatus', filters.stockStatus === 'low_stock' ? 'all' : 'low_stock')}
-                className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                  filters.stockStatus === 'low_stock' 
-                    ? 'bg-orange-100 text-orange-700 border border-orange-200' 
-                    : 'bg-gray-100 text-gray-700 border border-gray-200'
-                }`}
+                className={`px-3 py-2 rounded-lg text-sm font-medium ${filters.stockStatus === 'low_stock'
+                  ? 'bg-orange-100 text-orange-700 border border-orange-200'
+                  : 'bg-gray-100 text-gray-700 border border-gray-200'
+                  }`}
               >
                 <AlertCircle className="w-4 h-4 inline ml-1" />
                 مخزون منخفض
@@ -466,11 +530,10 @@ const AdminProducts = () => {
               {/* Advanced Filters */}
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center ${
-                  showFilters || getActiveFiltersCount() > 0
-                    ? 'bg-blue-100 text-blue-700 border border-blue-200' 
-                    : 'bg-gray-100 text-gray-700 border border-gray-200'
-                }`}
+                className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center ${showFilters || getActiveFiltersCount() > 0
+                  ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                  : 'bg-gray-100 text-gray-700 border border-gray-200'
+                  }`}
               >
                 <Filter className="w-4 h-4 ml-1" />
                 فلاتر متقدمة
@@ -660,8 +723,8 @@ const AdminProducts = () => {
             <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-800 mb-2">لا توجد منتجات</h3>
             <p className="text-gray-600 mb-4">
-              {getActiveFiltersCount() > 0 
-                ? "لم يتم العثور على منتجات تطابق معايير البحث" 
+              {getActiveFiltersCount() > 0
+                ? "لم يتم العثور على منتجات تطابق معايير البحث"
                 : "لم يتم العثور على منتجات في النظام"
               }
             </p>
@@ -695,217 +758,290 @@ const AdminProducts = () => {
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          <input
-                            type="checkbox"
-                            checked={selectedProducts.length === products.length && products.length > 0}
-                            onChange={toggleAllSelection}
-                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                          />
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          المنتج
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          الفئة
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          السعر
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          المخزون
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          المبيعات
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          التقييم
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          الحالة
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          الإجراءات
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {products.map((product) => {
-                        const stockStatus = getStockStatus(product);
-                        const hasDiscount = product.original_price && product.original_price > product.price;
-                        const discountPercentage = hasDiscount 
-                          ? Math.round(((product.original_price! - product.price) / product.original_price!) * 100)
-                          : 0;
+                    <table className="w-full">
+                      <thead className="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <input
+                              type="checkbox"
+                              checked={selectedProducts.length === products.length && products.length > 0}
+                              onChange={toggleAllSelection}
+                              className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                            />
+                          </th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            المنتج
+                          </th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            الفئة
+                          </th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
+                            السعر
+                          </th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            المخزون
+                          </th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            المبيعات
+                          </th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            التقييم
+                          </th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            الحالة
+                          </th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            الإجراءات
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {products.map((product) => {
+                          const stockStatus = getStockStatus(product);
+                          const hasDiscount = product.compare_price && product.compare_price > product.price;
+                          const discountPercentage = hasDiscount
+                            ? Math.round(((product.compare_price! - product.price) / product.compare_price!) * 100)
+                            : 0;
 
-                        return (
-                          <tr key={product.id} className="hover:bg-gray-50">
-                            {/* Checkbox */}
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <input
-                                type="checkbox"
-                                checked={selectedProducts.includes(product.id)}
-                                onChange={() => toggleProductSelection(product.id)}
-                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                              />
-                            </td>
+                          return (
+                            <tr key={product.id} className="hover:bg-gray-50">
+                              {/* Checkbox */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedProducts.includes(product.id)}
+                                  onChange={() => toggleProductSelection(product.id)}
+                                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                />
+                              </td>
 
-                            {/* Product */}
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center">
-                                <div className="flex-shrink-0 h-12 w-12">
-                                  {product.images?.[0] ? (
-                                    <img
-                                      className="h-12 w-12 rounded-lg object-cover"
-                                      src={product.images[0].image_url}
-                                      alt={product.images[0].alt_text || product.name}
-                                      onError={(e) => {
-                                        e.currentTarget.src = '/placeholder.svg';
-                                      }}
-                                    />
-                                  ) : (
-                                    <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center">
-                                      <Package className="w-6 h-6 text-gray-400" />
+                              {/* Product */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <div className="flex-shrink-0 h-12 w-12">
+                                    {product.images?.[0] ? (
+                                      <img
+                                        className="h-12 w-12 rounded-lg object-cover"
+                                        src={product.images[0].image_url}
+                                        alt={product.images[0].alt_text || product.name}
+                                        onError={(e) => {
+                                          e.currentTarget.src = '/placeholder.svg';
+                                        }}
+                                      />
+                                    ) : (
+                                      <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center">
+                                        <Package className="w-6 h-6 text-gray-400" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="mr-4">
+                                    <div className="text-sm font-medium text-gray-900 line-clamp-1">
+                                      {product.name}
                                     </div>
-                                  )}
-                                </div>
-                                <div className="mr-4">
-                                  <div className="text-sm font-medium text-gray-900 line-clamp-1">
-                                    {product.name}
-                                  </div>
-                                  <div className="text-sm text-gray-500">
-                                    {product.brand?.name}
-                                  </div>
-                                  <div className="flex items-center space-x-1 space-x-reverse mt-1">
-                                    {product.is_featured && (
-                                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                                        <Star className="w-3 h-3 ml-1" />
-                                        مميز
-                                      </span>
-                                    )}
-                                    {hasDiscount && (
-                                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                                        -{discountPercentage}%
-                                      </span>
-                                    )}
-                                    {!product.is_active && (
-                                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                                        غير نشط
-                                      </span>
-                                    )}
+                                    <div className="text-sm text-gray-500">
+                                      {product.brand?.name}
+                                    </div>
+                                    <div className="flex items-center space-x-1 space-x-reverse mt-1">
+                                      {product.is_featured && (
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                          <Star className="w-3 h-3 ml-1" />
+                                          مميز
+                                        </span>
+                                      )}
+                                      {hasDiscount && (
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                          -{discountPercentage}%
+                                        </span>
+                                      )}
+                                      {!product.is_active && (
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                          غير نشط
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            </td>
+                              </td>
 
-                            {/* Category */}
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                {product.category?.name || 'غير محدد'}
-                              </span>
-                            </td>
 
-                            {/* Price */}
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900">
-                                {formatPrice(product.price)}
-                              </div>
-                              {hasDiscount && (
-                                <div className="text-sm text-gray-500 line-through">
-                                  {formatPrice(product.original_price!)}
+
+                              {/* Stock */}
+
+                              {/* Category */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                  {product.category?.name || 'غير محدد'}
+                                </span>
+                              </td>
+
+                              {/* Price */}
+                              {/* Price (Editable) */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {editingId === product.id ? (
+                                  <div className="flex flex-col space-y-2">
+                                    <div>
+                                      <label className="text-xs text-gray-500 block mb-1">السعر</label>
+                                      <input
+                                        type="number"
+                                        name="price"
+                                        value={editForm.price}
+                                        onChange={handleEditFormChange}
+                                        className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                        min="0"
+                                        step="0.01"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-xs text-gray-500 block mb-1">الأصلي (اختياري)</label>
+                                      <input
+                                        type="number"
+                                        name="original_price"
+                                        value={editForm.original_price}
+                                        onChange={handleEditFormChange}
+                                        className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="-"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-xs text-gray-500 block mb-1">المقارنة (اختياري)</label>
+                                      <input
+                                        type="number"
+                                        name="compare_price"
+                                        value={editForm.compare_price}
+                                        onChange={handleEditFormChange}
+                                        className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="-"
+                                      />
+                                    </div>
+                                    <div className="flex items-center space-x-2 space-x-reverse pt-1">
+                                      <button
+                                        onClick={() => handleSaveEdit(product.id)}
+                                        disabled={isSaving}
+                                        className="text-white bg-green-600 hover:bg-green-700 p-1 rounded disabled:opacity-50"
+                                        title="حفظ"
+                                      >
+                                        {isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                                      </button>
+                                      <button
+                                        onClick={handleCancelEdit}
+                                        disabled={isSaving}
+                                        className="text-white bg-red-600 hover:bg-red-700 p-1 rounded disabled:opacity-50"
+                                        title="إلغاء"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="group relative">
+                                    <div className="text-sm font-medium text-gray-900">
+                                      {formatPrice(product.price)}
+                                    </div>
+                                    {product.compare_price && (
+                                      <div className="text-sm text-gray-500 line-through">
+                                        {formatPrice(product.compare_price)}
+                                      </div>
+                                    )}
+                                    <button
+                                      onClick={() => handleStartEdit(product)}
+                                      className="absolute left-0 top-1/2 -translate-y-1/2 p-1 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-50 rounded"
+                                      title="تعديل السعر سريعاً"
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                )}
+                              </td>
+
+                              {/* Stock */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <span className={`text-sm font-medium ${stockStatus.color}`}>
+                                    {product.stock_quantity}
+                                  </span>
+                                  <span className="text-sm text-gray-500 mr-1">قطعة</span>
                                 </div>
-                              )}
-                            </td>
-
-                            {/* Stock */}
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center">
-                                <span className={`text-sm font-medium ${stockStatus.color}`}>
-                                  {product.stock_quantity}
-                                </span>
-                                <span className="text-sm text-gray-500 mr-1">قطعة</span>
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                {stockStatus.label}
-                              </div>
-                            </td>
-
-                            {/* Sales */}
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900">
-                                {product.sales_count}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                مبيع
-                              </div>
-                            </td>
-
-                            {/* Rating */}
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center">
-                                <Star className="w-4 h-4 text-yellow-400 fill-current ml-1" />
-                                <span className="text-sm font-medium text-gray-900">
-                                  {typeof product.rating === 'number' ? product.rating.toFixed(1) : '0.0'}
-                                </span>
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                ({product.reviews_count} تقييم)
-                              </div>
-                            </td>
-
-                            {/* Status */}
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex flex-col space-y-1">
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                  product.is_active 
-                                    ? 'bg-green-100 text-green-800' 
-                                    : 'bg-red-100 text-red-800'
-                                }`}>
-                                  {product.is_active ? 'نشط' : 'غير نشط'}
-                                </span>
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                  stockStatus.status === 'out' ? 'bg-red-100 text-red-800' :
-                                  stockStatus.status === 'low' ? 'bg-orange-100 text-orange-800' :
-                                  'bg-green-100 text-green-800'
-                                }`}>
+                                <div className="text-xs text-gray-500">
                                   {stockStatus.label}
-                                </span>
-                              </div>
-                            </td>
+                                </div>
+                              </td>
 
-                            {/* Actions */}
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                              <div className="flex items-center space-x-2 space-x-reverse">
-                                <button
-                                  onClick={() => navigate(`/admin/products/${product.id}`)}
-                                  className="text-blue-600 hover:text-blue-900 p-1 rounded"
-                                  title="عرض التفاصيل"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => navigate(`/admin/products/${product.id}/edit`)}
-                                  className="text-green-600 hover:text-green-900 p-1 rounded"
-                                  title="تعديل"
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteProduct(product.id)}
-                                  className="text-red-600 hover:text-red-900 p-1 rounded"
-                                  title="حذف"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                              {/* Sales */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {product.sales_count}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  مبيع
+                                </div>
+                              </td>
+
+                              {/* Rating */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <Star className="w-4 h-4 text-yellow-400 fill-current ml-1" />
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {typeof product.rating === 'number' ? product.rating.toFixed(1) : '0.0'}
+                                  </span>
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  ({product.reviews_count} تقييم)
+                                </div>
+                              </td>
+
+                              {/* Status */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex flex-col space-y-1">
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.is_active
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-red-100 text-red-800'
+                                    }`}>
+                                    {product.is_active ? 'نشط' : 'غير نشط'}
+                                  </span>
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${stockStatus.status === 'out' ? 'bg-red-100 text-red-800' :
+                                    stockStatus.status === 'low' ? 'bg-orange-100 text-orange-800' :
+                                      'bg-green-100 text-green-800'
+                                    }`}>
+                                    {stockStatus.label}
+                                  </span>
+                                </div>
+                              </td>
+
+                              {/* Actions */}
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div className="flex items-center space-x-2 space-x-reverse">
+                                  <button
+                                    onClick={() => navigate(`/admin/products/${product.id}`)}
+                                    className="text-blue-600 hover:text-blue-900 p-1 rounded"
+                                    title="عرض التفاصيل"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => navigate(`/admin/products/${product.id}/edit`)}
+                                    className="text-green-600 hover:text-green-900 p-1 rounded"
+                                    title="تعديل"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteProduct(product.id)}
+                                    className="text-red-600 hover:text-red-900 p-1 rounded"
+                                    title="حذف"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>
@@ -919,200 +1055,197 @@ const AdminProducts = () => {
                   </div>
                 </div>
               ) : (
-                <div className={`${
-                  viewMode === "grid" 
-                    ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" 
-                    : "space-y-4"
-                }`}>
-              {products.map((product) => {
-                const stockStatus = getStockStatus(product);
-                const hasDiscount = product.original_price && product.original_price > product.price;
-                const discountPercentage = hasDiscount 
-                  ? Math.round(((product.original_price! - product.price) / product.original_price!) * 100)
-                  : 0;
+                <div className={`${viewMode === "grid"
+                  ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                  : "space-y-4"
+                  }`}>
+                  {products.map((product) => {
+                    const stockStatus = getStockStatus(product);
+                    const hasDiscount = product.original_price && product.original_price > product.price;
+                    const discountPercentage = hasDiscount
+                      ? Math.round(((product.original_price! - product.price) / product.original_price!) * 100)
+                      : 0;
 
-                return (
-                <div
-                  key={product.id}
-                  className={`bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow ${
-                    viewMode === "list" ? "flex" : ""
-                  }`}
-                >
-                  {/* Product Image */}
-                  <div className={`${viewMode === "grid" ? "aspect-square" : "w-32 h-32"} bg-gray-100 relative group`}>
-                    {product.images?.[0] ? (
-                      <img
-                        src={product.images[0].image_url}
-                        alt={product.images[0].alt_text || product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                        onError={(e) => {
-                          e.currentTarget.src = '/placeholder.svg';
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Package className="w-8 h-8 text-gray-400" />
-                      </div>
-                    )}
-                    
-                    {/* Status Badges */}
-                    <div className="absolute top-2 right-2 flex flex-col space-y-1">
-                      {product.is_featured && (
-                        <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-full font-medium">
-                          <Star className="w-3 h-3 inline ml-1" />
-                          مميز
-                        </span>
-                      )}
-                      {hasDiscount && (
-                        <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
-                          -{discountPercentage}%
-                        </span>
-                      )}
-                      {!product.is_active && (
-                        <span className="bg-gray-500 text-white text-xs px-2 py-1 rounded-full font-medium">
-                          غير نشط
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Selection Checkbox */}
-                    <div className="absolute top-2 left-2">
-                      <input
-                        type="checkbox"
-                        checked={selectedProducts.includes(product.id)}
-                        onChange={() => toggleProductSelection(product.id)}
-                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                      />
-                    </div>
-
-                    {/* Stock Status Overlay */}
-                    <div className="absolute bottom-2 left-2">
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        stockStatus.status === 'out' ? 'bg-red-100 text-red-700' :
-                        stockStatus.status === 'low' ? 'bg-orange-100 text-orange-700' :
-                        'bg-green-100 text-green-700'
-                      }`}>
-                        {stockStatus.label}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Product Info */}
-                  <div className={`p-4 ${viewMode === "list" ? "flex-1" : ""}`}>
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 line-clamp-2 mb-1">{product.name}</h3>
-                        <div className="flex items-center space-x-2 space-x-reverse text-sm text-gray-500">
-                          {product.category && (
-                            <span className="bg-gray-100 px-2 py-1 rounded-full">
-                              {product.category.name}
-                            </span>
+                    return (
+                      <div
+                        key={product.id}
+                        className={`bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow ${viewMode === "list" ? "flex" : ""
+                          }`}
+                      >
+                        {/* Product Image */}
+                        <div className={`${viewMode === "grid" ? "aspect-square" : "w-32 h-32"} bg-gray-100 relative group`}>
+                          {product.images?.[0] ? (
+                            <img
+                              src={product.images[0].image_url}
+                              alt={product.images[0].alt_text || product.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                              onError={(e) => {
+                                e.currentTarget.src = '/placeholder.svg';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Package className="w-8 h-8 text-gray-400" />
+                            </div>
                           )}
-                          {product.brand && (
-                            <span className="bg-gray-100 px-2 py-1 rounded-full">
-                              {product.brand.name}
+
+                          {/* Status Badges */}
+                          <div className="absolute top-2 right-2 flex flex-col space-y-1">
+                            {product.is_featured && (
+                              <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                                <Star className="w-3 h-3 inline ml-1" />
+                                مميز
+                              </span>
+                            )}
+                            {hasDiscount && (
+                              <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                                -{discountPercentage}%
+                              </span>
+                            )}
+                            {!product.is_active && (
+                              <span className="bg-gray-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                                غير نشط
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Selection Checkbox */}
+                          <div className="absolute top-2 left-2">
+                            <input
+                              type="checkbox"
+                              checked={selectedProducts.includes(product.id)}
+                              onChange={() => toggleProductSelection(product.id)}
+                              className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                            />
+                          </div>
+
+                          {/* Stock Status Overlay */}
+                          <div className="absolute bottom-2 left-2">
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${stockStatus.status === 'out' ? 'bg-red-100 text-red-700' :
+                              stockStatus.status === 'low' ? 'bg-orange-100 text-orange-700' :
+                                'bg-green-100 text-green-700'
+                              }`}>
+                              {stockStatus.label}
                             </span>
-                          )}
+                          </div>
                         </div>
-                      </div>
-                      <button className="p-1 hover:bg-gray-100 rounded">
-                        <MoreHorizontal className="w-4 h-4 text-gray-400" />
-                      </button>
-                    </div>
 
-                    {/* Price Section */}
-                    <div className="mb-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-gray-600">السعر:</span>
-                        <div className="flex items-center space-x-2 space-x-reverse">
-                          <span className="font-bold text-lg text-gray-900">
-                            {formatPrice(product.price)}
-                          </span>
-                          {hasDiscount && (
-                            <span className="text-sm text-gray-500 line-through">
-                              {formatPrice(product.original_price!)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {hasDiscount && (
-                        <div className="text-xs text-red-600 font-medium">
-                          وفرت {formatPrice(product.original_price! - product.price)}
-                        </div>
-                      )}
-                    </div>
+                        {/* Product Info */}
+                        <div className={`p-4 ${viewMode === "list" ? "flex-1" : ""}`}>
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-gray-900 line-clamp-2 mb-1">{product.name}</h3>
+                              <div className="flex items-center space-x-2 space-x-reverse text-sm text-gray-500">
+                                {product.category && (
+                                  <span className="bg-gray-100 px-2 py-1 rounded-full">
+                                    {product.category.name}
+                                  </span>
+                                )}
+                                {product.brand && (
+                                  <span className="bg-gray-100 px-2 py-1 rounded-full">
+                                    {product.brand.name}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <button className="p-1 hover:bg-gray-100 rounded">
+                              <MoreHorizontal className="w-4 h-4 text-gray-400" />
+                            </button>
+                          </div>
 
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                      <div className="text-center p-2 bg-gray-50 rounded-lg">
-                        <div className="flex items-center justify-center mb-1">
-                          <ShoppingCart className="w-4 h-4 text-blue-600 ml-1" />
-                          <span className="text-sm font-medium text-gray-900">{product.sales_count}</span>
-                        </div>
-                        <div className="text-xs text-gray-500">مبيع</div>
-                      </div>
-                      
-                      <div className="text-center p-2 bg-gray-50 rounded-lg">
-                        <div className="flex items-center justify-center mb-1">
-                          <Star className="w-4 h-4 text-yellow-400 fill-current ml-1" />
-                          <span className="text-sm font-medium text-gray-900">
-                            {typeof product.rating === 'number' ? product.rating.toFixed(1) : '0.0'}
-                          </span>
-                        </div>
-                        <div className="text-xs text-gray-500">({product.reviews_count})</div>
-                      </div>
-                      
-                      <div className="text-center p-2 bg-gray-50 rounded-lg">
-                        <div className="flex items-center justify-center mb-1">
-                          <Package className="w-4 h-4 text-green-600 ml-1" />
-                          <span className="text-sm font-medium text-gray-900">{product.stock_quantity}</span>
-                        </div>
-                        <div className="text-xs text-gray-500">مخزون</div>
-                      </div>
-                      
-                      <div className="text-center p-2 bg-gray-50 rounded-lg">
-                        <div className="flex items-center justify-center mb-1">
-                          <Eye className="w-4 h-4 text-purple-600 ml-1" />
-                          <span className="text-sm font-medium text-gray-900">{product.views_count}</span>
-                        </div>
-                        <div className="text-xs text-gray-500">مشاهدة</div>
-                      </div>
-                    </div>
+                          {/* Price Section */}
+                          <div className="mb-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm text-gray-600">السعر:</span>
+                              <div className="flex items-center space-x-2 space-x-reverse">
+                                <span className="font-bold text-lg text-gray-900">
+                                  {formatPrice(product.price)}
+                                </span>
+                                {hasDiscount && (
+                                  <span className="text-sm text-gray-500 line-through">
+                                    {formatPrice(product.original_price!)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {hasDiscount && (
+                              <div className="text-xs text-red-600 font-medium">
+                                وفرت {formatPrice(product.original_price! - product.price)}
+                              </div>
+                            )}
+                          </div>
 
-                    {/* Actions */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-1 space-x-reverse">
-                        <button
-                          onClick={() => navigate(`/admin/products/${product.id}`)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="عرض التفاصيل"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => navigate(`/admin/products/${product.id}/edit`)}
-                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                          title="تعديل"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteProduct(product.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="حذف"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                          {/* Stats Grid */}
+                          <div className="grid grid-cols-2 gap-3 mb-4">
+                            <div className="text-center p-2 bg-gray-50 rounded-lg">
+                              <div className="flex items-center justify-center mb-1">
+                                <ShoppingCart className="w-4 h-4 text-blue-600 ml-1" />
+                                <span className="text-sm font-medium text-gray-900">{product.sales_count}</span>
+                              </div>
+                              <div className="text-xs text-gray-500">مبيع</div>
+                            </div>
+
+                            <div className="text-center p-2 bg-gray-50 rounded-lg">
+                              <div className="flex items-center justify-center mb-1">
+                                <Star className="w-4 h-4 text-yellow-400 fill-current ml-1" />
+                                <span className="text-sm font-medium text-gray-900">
+                                  {typeof product.rating === 'number' ? product.rating.toFixed(1) : '0.0'}
+                                </span>
+                              </div>
+                              <div className="text-xs text-gray-500">({product.reviews_count})</div>
+                            </div>
+
+                            <div className="text-center p-2 bg-gray-50 rounded-lg">
+                              <div className="flex items-center justify-center mb-1">
+                                <Package className="w-4 h-4 text-green-600 ml-1" />
+                                <span className="text-sm font-medium text-gray-900">{product.stock_quantity}</span>
+                              </div>
+                              <div className="text-xs text-gray-500">مخزون</div>
+                            </div>
+
+                            <div className="text-center p-2 bg-gray-50 rounded-lg">
+                              <div className="flex items-center justify-center mb-1">
+                                <Eye className="w-4 h-4 text-purple-600 ml-1" />
+                                <span className="text-sm font-medium text-gray-900">{product.views_count}</span>
+                              </div>
+                              <div className="text-xs text-gray-500">مشاهدة</div>
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-1 space-x-reverse">
+                              <button
+                                onClick={() => navigate(`/admin/products/${product.id}`)}
+                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="عرض التفاصيل"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => navigate(`/admin/products/${product.id}/edit`)}
+                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                title="تعديل"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteProduct(product.id)}
+                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="حذف"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+
+                            <div className="text-xs text-gray-400">
+                              {new Date(product.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      
-                      <div className="text-xs text-gray-400">
-                        {new Date(product.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                );
-              })}
+                    );
+                  })}
                 </div>
               )
             )}
@@ -1139,7 +1272,7 @@ const AdminProducts = () => {
                     <span>مخزون منخفض: <strong>{products.filter(p => p.stock_quantity <= 5).length}</strong></span>
                   </div>
                 </div>
-                
+
                 <div className="text-sm text-gray-500">
                   تم تحميل {products.length.toLocaleString()} من {totalProducts.toLocaleString()} منتج
                 </div>
@@ -1156,21 +1289,20 @@ const AdminProducts = () => {
                     >
                       السابق
                     </button>
-                    
+
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                       <button
                         key={page}
                         onClick={() => handlePageChange(page)}
-                        className={`px-3 py-2 text-sm font-medium rounded-md ${
-                          currentPage === page
-                            ? 'bg-blue-600 text-white'
-                            : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
-                        }`}
+                        className={`px-3 py-2 text-sm font-medium rounded-md ${currentPage === page
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+                          }`}
                       >
                         {page}
                       </button>
                     ))}
-                    
+
                     <button
                       onClick={() => handlePageChange(currentPage + 1)}
                       disabled={currentPage === totalPages}

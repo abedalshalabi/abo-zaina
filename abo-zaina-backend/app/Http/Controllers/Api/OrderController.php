@@ -7,6 +7,7 @@ use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Models\Cart;
 use App\Models\Product;
+use App\Models\Offer;
 use App\Models\City;
 use App\Models\SiteSetting;
 use Illuminate\Http\Request;
@@ -41,7 +42,7 @@ class OrderController extends Controller
         if ($request->has('items') && is_array($request->input('items'))) {
             $request->validate([
                 'items' => 'array|min:1',
-                'items.*.product_id' => 'required|exists:products,id',
+                'items.*.product_id' => 'required|integer',
                 'items.*.quantity' => 'required|integer|min:1',
                 'items.*.price' => 'required|numeric|min:0',
             ]);
@@ -93,28 +94,70 @@ class OrderController extends Controller
 
         // Check stock availability
         foreach ($items as $itemData) {
-            $product = Product::findOrFail($itemData['product_id']);
-            
-            // Check stock availability based on stock_status
-            $isAvailable = false;
-            if ($product->stock_status === 'out_of_stock') {
-                // For out_of_stock, product is not available regardless of stock quantity
-                $isAvailable = false;
-            } elseif ($product->stock_status === 'in_stock' || $product->stock_status === 'on_backorder') {
-                // For in_stock or on_backorder, allow purchase regardless of stock quantity (can go negative)
-                $isAvailable = true;
-            } elseif ($product->stock_status === 'stock_based') {
-                // For stock_based, check if stock_quantity is sufficient
-                $isAvailable = $product->stock_quantity >= $itemData['quantity'];
-            } else {
-                // Default: not available
-                $isAvailable = false;
-            }
+            $itemType = $itemData['type'] ?? 'product'; // 'product' or 'offer'
 
-            if (!$isAvailable) {
-                return response()->json([
-                    'message' => "Product {$product->name} is out of stock or insufficient quantity"
-                ], 400);
+            if ($itemType === 'offer') {
+                $offer = Offer::find($itemData['product_id']);
+                
+                if (!$offer || !$offer->isActive()) {
+                    return response()->json([
+                        'message' => "Offer not found or expired"
+                    ], 400);
+                }
+
+                // Check stock for bundle items
+                if (!empty($offer->bundle_items) && is_array($offer->bundle_items)) {
+                    foreach ($offer->bundle_items as $bundleItem) {
+                        $product = Product::find($bundleItem['product_id']);
+                        if (!$product) {
+                            return response()->json([
+                                'message' => "Product in bundle not found"
+                            ], 400);
+                        }
+
+                        $requiredQuantity = $bundleItem['quantity'] * $itemData['quantity'];
+                        
+                        // Check logic (same as product)
+                        $isAvailable = false;
+                        if ($product->stock_status === 'out_of_stock') {
+                            $isAvailable = false;
+                        } elseif ($product->stock_status === 'in_stock' || $product->stock_status === 'on_backorder') {
+                            $isAvailable = true;
+                        } elseif ($product->stock_status === 'stock_based') {
+                            $isAvailable = $product->stock_quantity >= $requiredQuantity;
+                        }
+
+                        if (!$isAvailable) {
+                            return response()->json([
+                                'message' => "Product {$product->name} in bundle is out of stock"
+                            ], 400);
+                        }
+                    }
+                }
+            } else {
+                // Regular Product Check
+                $product = Product::find($itemData['product_id']);
+                
+                if (!$product) {
+                    return response()->json([
+                        'message' => "Product not found"
+                    ], 400);
+                }
+
+                $isAvailable = false;
+                if ($product->stock_status === 'out_of_stock') {
+                    $isAvailable = false;
+                } elseif ($product->stock_status === 'in_stock' || $product->stock_status === 'on_backorder') {
+                    $isAvailable = true;
+                } elseif ($product->stock_status === 'stock_based') {
+                    $isAvailable = $product->stock_quantity >= $itemData['quantity'];
+                }
+
+                if (!$isAvailable) {
+                    return response()->json([
+                        'message' => "Product {$product->name} is out of stock or insufficient quantity"
+                    ], 400);
+                }
             }
         }
 
@@ -168,27 +211,65 @@ class OrderController extends Controller
 
             // Create order items and update stock
             foreach ($items as $itemData) {
-                $product = Product::findOrFail($itemData['product_id']);
+                $itemType = $itemData['type'] ?? 'product';
                 $itemTotal = $itemData['price'] * $itemData['quantity'];
-                
-                $order->items()->create([
-                    'product_id' => $itemData['product_id'],
-                    'product_name' => $product->name,
-                    'product_sku' => $product->sku,
-                    'quantity' => $itemData['quantity'],
-                    'price' => $itemData['price'],
-                    'total' => $itemTotal,
-                ]);
 
-                // Update product stock
-                $product->decrement('stock_quantity', $itemData['quantity']);
-                $product->increment('sales_count', $itemData['quantity']);
-                
-                // If stock_status is 'stock_based', update in_stock based on new stock_quantity
-                if ($product->stock_status === 'stock_based') {
-                    $product->refresh(); // Refresh to get updated stock_quantity
-                    $product->in_stock = $product->stock_quantity > 0;
-                    $product->save();
+                if ($itemType === 'offer') {
+                    $offer = Offer::find($itemData['product_id']);
+                    
+                    // Create order item for the Bundle
+                    $order->items()->create([
+                        'product_id' => null, // Bundle has no single product ID in products table
+                        'product_name' => $offer->title ?? 'Bundle Offer',
+                        'product_sku' => 'BUNDLE-' . $itemData['product_id'],
+                        'quantity' => $itemData['quantity'],
+                        'price' => $itemData['price'],
+                        'total' => $itemTotal,
+                    ]);
+
+                    // Deduct stock for constituent products
+                    if (!empty($offer->bundle_items) && is_array($offer->bundle_items)) {
+                        foreach ($offer->bundle_items as $bundleItem) {
+                            $product = Product::find($bundleItem['product_id']);
+                            if ($product) {
+                                $qtyToDeduct = $bundleItem['quantity'] * $itemData['quantity'];
+                                $product->decrement('stock_quantity', $qtyToDeduct);
+                                $product->increment('sales_count', $qtyToDeduct);
+                                
+                                if ($product->stock_status === 'stock_based') {
+                                    $product->refresh();
+                                    $product->in_stock = $product->stock_quantity > 0;
+                                    $product->save();
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Update Offer stats if needed
+                    $offer->increment('sold_count', $itemData['quantity']);
+
+                } else {
+                    // Regular Product
+                    $product = Product::find($itemData['product_id']);
+                    
+                    $order->items()->create([
+                        'product_id' => $itemData['product_id'],
+                        'product_name' => $product->name,
+                        'product_sku' => $product->sku,
+                        'quantity' => $itemData['quantity'],
+                        'price' => $itemData['price'],
+                        'total' => $itemTotal,
+                    ]);
+
+                    // Update product stock
+                    $product->decrement('stock_quantity', $itemData['quantity']);
+                    $product->increment('sales_count', $itemData['quantity']);
+                    
+                    if ($product->stock_status === 'stock_based') {
+                        $product->refresh();
+                        $product->in_stock = $product->stock_quantity > 0;
+                        $product->save();
+                    }
                 }
             }
 
@@ -278,12 +359,176 @@ class OrderController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        $order->update($validated);
+        // Check if order is being cancelled
+        Log::info('Order Update Request', [
+            'order_id' => $order->id,
+            'current_status' => $order->order_status,
+            'new_status' => $validated['order_status'] ?? null,
+            'has_items' => $order->items->count()
+        ]);
+
+        if (isset($validated['order_status']) && $validated['order_status'] === 'cancelled' && $order->order_status !== 'cancelled') {
+            Log::info('Entering cancellation logic');
+            DB::beginTransaction();
+            try {
+                foreach ($order->items as $item) {
+                     Log::info('Processing item for restoration', [
+                        'item_id' => $item->id,
+                        'product_id' => $item->product_id,
+                        'sku' => $item->product_sku,
+                        'quantity' => $item->quantity
+                    ]);
+
+                    // Scenario 1: Regular Product (has product_id)
+                    if ($item->product_id) {
+                        $product = Product::find($item->product_id);
+                        if ($product) {
+                            $product->increment('stock_quantity', $item->quantity);
+                            $product->decrement('sales_count', $item->quantity);
+                            
+                            if ($product->stock_status === 'stock_based') {
+                                $product->refresh();
+                                $product->in_stock = $product->stock_quantity > 0;
+                                $product->save();
+                            }
+                        }
+                    }
+                    // Scenario 2: Bundle Offer (no product_id, but SKU indicates Bundle)
+                    elseif (str_starts_with($item->product_sku, 'BUNDLE-')) {
+                        $offerId = (int) str_replace('BUNDLE-', '', $item->product_sku);
+                        Log::info('Restoring bundle offer', ['offer_id' => $offerId]);
+                        $offer = Offer::find($offerId);
+                        
+                        if ($offer) {
+                            $offer->decrement('sold_count', $item->quantity);
+
+                            if (!empty($offer->bundle_items) && is_array($offer->bundle_items)) {
+                                foreach ($offer->bundle_items as $bundleItem) {
+                                    $product = Product::find($bundleItem['product_id']);
+                                    if ($product) {
+                                        $qtyToRestore = $bundleItem['quantity'] * $item->quantity;
+                                        Log::info('Restoring bundle product', [
+                                            'product_id' => $product->id, 
+                                            'qty' => $qtyToRestore
+                                        ]);
+                                        $product->increment('stock_quantity', $qtyToRestore);
+                                        $product->decrement('sales_count', $qtyToRestore);
+
+                                        if ($product->stock_status === 'stock_based') {
+                                            $product->refresh();
+                                            $product->in_stock = $product->stock_quantity > 0;
+                                            $product->save();
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            Log::warning('Offer not found for restoration', ['offer_id' => $offerId]);
+                        }
+                    } else {
+                         Log::warning('Unknown item type for restoration', ['item' => $item]);
+                    }
+                }
+                
+                $order->update($validated);
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('Failed to restore stock on order cancellation', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage()
+                ]);
+                return response()->json([
+                    'message' => 'Failed to cancel order and restore stock'
+                ], 500);
+            }
+        } else {
+            $order->update($validated);
+        }
 
         return response()->json([
             'message' => 'Order updated successfully',
             'data' => new OrderResource($order->load('items.product'))
         ]);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Order $order): JsonResponse
+    {
+        DB::beginTransaction();
+        try {
+            // Restore stock before deleting
+            foreach ($order->items as $item) {
+                 Log::info('Restoring stock for deleted item', [
+                    'order_id' => $order->id,
+                    'item_id' => $item->id,
+                    'sku' => $item->product_sku
+                ]);
+
+                // Scenario 1: Regular Product (has product_id)
+                if ($item->product_id) {
+                    $product = Product::find($item->product_id);
+                    if ($product) {
+                        $product->increment('stock_quantity', $item->quantity);
+                        $product->decrement('sales_count', $item->quantity);
+                        
+                        if ($product->stock_status === 'stock_based') {
+                            $product->refresh();
+                            $product->in_stock = $product->stock_quantity > 0;
+                            $product->save();
+                        }
+                    }
+                }
+                // Scenario 2: Bundle Offer (no product_id, but SKU indicates Bundle)
+                elseif (str_starts_with($item->product_sku, 'BUNDLE-')) {
+                    $offerId = (int) str_replace('BUNDLE-', '', $item->product_sku);
+                    $offer = Offer::find($offerId);
+                    
+                    if ($offer) {
+                        $offer->decrement('sold_count', $item->quantity);
+
+                        if (!empty($offer->bundle_items) && is_array($offer->bundle_items)) {
+                            foreach ($offer->bundle_items as $bundleItem) {
+                                $product = Product::find($bundleItem['product_id']);
+                                if ($product) {
+                                    $qtyToRestore = $bundleItem['quantity'] * $item->quantity;
+                                    $product->increment('stock_quantity', $qtyToRestore);
+                                    $product->decrement('sales_count', $qtyToRestore);
+
+                                    if ($product->stock_status === 'stock_based') {
+                                        $product->refresh();
+                                        $product->in_stock = $product->stock_quantity > 0;
+                                        $product->save();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            $order->items()->delete();
+            $order->delete();
+            
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Order deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to delete order', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage()
+            ]);
+            return response()->json([
+                'message' => 'Failed to delete order',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
