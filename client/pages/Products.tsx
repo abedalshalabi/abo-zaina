@@ -208,13 +208,18 @@ const Products = () => {
    * This is the central function that handles all category-related data loading
    */
   const initializeCategoryData = useCallback(async (category: any | null) => {
-    if (!category) {
-      // Reset everything
+    // Clear everything immediately and synchronously
+    setSubcategories([]);
+    setCategoryFilters([]);
+    setSelectedFilters({});
+
+    if (!category || category === null) {
+      // Thorough reset
       setSelectedCategoryId(null);
       setSelectedSubcategory(null);
+      // Ensure we clear the lists again just in case
       setSubcategories([]);
       setCategoryFilters([]);
-      setSelectedFilters({});
       return;
     }
 
@@ -245,16 +250,13 @@ const Products = () => {
       // This is a parent category
       setSelectedCategoryId(categoryId);
       setSelectedSubcategory(null);
-      setSelectedFilters({});
 
       // Check if category has children
       if (category.has_children) {
         // Has subcategories - load them, but no filters yet
         await loadSubcategories(categoryId);
-        setCategoryFilters([]);
       } else {
         // No subcategories - load filters directly for this category
-        setSubcategories([]);
         await loadCategoryFilters(categoryId);
       }
     }
@@ -419,23 +421,19 @@ const Products = () => {
     setSearchQuery("");
     setSortBy("default");
 
-    const params = new URLSearchParams(location.search);
-    params.delete("category_id");
-    params.delete("brand_id");
-    params.delete("search");
-    params.delete("price_min");
-    params.delete("price_max");
-    params.delete("sort");
-    const newUrl = params.toString() ? `${location.pathname}?${params.toString()}` : location.pathname;
-    navigate(newUrl, { replace: true });
-  }, [location.pathname, location.search, navigate]);
+    // Clear URL
+    navigate(location.pathname, { replace: true });
+  }, [location.pathname, navigate]);
 
-  /**
-   * Handle category selection from UI
-   * Updates URL and initializes category data
-   */
+  // Handle category selection from UI
+  // Updates URL and initializes category data
   const handleCategorySelection = useCallback(async (category: any | null) => {
     const params = new URLSearchParams(location.search);
+
+    // Synchronously clear all dependent filters when category changes
+    setSubcategories([]);
+    setCategoryFilters([]);
+    setSelectedFilters({});
 
     if (!category) {
       // Clear category selection
@@ -443,7 +441,14 @@ const Products = () => {
       params.delete('brand_id');
       params.delete('page');
 
-      // Initialize category data (will reset everything)
+      setSelectedCategoryId(null);
+      setSelectedSubcategory(null);
+
+      // Navigate immediately
+      const newUrl = params.toString() ? `${location.pathname}?${params.toString()}` : location.pathname;
+      navigate(newUrl, { replace: true });
+
+      // Also call data reset
       await initializeCategoryData(null);
     } else {
       const categoryId = Number(category.id);
@@ -454,17 +459,26 @@ const Products = () => {
       params.delete('search');
       params.delete('page');
 
-      // Initialize category data (loads subcategories and filters)
+      // Update URL first
+      const newUrl = params.toString()
+        ? `${location.pathname}?${params.toString()}`
+        : location.pathname;
+
+      navigate(newUrl, { replace: true });
+
+      // Initialize data for the new category
       await initializeCategoryData(category);
     }
-
-    // Update URL
-    const newUrl = params.toString()
-      ? `${location.pathname}?${params.toString()}`
-      : location.pathname;
-
-    navigate(newUrl, { replace: true });
   }, [location.pathname, location.search, navigate, initializeCategoryData]);
+
+  // Safety net: ensure sub-filters are hidden when no category is selected
+  useEffect(() => {
+    if (selectedCategoryId === null) {
+      if (subcategories.length > 0) setSubcategories([]);
+      if (categoryFilters.length > 0) setCategoryFilters([]);
+      if (Object.keys(selectedFilters).length > 0) setSelectedFilters({});
+    }
+  }, [selectedCategoryId]);
 
   const handleBrandSelection = (brandName: string) => {
     setSelectedBrand(brandName);
