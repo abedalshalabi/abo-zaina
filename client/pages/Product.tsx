@@ -160,11 +160,13 @@ const Product = () => {
   const [whatsappNumber, setWhatsappNumber] = useState<string>("");
   const [headerSettings, setHeaderSettings] = useState<any>({});
   const [showShareMenu, setShowShareMenu] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadProduct = async () => {
       if (id) {
         try {
+          setLoading(true);
           const [productResponse, categoriesResponse, settingsResponse] = await Promise.all([
             productsAPI.getProduct(Number(id)),
             categoriesAPI.getCategories().catch((error) => {
@@ -304,6 +306,8 @@ const Product = () => {
         } catch (err) {
           console.error('Error loading product from API:', err);
           navigate('/products');
+        } finally {
+          setLoading(false);
         }
       }
     };
@@ -457,19 +461,42 @@ const Product = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 arabic">
+        <Header
+          showSearch={true}
+          showActions={true}
+        />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-lg text-gray-600">جاري تحميل تفاصيل المنتج...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!product) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-4">📦</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">المنتج غير موجود</h2>
-          <p className="text-gray-600 mb-4">عذراً، لم يتم العثور على المنتج المطلوب</p>
-          <Link
-            to="/products"
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            العودة للمنتجات
-          </Link>
+      <div className="min-h-screen bg-gray-50 arabic">
+        <Header
+          showSearch={true}
+          showActions={true}
+        />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="text-6xl mb-4">📦</div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">المنتج غير موجود</h2>
+            <p className="text-gray-600 mb-4">عذراً، لم يتم العثور على المنتج المطلوب</p>
+            <Link
+              to="/products"
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              العودة للمنتجات
+            </Link>
+          </div>
         </div>
       </div>
     );
