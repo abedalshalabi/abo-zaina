@@ -115,7 +115,7 @@ const AdminProductCreate: React.FC = () => {
       setLoading(true);
       const [categoriesResponse, brandsResponse] = await Promise.all([
         adminCategoriesAPI.getCategories(),
-        adminBrandsAPI.getBrands()
+        adminBrandsAPI.getBrands({ per_page: 1000 })
       ]);
 
       setCategories(categoriesResponse.data);

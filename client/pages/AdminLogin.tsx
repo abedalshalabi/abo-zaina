@@ -26,11 +26,11 @@ const AdminLogin = () => {
 
     try {
       const data = await adminAuthAPI.login(email, password);
-      
+
       // Store admin token
       localStorage.setItem("admin_token", data.token);
       localStorage.setItem("admin_user", JSON.stringify(data.admin));
-      
+
       // Redirect to admin dashboard
       navigate("/admin/dashboard");
     } catch (err: any) {
@@ -70,7 +70,7 @@ const AdminLogin = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pr-10 pl-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="admin@abozaina.com"
+                  placeholder="أدخل البريد الإلكتروني"
                   required
                 />
               </div>
@@ -131,22 +131,12 @@ const AdminLogin = () => {
               )}
             </button>
           </form>
-
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <h3 className="text-sm font-medium text-gray-700 mb-2">بيانات الدخول التجريبية:</h3>
-            <div className="space-y-1 text-xs text-gray-600">
-              <p><strong>Super Admin:</strong> admin@abozaina.com / admin123</p>
-              <p><strong>Admin:</strong> admin@example.com / admin123</p>
-              <p><strong>Manager:</strong> manager@example.com / admin123</p>
-            </div>
-          </div>
         </div>
 
         {/* Footer */}
         <div className="text-center mt-6">
           <p className="text-sm text-gray-500">
-            © 2024 أبو زينة - جميع الحقوق محفوظة
+            © {new Date().getFullYear()} أبو زينة - جميع الحقوق محفوظة
           </p>
         </div>
       </div>

@@ -164,7 +164,7 @@ const AdminProductEdit: React.FC = () => {
       const [productResponse, categoriesResponse, brandsResponse] = await Promise.all([
         adminProductsAPI.getProduct(Number(id).toString()),
         adminCategoriesAPI.getCategories(),
-        adminBrandsAPI.getBrands()
+        adminBrandsAPI.getBrands({ per_page: 1000 })
       ]);
 
       setProduct(productResponse.data);
