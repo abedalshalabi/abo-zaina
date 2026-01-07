@@ -80,10 +80,10 @@ const SEO = ({
     setMetaTag('property', 'og:type', type);
     setMetaTag('property', 'og:locale', 'ar_SA');
     setMetaTag('property', 'og:site_name', 'أبو زينة للتقنيات');
-    
+
     // Logo for search engines (Google)
     setMetaTag('itemprop', 'logo', fullImageUrl);
-    
+
     // Add logo link tag
     let logoLink = document.querySelector('link[rel="image_src"]') as HTMLLinkElement;
     if (!logoLink) {
@@ -125,16 +125,50 @@ const SEO = ({
     document.documentElement.setAttribute('lang', 'ar');
     document.documentElement.setAttribute('dir', 'rtl');
 
+    // Base Structured Data (Organization and Website)
+    const baseUrl = siteUrl;
+    const baseStructuredData = [
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "@id": `${baseUrl}/#organization`,
+        "name": "أبو زينة للتقنيات",
+        "url": baseUrl,
+        "logo": {
+          "@type": "ImageObject",
+          "url": `${baseUrl}/logo-favicon.png`,
+          "width": "512",
+          "height": "512"
+        },
+        "image": `${baseUrl}/logo-favicon.png`,
+        "sameAs": [
+          "https://www.facebook.com/abozaina.tech",
+          "https://www.instagram.com/abozaina.tech"
+        ]
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "@id": `${baseUrl}/#website`,
+        "name": "أبو زينة للتقنيات",
+        "url": baseUrl,
+        "publisher": {
+          "@id": `${baseUrl}/#organization`
+        }
+      }
+    ];
+
     // Add structured data (support both single object and array)
-    if (structuredData) {
+    if (structuredData || baseStructuredData) {
       // Remove all existing structured data scripts
       const existingScripts = document.querySelectorAll('script[type="application/ld+json"]');
       existingScripts.forEach(script => script.remove());
 
-      // Handle array of structured data
-      const dataArray = Array.isArray(structuredData) ? structuredData : [structuredData];
-      
-      dataArray.forEach((data) => {
+      // Merge user structured data with base data
+      const dataArray = Array.isArray(structuredData) ? structuredData : (structuredData ? [structuredData] : []);
+      const finalDataArray = [...baseStructuredData, ...dataArray];
+
+      finalDataArray.forEach((data) => {
         const script = document.createElement('script');
         script.type = 'application/ld+json';
         script.text = JSON.stringify(data);
