@@ -764,16 +764,15 @@ const Products = () => {
       const uniqueBrandsArray = Array.from(uniqueBrands.values());
       const brandListForMainCategory = allBrands.length > 0 ? allBrands : uniqueBrandsArray;
 
-      // Update brands list with unique brands from filtered products
-      if (!append) {
-        if (isMainCategorySelected) {
-          setBrands(brandListForMainCategory);
-        } else {
-          setBrands(uniqueBrandsArray);
-        }
-      } else {
-        if (isMainCategorySelected) {
-          setBrands(brandListForMainCategory);
+      // Update brands list ONLY when no specific brand is selected
+      // This ensures that choosing a brand doesn't cause other brands in the same category to disappear from the dropdown
+      if (selectedBrand === "الكل") {
+        if (!append) {
+          if (isMainCategorySelected) {
+            setBrands(brandListForMainCategory);
+          } else {
+            setBrands(uniqueBrandsArray);
+          }
         } else {
           // For pagination, merge with existing brands
           setBrands(prev => {

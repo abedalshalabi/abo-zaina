@@ -157,7 +157,7 @@ const AdminProducts = () => {
     try {
       const [categoriesData, brandsData] = await Promise.all([
         adminCategoriesAPI.getCategories(),
-        adminBrandsAPI.getBrands()
+        adminBrandsAPI.getBrands({ per_page: 1000 })
       ]);
 
       setCategories(categoriesData.data || []);
