@@ -40,9 +40,7 @@ class CategoryResource extends JsonResource
             }),
             'meta_title' => $this->meta_title,
             'meta_description' => $this->meta_description,
-            'products_count' => $this->whenLoaded('products', function () {
-                return $this->products->count();
-            }),
+            'products_count' => $this->products_count ?? 0,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

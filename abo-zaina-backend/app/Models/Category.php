@@ -114,6 +114,21 @@ class Category extends Model
     }
 
     /**
+     * Get total products count including descendants
+     */
+    public function getTotalProductsCount(): int
+    {
+        $ids = $this->getAllDescendantIds();
+        
+        return Product::where(function($q) use ($ids) {
+            $q->whereIn('category_id', $ids)
+              ->orWhereHas('categories', function($query) use ($ids) {
+                  $query->whereIn('categories.id', $ids);
+              });
+        })->count();
+    }
+
+    /**
      * Static method to get all descendant IDs for a given category ID
      */
     public static function getAllDescendantIdsFor($categoryId): array

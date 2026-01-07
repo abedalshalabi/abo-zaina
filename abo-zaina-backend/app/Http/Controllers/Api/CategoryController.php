@@ -355,7 +355,9 @@ class CategoryController extends Controller
             });
         }
 
-        $categories = $query->with(['parent', 'children'])->paginate($request->get('per_page', 20));
+        $categories = $query->with(['parent', 'children'])
+            ->withCount('products')
+            ->paginate($request->get('per_page', 20));
 
         return response()->json([
             'data' => CategoryResource::collection($categories),
