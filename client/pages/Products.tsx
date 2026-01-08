@@ -109,16 +109,18 @@ const Products = () => {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  // Map URL paths to category names
+  // Map URL paths to category names for SEO-friendly URLs
   const pathToCategoryMap: { [key: string]: string } = {
-    "/kitchen": "أجهزة المطبخ",
-    "/cooling": "التكييف والتبريد",
-    "/small-appliances": "الأجهزة الصغيرة",
-    "/washing": "أجهزة الغسيل",
-    "/cleaning": "أجهزة التنظيف",
+    "/home-appliances": "الأجهزة المنزلية",
     "/electronics": "الإلكترونيات",
-    "/lighting": "الإلكترونيات", // Map lighting to electronics for now
-    "/tools": "الأجهزة الصغيرة" // Map tools to small appliances for now
+    "/personal-care": "العناية الشخصية",
+    "/cooling": "أجهزة التدفئة والتبريد",
+    "/small-appliances": "الأجهزة المنزلية الصغيرة",
+    "/kitchen": "أجهزة المطبخ الصغيرة",
+    "/washing": "غسالات",
+    "/cleaning": "غسالات", // Map cleaning to washing (or whichever fits best in DB)
+    "/lighting": "الإضاءة",
+    "/tools": "العدد والأدوات",
   };
 
   const flattenCategories = useCallback((categoriesData: any[]): any[] => {
@@ -369,8 +371,24 @@ const Products = () => {
               await initializeCategoryData(category);
             }
           }
+        } else if (pathToCategoryMap[location.pathname]) {
+          // Handle SEO-friendly paths (e.g., /kitchen)
+          const categoryName = pathToCategoryMap[location.pathname];
+          const category =
+            categories.find(cat => cat.name === categoryName) ||
+            allCategoriesList.find(cat => cat.name === categoryName);
+
+          if (category) {
+            const currentCategoryId = selectedSubcategory
+              ? Number(selectedSubcategory.id)
+              : selectedCategoryId;
+
+            if (currentCategoryId !== Number(category.id)) {
+              await initializeCategoryData(category);
+            }
+          }
         } else {
-          // No category_id in URL - reset if we have a selection
+          // No category_id or specialized path in URL - reset if we have a selection
           if (selectedCategoryId !== null || selectedSubcategory !== null) {
             await initializeCategoryData(null);
           }

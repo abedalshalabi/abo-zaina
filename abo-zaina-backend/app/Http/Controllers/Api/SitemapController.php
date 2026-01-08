@@ -12,9 +12,6 @@ use Illuminate\Support\Facades\Cache;
 
 class SitemapController extends Controller
 {
-    /**
-     * Generate and return sitemap.xml
-     */
     public function index(): Response
     {
         // Cache sitemap for 24 hours
@@ -38,6 +35,7 @@ class SitemapController extends Controller
         
         $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
         $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"' . "\n";
+        $xml .= '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"' . "\n";
         $xml .= '        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"' . "\n";
         $xml .= '        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9' . "\n";
         $xml .= '        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">' . "\n\n";
@@ -45,25 +43,42 @@ class SitemapController extends Controller
         // Homepage
         $xml .= $this->addUrl($siteUrl . '/', '1.0', 'daily', now()->toDateString());
 
+        // Specialized Category Paths (SEO Aliases)
+        $specialPaths = [
+            ['url' => '/home-appliances', 'name' => 'الأجهزة المنزلية'],
+            ['url' => '/electronics', 'name' => 'الإلكترونيات'],
+            ['url' => '/personal-care', 'name' => 'العناية الشخصية'],
+            ['url' => '/cooling', 'name' => 'أجهزة التدفئة والتبريد'],
+            ['url' => '/small-appliances', 'name' => 'الأجهزة المنزلية الصغيرة'],
+            ['url' => '/kitchen', 'name' => 'أجهزة المطبخ الصغيرة'],
+            ['url' => '/washing', 'name' => 'غسالات'],
+            ['url' => '/lighting', 'name' => 'الإضاءة'],
+            ['url' => '/tools', 'name' => 'العدد والأدوات'],
+        ];
+
+        foreach ($specialPaths as $path) {
+            $xml .= $this->addUrl($siteUrl . $path['url'], '0.9', 'weekly', now()->toDateString());
+        }
+
         // Products Page
-        $xml .= $this->addUrl($siteUrl . '/products', '0.9', 'daily', now()->toDateString());
+        $xml .= $this->addUrl($siteUrl . '/products', '0.8', 'daily', now()->toDateString());
 
         // Categories Page
-        $xml .= $this->addUrl($siteUrl . '/categories', '0.8', 'weekly', now()->toDateString());
+        $xml .= $this->addUrl($siteUrl . '/categories', '0.7', 'weekly', now()->toDateString());
 
         // Brands Page
-        $xml .= $this->addUrl($siteUrl . '/brands', '0.8', 'weekly', now()->toDateString());
+        $xml .= $this->addUrl($siteUrl . '/brands', '0.7', 'weekly', now()->toDateString());
 
         // Offers Page
         $xml .= $this->addUrl($siteUrl . '/offers', '0.8', 'daily', now()->toDateString());
 
         // Static Pages
         $staticPages = [
-            ['url' => '/about', 'priority' => '0.6', 'changefreq' => 'monthly'],
-            ['url' => '/contact', 'priority' => '0.6', 'changefreq' => 'monthly'],
-            ['url' => '/shipping', 'priority' => '0.5', 'changefreq' => 'monthly'],
-            ['url' => '/returns', 'priority' => '0.5', 'changefreq' => 'monthly'],
-            ['url' => '/warranty', 'priority' => '0.5', 'changefreq' => 'monthly'],
+            ['url' => '/about', 'priority' => '0.5', 'changefreq' => 'monthly'],
+            ['url' => '/contact', 'priority' => '0.5', 'changefreq' => 'monthly'],
+            ['url' => '/shipping', 'priority' => '0.4', 'changefreq' => 'monthly'],
+            ['url' => '/returns', 'priority' => '0.4', 'changefreq' => 'monthly'],
+            ['url' => '/warranty', 'priority' => '0.4', 'changefreq' => 'monthly'],
         ];
 
         foreach ($staticPages as $page) {
@@ -71,40 +86,56 @@ class SitemapController extends Controller
         }
 
         // Active Products
-        $products = Product::where('is_active', true)
-            ->select('id', 'updated_at')
+        $products = Product::where('is_active', 1)
+            ->select('id', 'name', 'images', 'updated_at')
             ->orderBy('updated_at', 'desc')
             ->get();
 
         foreach ($products as $product) {
             $lastmod = $product->updated_at ? $product->updated_at->toDateString() : now()->toDateString();
-            $xml .= $this->addUrl($siteUrl . '/product/' . $product->id, '0.7', 'weekly', $lastmod);
+            
+            // Get product image
+            $imageUrl = null;
+            if (is_array($product->images) && !empty($product->images)) {
+                $firstImage = $product->images[0];
+                $imageUrl = is_array($firstImage) ? ($firstImage['image_url'] ?? null) : $firstImage;
+            }
+
+            $imageXml = "";
+            if ($imageUrl) {
+                $imageXml = "    <image:image>\n";
+                $imageXml .= "      <image:loc>" . htmlspecialchars($imageUrl, ENT_XML1, 'UTF-8') . "</image:loc>\n";
+                $imageXml .= "      <image:title>" . htmlspecialchars($product->name, ENT_XML1, 'UTF-8') . "</image:title>\n";
+                $imageXml .= "    </image:image>\n";
+            }
+
+            $xml .= $this->addUrl($siteUrl . '/product/' . $product->id, '0.7', 'weekly', $lastmod, $imageXml);
         }
 
         // Active Categories
-        $categories = Category::where('is_active', true)
-            ->select('id', 'updated_at')
+        $categories = Category::where('is_active', 1)
+            ->select('id', 'name', 'updated_at')
             ->orderBy('updated_at', 'desc')
             ->get();
 
         foreach ($categories as $category) {
             $lastmod = $category->updated_at ? $category->updated_at->toDateString() : now()->toDateString();
-            $xml .= $this->addUrl($siteUrl . '/products?category_id=' . $category->id, '0.7', 'weekly', $lastmod);
+            $xml .= $this->addUrl($siteUrl . '/products?category_id=' . $category->id, '0.6', 'weekly', $lastmod);
         }
 
         // Active Brands
-        $brands = Brand::where('is_active', true)
+        $brands = Brand::where('is_active', 1)
             ->select('id', 'updated_at')
             ->orderBy('updated_at', 'desc')
             ->get();
 
         foreach ($brands as $brand) {
             $lastmod = $brand->updated_at ? $brand->updated_at->toDateString() : now()->toDateString();
-            $xml .= $this->addUrl($siteUrl . '/products?brand_id=' . $brand->id, '0.7', 'weekly', $lastmod);
+            $xml .= $this->addUrl($siteUrl . '/products?brand_id=' . $brand->id, '0.5', 'weekly', $lastmod);
         }
 
         // Active Offers
-        $offers = Offer::where('is_active', true)
+        $offers = Offer::where('is_active', 1)
             ->where('ends_at', '>', now())
             ->select('id', 'updated_at')
             ->orderBy('updated_at', 'desc')
@@ -123,13 +154,14 @@ class SitemapController extends Controller
     /**
      * Add a URL entry to sitemap
      */
-    private function addUrl(string $loc, string $priority, string $changefreq, string $lastmod): string
+    private function addUrl(string $loc, string $priority, string $changefreq, string $lastmod, string $extraXml = ""): string
     {
         $xml = "  <url>\n";
         $xml .= "    <loc>" . htmlspecialchars($loc, ENT_XML1, 'UTF-8') . "</loc>\n";
         $xml .= "    <lastmod>" . $lastmod . "</lastmod>\n";
         $xml .= "    <changefreq>" . $changefreq . "</changefreq>\n";
         $xml .= "    <priority>" . $priority . "</priority>\n";
+        $xml .= $extraXml;
         $xml .= "  </url>\n\n";
         
         return $xml;

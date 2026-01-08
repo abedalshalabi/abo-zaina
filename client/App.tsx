@@ -75,6 +75,14 @@ function App() {
 
               {/* Category Routes - All redirect to Products page with category filter */}
               <Route
+                path="/home-appliances"
+                element={<Products />}
+              />
+              <Route
+                path="/personal-care"
+                element={<Products />}
+              />
+              <Route
                 path="/kitchen"
                 element={<Products />}
               />
