@@ -45,7 +45,7 @@ const Index = () => {
       try {
         setLoading(true);
         setError("");
-        
+
         // Load featured and latest products
         const [featuredResponse, latestResponse, categoriesResponse, brandsResponse, settingsResponse, sliderResponse] = await Promise.all([
           productsAPI.getFeaturedProducts(),
@@ -55,7 +55,7 @@ const Index = () => {
           settingsAPI.getSettings('header'),
           sliderAPI.getSliderItems().catch(() => ({ data: [] })) // Fallback to empty array if slider API fails
         ]);
-        
+
         setFeaturedProducts(featuredResponse.data || []);
         setLatestProducts(latestResponse.data || []);
         setCategories(categoriesResponse.data || []);
@@ -63,7 +63,7 @@ const Index = () => {
         setSocialSettings(settingsResponse.data || {});
         setHeaderSettings(settingsResponse.data || {});
         setSliderItems(sliderResponse.data || []);
-        
+
         // Debug: Log categories to check show_in_slider
         console.log('Categories loaded:', categoriesResponse.data);
         console.log('Categories with show_in_slider:', categoriesResponse.data?.filter((cat: any) => cat.show_in_slider));
@@ -74,12 +74,12 @@ const Index = () => {
         setLoading(false);
       }
     };
-    
+
     loadData();
   }, []);
 
-    // Use categories from API or fallback to static data
-    // Filter categories to show only those with show_in_slider = true
+  // Use categories from API or fallback to static data
+  // Filter categories to show only those with show_in_slider = true
   const mainCategories = categories.length > 0 ? (() => {
     const filtered = categories.filter(cat => {
       // Handle both boolean true and string "true" or "1"
@@ -169,10 +169,10 @@ const Index = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 arabic">
-        <Header 
-        showSearch={true}
-        showActions={true}
-      />
+        <Header
+          showSearch={true}
+          showActions={true}
+        />
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -187,16 +187,16 @@ const Index = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 arabic">
-        <Header 
-        showSearch={true}
-        showActions={true}
-      />
+        <Header
+          showSearch={true}
+          showActions={true}
+        />
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="text-red-500 text-6xl mb-4">⚠️</div>
             <p className="text-xl text-gray-600 mb-4">{error}</p>
-            <button 
-              onClick={() => window.location.reload()} 
+            <button
+              onClick={() => window.location.reload()}
               className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
             >
               إعادة المحاولة
@@ -208,14 +208,14 @@ const Index = () => {
   }
 
   const siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
-  
+
   // Get logo URL (use header_logo if available, otherwise use placeholder)
-  const logoUrl = headerSettings.header_logo 
-    ? (headerSettings.header_logo.startsWith('http') 
-        ? headerSettings.header_logo 
-        : `${siteUrl}${headerSettings.header_logo.startsWith('/') ? '' : '/'}${headerSettings.header_logo}`)
+  const logoUrl = headerSettings.header_logo
+    ? (headerSettings.header_logo.startsWith('http')
+      ? headerSettings.header_logo
+      : `${siteUrl}${headerSettings.header_logo.startsWith('/') ? '' : '/'}${headerSettings.header_logo}`)
     : `${siteUrl}/placeholder.svg`;
-  
+
   // Get social media links for sameAs
   const socialLinks = [
     socialSettings.social_media_facebook,
@@ -354,10 +354,13 @@ const Index = () => {
         image={headerSettings.header_logo || '/placeholder.svg'}
         structuredData={structuredDataArray}
       />
-      <Header 
+      <Header
         showSearch={true}
         showActions={true}
       />
+
+      {/* SEO H1 - Screen reader only, hidden visually */}
+      <h1 className="sr-only">أبو زينة للتقنيات - أجهزة كهربائية وإلكترونيات في جنين</h1>
 
       {/* Hero Slider Section */}
       <section className="relative w-full overflow-hidden">
@@ -376,9 +379,9 @@ const Index = () => {
                   <div
                     key={item.id}
                     className={`relative ${item.background_color ? `bg-gradient-to-r ${item.background_color}` : ''} ${item.text_color} py-6 sm:py-8 lg:py-4 overflow-hidden min-h-[180px] sm:min-h-[300px] lg:min-h-[180px]`}
-                    style={item.image && !item.background_color ? { 
-                      backgroundImage: `url(${item.image})`, 
-                      backgroundSize: '100% 100%', 
+                    style={item.image && !item.background_color ? {
+                      backgroundImage: `url(${item.image})`,
+                      backgroundSize: '100% 100%',
                       backgroundPosition: 'center',
                       backgroundRepeat: 'no-repeat',
                       width: '100%',
@@ -405,7 +408,7 @@ const Index = () => {
                         />
                       </div>
                     )}
-                    
+
                     <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 h-full flex items-center">
                       <div className="max-w-4xl w-full">
                         {item.title && (
@@ -515,48 +518,45 @@ const Index = () => {
             {mainCategories.map((category, index) => {
               // Get isActive prop from SimpleCarousel3D (it will be passed via cloneElement)
               const CategorySlide = ({ isActive }: { isActive?: boolean }) => (
-              <Link
-                to={category.href}
+                <Link
+                  to={category.href}
                   className="group block bg-transparent transition-all duration-500"
                   style={{
                     perspective: '1000px',
                     transformStyle: 'preserve-3d'
                   }}
                 >
-                  <div 
-                    className={`relative h-28 sm:h-36 md:h-48 bg-transparent overflow-hidden transition-all duration-500 transform ${
-                      isActive ? 'scale-110 -translate-y-3' : 'group-hover:scale-105 group-hover:-translate-y-3'
-                    }`}
+                  <div
+                    className={`relative h-28 sm:h-36 md:h-48 bg-transparent overflow-hidden transition-all duration-500 transform ${isActive ? 'scale-110 -translate-y-3' : 'group-hover:scale-105 group-hover:-translate-y-3'
+                      }`}
                     style={{
                       transform: 'perspective(1000px) rotateY(0deg) rotateX(0deg)',
                       transformStyle: 'preserve-3d'
                     }}
                   >
-                  <img
-                    src={category.image}
-                    alt={category.name}
-                      className={`w-full h-full object-contain transition-all duration-500 ${
-                        isActive ? 'scale-125' : 'group-hover:scale-110'
-                      }`}
+                    <img
+                      src={category.image}
+                      alt={category.name}
+                      className={`w-full h-full object-contain transition-all duration-500 ${isActive ? 'scale-125' : 'group-hover:scale-110'
+                        }`}
                       style={{
                         transform: 'translateZ(30px)',
                         transformStyle: 'preserve-3d',
                         filter: isActive ? 'brightness(1.1) saturate(1.2)' : 'none'
                       }}
                     />
-                </div>
+                  </div>
                   <div className="pt-1 px-2 pb-0 mt-1">
-                    <h3 className={`text-sm font-semibold text-center transition-all duration-500 leading-tight ${
-                      isActive 
-                        ? 'text-blue-600 scale-110 font-bold' 
+                    <h3 className={`text-sm font-semibold text-center transition-all duration-500 leading-tight ${isActive
+                        ? 'text-blue-600 scale-110 font-bold'
                         : 'text-gray-800 group-hover:text-blue-600'
-                    }`}>
-                    {category.name}
-                  </h3>
-                </div>
-              </Link>
+                      }`}>
+                      {category.name}
+                    </h3>
+                  </div>
+                </Link>
               );
-              
+
               return <CategorySlide key={index} />;
             })}
           </SimpleCarousel3D>
@@ -603,19 +603,19 @@ const Index = () => {
                     >
                       <div className="text-center h-full flex flex-col justify-center items-center">
                         <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-2 md:p-3 mb-2 md:mb-3 group-hover:from-blue-50 group-hover:to-indigo-50 transition-all duration-300 w-full flex-grow flex items-center justify-center">
-                            {brand.logo ? (
-                          <img
-                            src={brand.logo}
-                            alt={brand.name}
-                            className="w-full h-10 md:h-12 object-contain group-hover:scale-110 transition-transform duration-300"
-                          />
-                            ) : (
-                              <div className="w-full h-10 md:h-12 flex items-center justify-center">
-                                <span className="text-gray-400 text-xs md:text-sm font-semibold">{brand.name}</span>
-                              </div>
-                            )}
+                          {brand.logo ? (
+                            <img
+                              src={brand.logo}
+                              alt={brand.name}
+                              className="w-full h-10 md:h-12 object-contain group-hover:scale-110 transition-transform duration-300"
+                            />
+                          ) : (
+                            <div className="w-full h-10 md:h-12 flex items-center justify-center">
+                              <span className="text-gray-400 text-xs md:text-sm font-semibold">{brand.name}</span>
+                            </div>
+                          )}
                         </div>
-                          <p className="text-[10px] md:text-xs text-gray-500">{brand.productCount || 0} منتج</p>
+                        <p className="text-[10px] md:text-xs text-gray-500">{brand.productCount || 0} منتج</p>
                       </div>
                     </Link>
                   );
@@ -647,97 +647,96 @@ const Index = () => {
           </div>
 
           {featuredOffers.length > 0 ? (
-          <div className="product-grid grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
-            {featuredOffers.map((product) => (
+            <div className="product-grid grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+              {featuredOffers.map((product) => (
                 <div
                   key={product.id}
                   className="group bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100"
                 >
                   <Link to={`/product/${product.id}`} className="block">
-                <div className="relative p-2 md:p-4">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-32 md:h-48 object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
-                  />
-                  
-                  {/* Badges */}
-                  <div className="absolute top-3 right-3 md:top-6 md:right-6 flex flex-col gap-1 md:gap-2">
+                    <div className="relative p-2 md:p-4">
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        className="w-full h-32 md:h-48 object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
+                      />
+
+                      {/* Badges */}
+                      <div className="absolute top-3 right-3 md:top-6 md:right-6 flex flex-col gap-1 md:gap-2">
                         {product.originalPrice && product.originalPrice > product.price ? (
-                      <span className="bg-red-500 text-white px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-sm font-bold">
+                          <span className="bg-red-500 text-white px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-sm font-bold">
                             خصم {(product.originalPrice - product.price).toLocaleString()} ₪
-                      </span>
+                          </span>
                         ) : null}
                         {product.isNew ? (
-                      <span className="bg-green-500 text-white px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-sm font-bold">
-                        جديد
-                      </span>
+                          <span className="bg-green-500 text-white px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-sm font-bold">
+                            جديد
+                          </span>
                         ) : null}
                         {product.isBestSeller ? (
-                      <span className="bg-blue-500 text-white px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-sm font-bold">
-                        الأكثر مبيعاً
-                      </span>
+                          <span className="bg-blue-500 text-white px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-sm font-bold">
+                            الأكثر مبيعاً
+                          </span>
                         ) : null}
-                  </div>
+                      </div>
 
-                  <button className="absolute top-3 left-3 md:top-6 md:left-6 p-1.5 md:p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors">
-                    <Heart className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
-                  </button>
-                </div>
+                      <button className="absolute top-3 left-3 md:top-6 md:left-6 p-1.5 md:p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors">
+                        <Heart className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
+                      </button>
+                    </div>
                   </Link>
 
-                <div className="p-3 md:p-6">
+                  <div className="p-3 md:p-6">
                     <Link to={`/product/${product.id}`} className="block">
-                  <h3 className="font-bold text-gray-800 mb-1 md:mb-2 text-sm md:text-base line-clamp-2 group-hover:text-blue-600 transition-colors">
-                    {product.name}
-                  </h3>
+                      <h3 className="font-bold text-gray-800 mb-1 md:mb-2 text-sm md:text-base line-clamp-2 group-hover:text-blue-600 transition-colors">
+                        {product.name}
+                      </h3>
                     </Link>
-                  
-                  <div className="flex items-center gap-1 md:gap-2 mb-2 md:mb-3">
-                    <div className="flex items-center">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-3 h-3 md:w-4 md:h-4 ${
-                            i < Math.floor(product.rating)
-                              ? "text-yellow-400 fill-current"
-                              : "text-gray-300"
-                          }`}
-                        />
-                      ))}
+
+                    <div className="flex items-center gap-1 md:gap-2 mb-2 md:mb-3">
+                      <div className="flex items-center">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-3 h-3 md:w-4 md:h-4 ${i < Math.floor(product.rating)
+                                ? "text-yellow-400 fill-current"
+                                : "text-gray-300"
+                              }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-xs md:text-sm text-gray-600">({product.reviews})</span>
                     </div>
-                    <span className="text-xs md:text-sm text-gray-600">({product.reviews})</span>
-                  </div>
 
-                  <div className="flex items-center gap-2 mb-3 md:mb-4 flex-wrap">
-                    <span className="text-lg md:text-2xl font-bold text-blue-600">{product.price} ₪</span>
+                    <div className="flex items-center gap-2 mb-3 md:mb-4 flex-wrap">
+                      <span className="text-lg md:text-2xl font-bold text-blue-600">{product.price} ₪</span>
                       {product.originalPrice && product.originalPrice > 0 ? (
-                  <span className="text-xs md:text-sm text-gray-500 line-through">{product.originalPrice} ₪</span>
+                        <span className="text-xs md:text-sm text-gray-500 line-through">{product.originalPrice} ₪</span>
                       ) : null}
-                  </div>
+                    </div>
 
-                  <button 
-                    onClick={(e) => {
+                    <button
+                      onClick={(e) => {
                         e.preventDefault();
-                      triggerAnimation(e.currentTarget, {
-                        image: product.image,
+                        triggerAnimation(e.currentTarget, {
+                          image: product.image,
                           name: product.name,
-                      });
-                      addItem({
-                        id: product.id,
-                        name: product.name,
-                        price: product.price,
-                        image: product.image,
+                        });
+                        addItem({
+                          id: product.id,
+                          name: product.name,
+                          price: product.price,
+                          image: product.image,
                           brand: "متنوع",
-                      });
-                    }}
-                    className="w-full bg-blue-600 text-white py-2 md:py-3 rounded-lg md:rounded-xl hover:bg-blue-700 transition-colors font-semibold text-sm md:text-base"
-                  >
-                    أضف للسلة
-                  </button>
+                        });
+                      }}
+                      className="w-full bg-blue-600 text-white py-2 md:py-3 rounded-lg md:rounded-xl hover:bg-blue-700 transition-colors font-semibold text-sm md:text-base"
+                    >
+                      أضف للسلة
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
             </div>
           ) : (
             <div className="text-center py-12 text-gray-500">
@@ -766,23 +765,23 @@ const Index = () => {
           </div>
 
           {latestProductsData.length > 0 ? (
-          <div className="product-grid grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            <div className="product-grid grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
               {latestProductsData.map((product) => (
                 <div
                   key={product.id}
                   className="group bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden"
                 >
                   <Link to={`/product/${product.id}`} className="block">
-                <div className="relative p-4">
-                  <img
-                    src={product.image}
-                    alt={product.name}
+                    <div className="relative p-4">
+                      <img
+                        src={product.image}
+                        alt={product.name}
                         className="w-full h-40 object-contain bg-white rounded-xl group-hover:scale-105 transition-transform duration-300"
-                  />
+                      />
                       {product.isNew ? (
-                  <span className="absolute top-6 right-6 bg-gradient-to-r from-green-400 to-green-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-                    جديد
-                  </span>
+                        <span className="absolute top-6 right-6 bg-gradient-to-r from-green-400 to-green-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                          جديد
+                        </span>
                       ) : null}
                       {product.originalPrice && product.originalPrice > product.price ? (
                         <span className="absolute top-6 right-6 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
@@ -790,44 +789,43 @@ const Index = () => {
                         </span>
                       ) : null}
 
-                  <button className="absolute top-6 left-6 p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors">
-                    <Heart className="w-5 h-5 text-gray-600" />
-                  </button>
-                </div>
+                      <button className="absolute top-6 left-6 p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors">
+                        <Heart className="w-5 h-5 text-gray-600" />
+                      </button>
+                    </div>
                   </Link>
 
-                <div className="p-6">
+                  <div className="p-6">
                     <Link to={`/product/${product.id}`} className="block">
-                  <h3 className="font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors">
-                    {product.name}
-                  </h3>
+                      <h3 className="font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors">
+                        {product.name}
+                      </h3>
                     </Link>
-                  
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="flex items-center">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-4 h-4 ${
-                            i < Math.floor(product.rating)
-                              ? "text-yellow-400 fill-current"
-                              : "text-gray-300"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-sm text-gray-600">({product.reviews})</span>
-                  </div>
 
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-2xl font-bold text-blue-600">{product.price} ₪</span>
-                    <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="flex items-center">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-4 h-4 ${i < Math.floor(product.rating)
+                                ? "text-yellow-400 fill-current"
+                                : "text-gray-300"
+                              }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-sm text-gray-600">({product.reviews})</span>
+                    </div>
+
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-2xl font-bold text-blue-600">{product.price} ₪</span>
+                      <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
                         {product.stockStatus}
-                    </span>
-                  </div>
+                      </span>
+                    </div>
 
                     <div className="flex items-center gap-2">
-                  <button 
+                      <button
                         onClick={(e) => {
                           e.preventDefault();
                           triggerAnimation(e.currentTarget, {
@@ -835,25 +833,25 @@ const Index = () => {
                             name: product.name,
                           });
                           addItem({
-                      id: product.id,
-                      name: product.name,
-                      price: product.price,
-                      image: product.image,
+                            id: product.id,
+                            name: product.name,
+                            price: product.price,
+                            image: product.image,
                             brand: product.brand,
                           });
                         }}
                         className="flex-1 bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition-colors font-semibold"
-                  >
-                    أضف للسلة
-                  </button>
+                      >
+                        أضف للسلة
+                      </button>
                       <button className="p-3 bg-white text-blue-600 rounded-xl border border-blue-100 hover:border-blue-300 transition-colors">
                         <Heart className="w-5 h-5" />
                       </button>
                     </div>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
           ) : (
             <div className="text-center py-12 text-gray-500">
               لا توجد منتجات جديدة متاحة حالياً.
@@ -928,8 +926,8 @@ const Index = () => {
             {/* Company Info */}
             <div>
               <div className="flex items-center gap-3 mb-6">
-                <img 
-                  src="https://cdn.builder.io/api/v1/image/assets%2F771ae719ebd54c27bd1a3d83e2201d6c%2Ff677e03217fa4fb894a0ecba683c6cb5?format=webp&width=800" 
+                <img
+                  src="https://cdn.builder.io/api/v1/image/assets%2F771ae719ebd54c27bd1a3d83e2201d6c%2Ff677e03217fa4fb894a0ecba683c6cb5?format=webp&width=800"
                   alt="أبو زينة للتقنيات"
                   className="h-12 w-auto"
                 />
@@ -991,7 +989,7 @@ const Index = () => {
                     aria-label="لينكد إن"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white">
-                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
                     </svg>
                   </a>
                 )}
@@ -1004,7 +1002,7 @@ const Index = () => {
                     aria-label="يوتيوب"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white">
-                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
                     </svg>
                   </a>
                 )}
@@ -1017,7 +1015,7 @@ const Index = () => {
                     aria-label="تيليجرام"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white">
-                      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.174 1.858-.927 6.654-1.309 8.838-.17.968-.504 1.291-.828 1.323-.696.062-1.223-.459-1.897-.9-1.05-.692-1.644-1.123-2.664-1.798-1.18-.78-.415-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.062 3.345-.479.329-.913.489-1.302.481-.428-.008-1.252-.241-1.865-.44-.752-.244-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635.099-.002.321.023.465.14a.49.49 0 01.168.343c.01.05.015.131.003.199z"/>
+                      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.174 1.858-.927 6.654-1.309 8.838-.17.968-.504 1.291-.828 1.323-.696.062-1.223-.459-1.897-.9-1.05-.692-1.644-1.123-2.664-1.798-1.18-.78-.415-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.062 3.345-.479.329-.913.489-1.302.481-.428-.008-1.252-.241-1.865-.44-.752-.244-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635.099-.002.321.023.465.14a.49.49 0 01.168.343c.01.05.015.131.003.199z" />
                     </svg>
                   </a>
                 )}
@@ -1045,7 +1043,7 @@ const Index = () => {
                   .slice(0, 5)
                   .map((category: any) => (
                     <li key={category.id}>
-                      <Link 
+                      <Link
                         to={category.slug ? `/products?category_id=${category.id}` : `/products`}
                         className="hover:text-white transition-colors"
                       >
