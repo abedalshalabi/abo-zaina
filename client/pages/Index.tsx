@@ -351,7 +351,7 @@ const Index = () => {
         title="أبو زينة للتقنيات - أجهزة كهربائية وإلكترونيات في جنين | ثلاجات، غسالات، أفران"
         description="تسوق أونلاين من أبو زينة للتقنيات - أفضل متجر للأجهزة الكهربائية والإلكترونية في جنين، فلسطين. أفران، ثلاجات، غسالات، تلفزيونات، هواتف ذكية وأكثر. بالقرب من النمر مول وبنك الاستثمار. توصيل سريع وضمان شامل."
         keywords="أبو زينة, أبو زينة للتقنيات, أجهزة كهربائية, تقنيات, إلكترونيات, ثلاجات, غسالات, جنين, النمر مول, بنك الاستثمار, أفران, تلفزيونات, هواتف ذكية, تسوق أونلاين, فلسطين, تفاصيل المنتجات"
-        image={headerSettings.header_logo || '/placeholder.svg'}
+        image={headerSettings.header_logo || '/logo.webp'}
         structuredData={structuredDataArray}
       />
       <Header
@@ -938,7 +938,8 @@ const Index = () => {
             <div>
               <div className="flex items-center gap-3 mb-6">
                 <img
-                  src="https://cdn.builder.io/api/v1/image/assets%2F771ae719ebd54c27bd1a3d83e2201d6c%2Ff677e03217fa4fb894a0ecba683c6cb5?format=webp&width=800"
+
+                  src={headerSettings.footer_logo || headerSettings.header_logo || "/logo.webp"}
                   alt="أبو زينة للتقنيات"
                   className="h-12 w-auto"
                 />

@@ -35,9 +35,9 @@ interface HeaderSettings {
   };
 }
 
-const Header = ({ 
-  showSearch = false, 
-  showActions = false, 
+const Header = ({
+  showSearch = false,
+  showActions = false,
   showBackButton = false,
   backButtonText = "العودة للرئيسية",
   backButtonLink = "/",
@@ -59,7 +59,7 @@ const Header = ({
     try {
       const response = await settingsAPI.getSettings('header');
       console.log("Header settings response:", response);
-      
+
       // The API returns { data: { header_phone: ..., header_menu_items: ... } }
       if (response && response.data) {
         console.log("Header settings data:", response.data);
@@ -77,7 +77,7 @@ const Header = ({
         header_phone: "966+ 11 456 7890",
         header_email: "info@abu-zaina.com",
         header_welcome_text: "مرحباً بكم في أبو زينة للتقنيات",
-        header_logo: "https://cdn.builder.io/api/v1/image/assets%2F771ae719ebd54c27bd1a3d83e2201d6c%2Ff677e03217fa4fb894a0ecba683c6cb5?format=webp&width=800",
+        header_logo: settings.header_logo || "/logo.webp",
         header_title: "أبو زينة للتقنيات",
         header_subtitle: "عالم التكنولوجيا والأجهزة الكهربائية",
         header_search_placeholder: "ابحث عن المنتجات والعلامات التجارية...",
@@ -185,7 +185,7 @@ const Header = ({
                     aria-label="لينكد إن"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3 sm:w-4 sm:h-4 text-white">
-                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
                     </svg>
                   </a>
                 )}
@@ -198,7 +198,7 @@ const Header = ({
                     aria-label="يوتيوب"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3 sm:w-4 sm:h-4 text-white">
-                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
                     </svg>
                   </a>
                 )}
@@ -211,7 +211,7 @@ const Header = ({
                     aria-label="تيليجرام"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3 sm:w-4 sm:h-4 text-white">
-                      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.174 1.858-.927 6.654-1.309 8.838-.17.968-.504 1.291-.828 1.323-.696.062-1.223-.459-1.897-.9-1.05-.692-1.644-1.123-2.664-1.798-1.18-.78-.415-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.062 3.345-.479.329-.913.489-1.302.481-.428-.008-1.252-.241-1.865-.44-.752-.244-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635.099-.002.321.023.465.14a.49.49 0 01.168.343c.01.05.015.131.003.199z"/>
+                      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.174 1.858-.927 6.654-1.309 8.838-.17.968-.504 1.291-.828 1.323-.696.062-1.223-.459-1.897-.9-1.05-.692-1.644-1.123-2.664-1.798-1.18-.78-.415-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.062 3.345-.479.329-.913.489-1.302.481-.428-.008-1.252-.241-1.865-.44-.752-.244-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635.099-.002.321.023.465.14a.49.49 0 01.168.343c.01.05.015.131.003.199z" />
                     </svg>
                   </a>
                 )}
@@ -226,8 +226,8 @@ const Header = ({
         <div className="flex items-center justify-between gap-2 sm:gap-4">
           {/* Back Button or Logo */}
           {showBackButton ? (
-            <Link 
-              to={backButtonLink} 
+            <Link
+              to={backButtonLink}
               className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors flex-shrink-0"
             >
               <ArrowRight className="w-5 h-5" />
@@ -236,8 +236,8 @@ const Header = ({
           ) : (
             <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
               <Link to="/" className="flex items-center gap-2 sm:gap-4">
-                <img 
-                  src={settings.header_logo || "https://cdn.builder.io/api/v1/image/assets%2F771ae719ebd54c27bd1a3d83e2201d6c%2Ff677e03217fa4fb894a0ecba683c6cb5?format=webp&width=800"} 
+                <img
+                  src={settings.header_logo || "/logo.webp"}
                   alt={settings.header_title || "أبو زينة للتقنيات"}
                   className="h-10 sm:h-12 w-auto"
                 />
@@ -256,8 +256,8 @@ const Header = ({
           {/* Logo for back button pages */}
           {showBackButton && (
             <Link to="/" className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              <img 
-                src={settings.header_logo || "https://cdn.builder.io/api/v1/image/assets%2F771ae719ebd54c27bd1a3d83e2201d6c%2Ff677e03217fa4fb894a0ecba683c6cb5?format=webp&width=800"} 
+              <img
+                src={settings.header_logo || "/logo.webp"}
                 alt={settings.header_title || "أبو زينة للتقنيات"}
                 className="h-10 sm:h-12 w-auto"
               />
@@ -299,11 +299,11 @@ const Header = ({
                   0
                 </span>
               </button>
-              
+
               <button className="p-2 sm:p-2.5 md:p-3 hover:bg-gray-100 rounded-full transition-colors hidden sm:flex">
                 <User className="w-5 h-5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6 text-gray-600" />
               </button>
-              
+
               <Link to="/cart" className="p-2 sm:p-2.5 md:p-3 hover:bg-gray-100 rounded-full transition-colors relative" data-cart-icon>
                 <ShoppingCart className="w-5 h-5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6 text-gray-600" />
                 {state.itemCount > 0 && (
@@ -314,7 +314,7 @@ const Header = ({
               </Link>
 
               {/* Hamburger Menu */}
-              <button 
+              <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className="p-2 sm:p-2.5 md:p-3 hover:bg-gray-100 rounded-full transition-colors"
               >
@@ -388,7 +388,7 @@ const Header = ({
                   ))}
                 </div>
               </div>
-              
+
               {/* Customer Service */}
               <div>
                 <h3 className="font-semibold text-gray-800 mb-3">خدمة العملاء</h3>
@@ -398,15 +398,15 @@ const Header = ({
                     { title: "اتصل بنا", link: "/contact" },
                     { title: "الضمان", link: "/warranty" },
                   ])
-                  .filter((item: { title: string; link: string }) => 
-                    item.title !== "الشحن والتوصيل" && 
-                    item.title !== "الإرجاع والاستبدال"
-                  )
-                  .map((item, index) => (
-                    <Link key={index} to={item.link} className="block text-gray-600 hover:text-blue-600 transition-colors">
-                      {item.title}
-                    </Link>
-                  ))}
+                    .filter((item: { title: string; link: string }) =>
+                      item.title !== "الشحن والتوصيل" &&
+                      item.title !== "الإرجاع والاستبدال"
+                    )
+                    .map((item, index) => (
+                      <Link key={index} to={item.link} className="block text-gray-600 hover:text-blue-600 transition-colors">
+                        {item.title}
+                      </Link>
+                    ))}
                 </div>
               </div>
             </div>

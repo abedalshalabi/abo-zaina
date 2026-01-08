@@ -53,7 +53,7 @@ return new class extends Migration
             ],
             [
                 'key' => 'header_logo',
-                'value' => 'https://cdn.builder.io/api/v1/image/assets%2F771ae719ebd54c27bd1a3d83e2201d6c%2Ff677e03217fa4fb894a0ecba683c6cb5?format=webp&width=800',
+                'value' => '/logo.webp',
                 'type' => 'image',
                 'group' => 'header',
                 'description' => 'رابط شعار الموقع',
