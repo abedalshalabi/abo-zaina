@@ -394,6 +394,8 @@ const Index = () => {
                         <img
                           src={item.image}
                           alt={item.title || 'Slider'}
+                          width="1920"
+                          height="600"
                           className="w-full h-full opacity-30"
                           style={{
                             width: '100%',
@@ -412,14 +414,14 @@ const Index = () => {
                     <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 h-full flex items-center">
                       <div className="max-w-4xl w-full">
                         {item.title && (
-                          <h1 className="text-xl sm:text-4xl lg:text-6xl font-bold mb-2 sm:mb-4 lg:mb-6 leading-loose py-2 sm:py-4">
+                          <h2 className="text-xl sm:text-4xl lg:text-6xl font-bold mb-2 sm:mb-4 lg:mb-6 leading-loose py-2 sm:py-4">
                             {item.title}
                             {item.subtitle && (
                               <span className="block mt-2 sm:mt-6 py-1 sm:py-2">
                                 {item.subtitle}
                               </span>
                             )}
-                          </h1>
+                          </h2>
                         )}
                         {item.description && (
                           <p className="text-[10px] sm:text-sm lg:text-xl mb-3 sm:mb-6 lg:mb-8 leading-relaxed max-w-2xl mt-2 sm:mt-6 opacity-90">
@@ -463,12 +465,12 @@ const Index = () => {
                 <div className="relative bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 text-white py-6 sm:py-8 lg:py-4 overflow-hidden min-h-[180px] sm:min-h-[300px] lg:min-h-[180px]">
                   <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 h-full flex items-center">
                     <div className="max-w-4xl w-full">
-                      <h1 className="text-xl sm:text-4xl lg:text-6xl font-bold mb-2 sm:mb-4 lg:mb-6 leading-loose py-2 sm:py-4">
+                      <h2 className="text-xl sm:text-4xl lg:text-6xl font-bold mb-2 sm:mb-4 lg:mb-6 leading-loose py-2 sm:py-4">
                         مرحباً بكم في
                         <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-cyan-200 mt-2 sm:mt-6 py-1 sm:py-2">
                           أبو زينة للتقنيات
                         </span>
-                      </h1>
+                      </h2>
                       <p className="text-[10px] sm:text-sm lg:text-xl mb-3 sm:mb-6 lg:mb-8 text-blue-100 leading-relaxed max-w-2xl mt-2 sm:mt-6">
                         وجهتكم الأولى للأجهزة الكهربائية والإلكترونية الحديثة. نوفر لكم أحدث التقنيات بأفضل الأسعار.
                       </p>
@@ -537,6 +539,8 @@ const Index = () => {
                     <img
                       src={category.image}
                       alt={category.name}
+                      width="300"
+                      height="300"
                       className={`w-full h-full object-contain transition-all duration-500 ${isActive ? 'scale-125' : 'group-hover:scale-110'
                         }`}
                       style={{
@@ -548,8 +552,8 @@ const Index = () => {
                   </div>
                   <div className="pt-1 px-2 pb-0 mt-1">
                     <h3 className={`text-sm font-semibold text-center transition-all duration-500 leading-tight ${isActive
-                        ? 'text-blue-600 scale-110 font-bold'
-                        : 'text-gray-800 group-hover:text-blue-600'
+                      ? 'text-blue-600 scale-110 font-bold'
+                      : 'text-gray-800 group-hover:text-blue-600'
                       }`}>
                       {category.name}
                     </h3>
@@ -600,6 +604,7 @@ const Index = () => {
                     <Link
                       to={`/products?brand_id=${brand.id || ''}`}
                       className="group block bg-white p-3 md:p-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border border-gray-100 hover:border-blue-200 h-full w-full"
+                      aria-label={`تسوق منتجات ${brand.name}`}
                     >
                       <div className="text-center h-full flex flex-col justify-center items-center">
                         <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-2 md:p-3 mb-2 md:mb-3 group-hover:from-blue-50 group-hover:to-indigo-50 transition-all duration-300 w-full flex-grow flex items-center justify-center">
@@ -607,6 +612,8 @@ const Index = () => {
                             <img
                               src={brand.logo}
                               alt={brand.name}
+                              width="120"
+                              height="60"
                               className="w-full h-10 md:h-12 object-contain group-hover:scale-110 transition-transform duration-300"
                             />
                           ) : (
@@ -653,11 +660,13 @@ const Index = () => {
                   key={product.id}
                   className="group bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100"
                 >
-                  <Link to={`/product/${product.id}`} className="block">
+                  <Link to={`/product/${product.id}`} className="block" aria-label={product.name}>
                     <div className="relative p-2 md:p-4">
                       <img
                         src={product.image}
                         alt={product.name}
+                        width="300"
+                        height="300"
                         className="w-full h-32 md:h-48 object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
                       />
 
@@ -699,8 +708,8 @@ const Index = () => {
                           <Star
                             key={i}
                             className={`w-3 h-3 md:w-4 md:h-4 ${i < Math.floor(product.rating)
-                                ? "text-yellow-400 fill-current"
-                                : "text-gray-300"
+                              ? "text-yellow-400 fill-current"
+                              : "text-gray-300"
                               }`}
                           />
                         ))}
@@ -771,11 +780,13 @@ const Index = () => {
                   key={product.id}
                   className="group bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden"
                 >
-                  <Link to={`/product/${product.id}`} className="block">
+                  <Link to={`/product/${product.id}`} className="block" aria-label={product.name}>
                     <div className="relative p-4">
                       <img
                         src={product.image}
                         alt={product.name}
+                        width="300"
+                        height="300"
                         className="w-full h-40 object-contain bg-white rounded-xl group-hover:scale-105 transition-transform duration-300"
                       />
                       {product.isNew ? (
@@ -808,8 +819,8 @@ const Index = () => {
                           <Star
                             key={i}
                             className={`w-4 h-4 ${i < Math.floor(product.rating)
-                                ? "text-yellow-400 fill-current"
-                                : "text-gray-300"
+                              ? "text-yellow-400 fill-current"
+                              : "text-gray-300"
                               }`}
                           />
                         ))}

@@ -211,9 +211,8 @@ const CategoriesPage = () => {
         {rows.map((row, rowIndex) => (
           <div
             key={`${depth}-${rowIndex}`}
-            className={`relative w-full flex justify-center gap-6 flex-wrap ${
-              rowIndex === 0 ? "pt-8" : "pt-8 mt-4"
-            }`}
+            className={`relative w-full flex justify-center gap-6 flex-wrap ${rowIndex === 0 ? "pt-8" : "pt-8 mt-4"
+              }`}
           >
             <div className="absolute top-2 left-0 right-0 flex justify-center">
               <div className="w-[70%] max-w-[360px] h-0.5 bg-blue-100" />
@@ -239,8 +238,8 @@ const CategoriesPage = () => {
                 depth === 1
                   ? "w-20 h-20 border-4"
                   : depth === 2
-                  ? "w-16 h-16 border-2"
-                  : "w-14 h-14 border";
+                    ? "w-16 h-16 border-2"
+                    : "w-14 h-14 border";
 
               return (
                 <div key={node.id} className="flex flex-col items-center gap-2">
@@ -251,11 +250,14 @@ const CategoriesPage = () => {
                     <Link
                       to={`/products?category_id=${node.id}`}
                       className={`${sizeClasses} rounded-full border-blue-50 bg-white shadow hover:shadow-lg flex items-center justify-center overflow-hidden hover:border-blue-200 transition-all`}
+                      aria-label={node.name}
                     >
                       {node.image ? (
                         <img
                           src={node.image}
                           alt={node.name}
+                          width="80"
+                          height="80"
                           className="w-full h-full object-cover object-center"
                           loading="lazy"
                         />
@@ -372,12 +374,15 @@ const CategoriesPage = () => {
                       <Link
                         to={`/products?category_id=${parent.id}`}
                         className="flex flex-col items-center gap-2 group"
+                        aria-label={parent.name}
                       >
                         <div className="w-20 h-20 rounded-full border-2 border-blue-100 bg-white shadow-sm hover:shadow-md transition-all overflow-hidden flex items-center justify-center">
                           {parent.image ? (
                             <img
                               src={parent.image}
                               alt={parent.name}
+                              width="80"
+                              height="80"
                               className="w-full h-full object-cover"
                               loading="lazy"
                             />
@@ -397,12 +402,15 @@ const CategoriesPage = () => {
                           key={child.id}
                           to={`/products?category_id=${child.id}`}
                           className="flex flex-col items-center gap-2 group"
+                          aria-label={child.name}
                         >
                           <div className="w-20 h-20 rounded-full border-2 border-blue-100 bg-white shadow-sm hover:shadow-md transition-all overflow-hidden flex items-center justify-center">
                             {child.image ? (
                               <img
                                 src={child.image}
                                 alt={child.name}
+                                width="80"
+                                height="80"
                                 className="w-full h-full object-cover"
                                 loading="lazy"
                               />
@@ -434,11 +442,14 @@ const CategoriesPage = () => {
                     <Link
                       to={`/products?category_id=${parent.id}`}
                       className="block w-32 h-32 sm:w-36 sm:h-36 rounded-full border-4 border-blue-100 overflow-hidden shadow-lg transition-transform duration-700 group-hover:scale-105"
+                      aria-label={parent.name}
                     >
                       {parent.image ? (
                         <img
                           src={parent.image}
                           alt={parent.name}
+                          width="160"
+                          height="160"
                           className="w-full h-full object-cover object-center"
                           loading="lazy"
                         />

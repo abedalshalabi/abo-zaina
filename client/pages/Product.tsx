@@ -674,6 +674,8 @@ const Product = () => {
               <img
                 src={product.images && product.images[selectedImage] ? product.images[selectedImage] : '/placeholder.svg'}
                 alt={product.name}
+                width="600"
+                height="600"
                 className="w-full h-96 object-contain bg-white cursor-pointer hover:opacity-90 transition-opacity"
                 onClick={() => setIsImageModalOpen(true)}
                 onError={(e) => {
@@ -720,6 +722,8 @@ const Product = () => {
                     <img
                       src={image || '/placeholder.svg'}
                       alt={`${product.name} ${index + 1}`}
+                      width="80"
+                      height="80"
                       className="w-full h-full object-contain bg-white cursor-pointer hover:opacity-90 transition-opacity"
                       onClick={() => {
                         setSelectedImage(index);

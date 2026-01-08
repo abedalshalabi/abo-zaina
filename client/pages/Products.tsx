@@ -941,11 +941,14 @@ const Products = () => {
       <Link
         to={`/product/${product.id}`}
         className="product-card p-2 md:p-4 group block hover:transform hover:scale-105 transition-all duration-300"
+        aria-label={product.name}
       >
         <div className="relative mb-2 md:mb-4">
           <img
             src={product.image || product.images?.[0] || "/placeholder.svg"}
             alt={product.name}
+            width="300"
+            height="300"
             className="w-full h-32 md:h-48 object-contain bg-white rounded-lg"
             onError={(e) => {
               console.error("Image load error for product", product.id, ":", e.currentTarget.src);
