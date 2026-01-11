@@ -163,7 +163,7 @@ const AdminProductEdit: React.FC = () => {
       setLoading(true);
       const [productResponse, categoriesResponse, brandsResponse] = await Promise.all([
         adminProductsAPI.getProduct(Number(id).toString()),
-        adminCategoriesAPI.getCategories(),
+        adminCategoriesAPI.getCategories({ per_page: 1000 }),
         adminBrandsAPI.getBrands({ per_page: 1000 })
       ]);
 
@@ -230,8 +230,11 @@ const AdminProductEdit: React.FC = () => {
       // Merge filters from all selected categories
       const loadFiltersFromCategories = (categoryIds: number[]) => {
         const allFilters: Filter[] = [];
+        const productCategories = productResponse.data.categories || [];
+
         categoryIds.forEach(catId => {
-          const selectedCategory = categoriesResponse.data.find(cat => cat.id === catId);
+          const selectedCategory = categoriesResponse.data.find(cat => cat.id === catId)
+            || productCategories.find((cat: any) => cat.id === catId);
           if (selectedCategory && selectedCategory.filters) {
             // Merge filters, avoiding duplicates by name
             selectedCategory.filters.forEach(filter => {
@@ -271,7 +274,8 @@ const AdminProductEdit: React.FC = () => {
         console.log('Available categories from response:', categoriesResponse.data);
         console.log('Looking for category_id:', formDataToSet.category_id);
 
-        const selectedCategory = categoriesResponse.data.find(cat => cat.id === formDataToSet.category_id);
+        const selectedCategory = categoriesResponse.data.find(cat => cat.id === formDataToSet.category_id)
+          || (productResponse.data.category?.id === formDataToSet.category_id ? productResponse.data.category : null);
 
         console.log('Selected category for filters:', selectedCategory);
         console.log('Category filters:', selectedCategory?.filters);
@@ -710,7 +714,7 @@ const AdminProductEdit: React.FC = () => {
         // Reload both product and categories to ensure filters are available
         const [productResponse, categoriesResponse] = await Promise.all([
           adminProductsAPI.getProduct(Number(id).toString()),
-          adminCategoriesAPI.getCategories()
+          adminCategoriesAPI.getCategories({ per_page: 1000 })
         ]);
 
         console.log('Product response after save:', {
@@ -767,10 +771,10 @@ const AdminProductEdit: React.FC = () => {
           console.log('Looking for category_id:', formDataToSet.category_id);
           console.log('Category ID type:', typeof formDataToSet.category_id);
 
-          const selectedCategory = categoriesResponse.data.find(cat => {
+          const selectedCategory = categoriesResponse.data.find((cat: any) => {
             console.log('Comparing category:', cat.id, 'with', formDataToSet.category_id, 'match:', cat.id === formDataToSet.category_id);
             return cat.id === formDataToSet.category_id;
-          });
+          }) || (productResponse.data.category?.id === formDataToSet.category_id ? productResponse.data.category : null);
 
           console.log('Selected category for filters:', selectedCategory);
           console.log('Category filters:', selectedCategory?.filters);

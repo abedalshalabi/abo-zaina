@@ -48,6 +48,8 @@ interface ProductDetail {
   warranty: string;
   deliveryTime: string;
   sku: string;
+  dimensions?: string;
+  weight?: number;
 }
 
 interface BreadcrumbCategory {
@@ -279,7 +281,9 @@ const Product = () => {
             specifications: apiProduct.specifications || {},
             warranty: apiProduct.warranty || 'ضمان شامل',
             deliveryTime: apiProduct.delivery_time || '2-3 أيام عمل',
-            sku: apiProduct.sku || ''
+            sku: apiProduct.sku || '',
+            dimensions: apiProduct.dimensions,
+            weight: apiProduct.weight
           };
 
           console.log('Transformed product:', transformedProduct);
@@ -785,13 +789,17 @@ const Product = () => {
               </span>
             </div>
 
-            {/* Description */}
+            {/* Main Features */}
             <div>
-              <h3 className="font-semibold text-gray-800 mb-3">وصف المنتج:</h3>
-              <div
-                className="text-gray-700 leading-relaxed text-sm prose max-w-none"
-                dangerouslySetInnerHTML={{ __html: product.description || '' }}
-              />
+              <h3 className="font-semibold text-gray-800 mb-3">المميزات الرئيسية:</h3>
+              <ul className="space-y-2">
+                {product.features.map((feature, index) => (
+                  <li key={index} className="flex items-center gap-2">
+                    <Award className="w-4 h-4 text-blue-500" />
+                    <span className="text-gray-700">{feature}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
 
             {/* Quantity and Add to Cart */}
@@ -958,26 +966,46 @@ const Product = () => {
           <div className="p-6">
             {activeTab === 'description' && (
               <div className="space-y-4">
-                <h3 className="text-xl font-bold text-gray-800 mb-4">المميزات الرئيسية</h3>
-                <ul className="space-y-2">
-                  {product.features.map((feature, index) => (
-                    <li key={index} className="flex items-center gap-2">
-                      <Award className="w-4 h-4 text-blue-500" />
-                      <span className="text-gray-700">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
+                <h3 className="text-xl font-bold text-gray-800 mb-4">وصف المنتج</h3>
+                <div
+                  className="text-gray-700 leading-relaxed text-sm prose max-w-none"
+                  dangerouslySetInnerHTML={{ __html: product.description || '' }}
+                />
               </div>
             )}
 
             {activeTab === 'specifications' && (
               <div>
                 <h3 className="text-xl font-bold text-gray-800 mb-4">المواصفات التقنية</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {product.dimensions && (
+                    <div className="flex items-stretch border border-gray-200 rounded-lg overflow-hidden bg-white">
+                      <div className="w-1/2 p-3 bg-gray-50 font-medium text-gray-900 border-l border-gray-200 flex items-center justify-center text-center">
+                        الأبعاد
+                      </div>
+                      <div className="w-1/2 p-3 text-gray-700 flex items-center justify-center text-center" dir="ltr">
+                        {product.dimensions}
+                      </div>
+                    </div>
+                  )}
+                  {product.weight && Number(product.weight) > 0 && (
+                    <div className="flex items-stretch border border-gray-200 rounded-lg overflow-hidden bg-white">
+                      <div className="w-1/2 p-3 bg-gray-50 font-medium text-gray-900 border-l border-gray-200 flex items-center justify-center text-center">
+                        الوزن
+                      </div>
+                      <div className="w-1/2 p-3 text-gray-700 flex items-center justify-center text-center">
+                        {product.weight} كجم
+                      </div>
+                    </div>
+                  )}
                   {Object.entries(product.specifications).map(([key, value]) => (
-                    <div key={key} className="flex justify-between items-center py-2 border-b border-gray-100">
-                      <span className="font-medium text-gray-700">{key}:</span>
-                      <span className="text-gray-600">{value}</span>
+                    <div key={key} className="flex items-stretch border border-gray-200 rounded-lg overflow-hidden bg-white">
+                      <div className="w-1/2 p-3 bg-gray-50 font-medium text-gray-900 border-l border-gray-200 flex items-center justify-center text-center">
+                        {key}
+                      </div>
+                      <div className="w-1/2 p-3 text-gray-700 flex items-center justify-center text-center">
+                        {value}
+                      </div>
                     </div>
                   ))}
                 </div>
