@@ -47,6 +47,7 @@ class Product extends Model
         'brand_id',
         'meta_title',
         'meta_description',
+        'cover_image',
     ];
 
     protected $casts = [
@@ -65,6 +66,7 @@ class Product extends Model
         'specifications' => 'array',
         'filter_values' => 'array',
         'images' => 'array',
+        'cover_image' => 'string',
     ];
 
     // Keep for backward compatibility (single category)

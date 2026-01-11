@@ -146,13 +146,17 @@ const AdminProductEdit: React.FC = () => {
     sales_count: 0,
     meta_title: '',
     meta_description: '',
-    category_id: null, // Keep for backward compatibility
-    categories: [] as number[], // New: multiple categories
+    category_id: null,
+    categories: [] as number[],
     brand_id: null,
     features: [] as string[],
     specifications: {} as Record<string, string>,
-    filter_values: {} as Record<string, string>
+    filter_values: {} as Record<string, any>,
+    cover_image: null as string | null
   });
+
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+  const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -208,10 +212,20 @@ const AdminProductEdit: React.FC = () => {
         brand_id: productResponse.data.brand?.id || productResponse.data.brand_id || null,
         features: productResponse.data.features || [],
         specifications: productResponse.data.specifications || {},
-        filter_values: productResponse.data.filter_values || {}
+        filter_values: productResponse.data.filter_values || {},
+        cover_image: productResponse.data.cover_image || null
       };
 
       setFormData(formDataToSet);
+
+      // Set cover image preview if exists
+      if (productResponse.data.cover_image) {
+        setCoverImagePreview(
+          productResponse.data.cover_image.startsWith('http')
+            ? productResponse.data.cover_image
+            : `${import.meta.env.VITE_STORAGE_URL}/${productResponse.data.cover_image}`
+        );
+      }
 
       const existingImageUrls = (formDataToSet.images || [])
         .map((img: any) => {
@@ -455,6 +469,27 @@ const AdminProductEdit: React.FC = () => {
     }));
   };
 
+  const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setCoverImageFile(file);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        setCoverImagePreview(result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveCoverImage = () => {
+    setCoverImageFile(null);
+    setCoverImagePreview(null);
+    setFormData(prev => ({ ...prev, cover_image: null }));
+  };
+
+
+
   const handleSwitchChange = (name: string, checked: boolean) => {
     setFormData(prev => ({
       ...prev,
@@ -661,6 +696,11 @@ const AdminProductEdit: React.FC = () => {
         uploadFormData.append('image_urls', JSON.stringify(newImageUrls));
       }
 
+      // Add cover image if selected
+      if (coverImageFile) {
+        uploadFormData.append('cover_image', coverImageFile);
+      }
+
       // Add new image files
       console.log('Image files state:', imageFiles);
       console.log('Image files length:', imageFiles.length);
@@ -762,6 +802,7 @@ const AdminProductEdit: React.FC = () => {
           features: productResponse.data.features || [],
           specifications: productResponse.data.specifications || {},
           filter_values: productResponse.data.filter_values || {},
+          cover_image: productResponse.data.cover_image || null
         };
         setFormData(formDataToSet);
 
@@ -1319,6 +1360,53 @@ const AdminProductEdit: React.FC = () => {
                         }
                       }}
                     />
+                  </div>
+                </div>
+
+                {/* Cover Image Upload */}
+                <div className="space-y-4 md:col-span-2">
+                  <Label>صورة الغلاف (منفصلة عن صور الألبوم)</Label>
+                  <div className="border border-dashed border-gray-300 rounded-lg p-6 text-center">
+                    {coverImagePreview ? (
+                      <div className="relative inline-block">
+                        <img
+                          src={coverImagePreview}
+                          alt="Cover Preview"
+                          className="h-48 w-auto object-cover rounded-md border"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleRemoveCoverImage}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="mx-auto h-12 w-12 text-gray-400">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <div className="flex text-sm text-gray-600 justify-center">
+                          <label htmlFor="cover-image-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                            <span>ارفع صورة غلاف</span>
+                            <Input
+                              id="cover-image-upload"
+                              name="cover_image"
+                              type="file"
+                              className="sr-only"
+                              accept="image/*"
+                              onChange={handleCoverImageChange}
+                            />
+                          </label>
+                        </div>
+                        <p className="text-xs text-gray-500">PNG, JPG, WEBP up to 5MB</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 

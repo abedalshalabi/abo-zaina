@@ -175,6 +175,7 @@ class ProductResource extends JsonResource
             }),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'cover_image' => $this->cover_image ? asset('storage/' . $this->cover_image) : null,
         ];
     }
 }

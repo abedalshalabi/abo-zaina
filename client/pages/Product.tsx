@@ -222,6 +222,8 @@ const Product = () => {
 
           // Transform images array from objects to URLs
           const transformedImages: string[] = [];
+
+
           if (apiProduct.images && Array.isArray(apiProduct.images)) {
             apiProduct.images.forEach((img: any) => {
               if (typeof img === 'string') {

@@ -501,6 +501,8 @@ class ProductController extends Controller
             'dimensions' => 'nullable|string',
             'warranty' => 'nullable|string',
             'delivery_time' => 'nullable|string',
+
+            'cover_image' => 'nullable', // Allow separate validation for file or string or null
             // Note: images validation is handled separately after main validation
             'is_active' => 'sometimes|string|in:true,false,1,0',
             'is_featured' => 'sometimes|string|in:true,false,1,0',
@@ -546,6 +548,32 @@ class ProductController extends Controller
         // Sync categories if provided
         if ($categories !== null) {
             $product->categories()->sync($categories);
+        }
+
+        // Handle cover image
+        if ($request->hasFile('cover_image')) {
+            Log::info('Cover image file received for product ' . $product->id);
+            $file = $request->file('cover_image');
+            if ($file->isValid()) {
+                // Delete old cover image if exists
+                if ($product->cover_image && Storage::disk('public')->exists($product->cover_image)) {
+                    Storage::disk('public')->delete($product->cover_image);
+                }
+
+                $filename = 'cover_' . time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs('products', $filename, 'public');
+                $product->cover_image = $path;
+                $product->save();
+                Log::info('New cover image saved: ' . $path);
+            }
+        } elseif ($request->has('cover_image') && $request->cover_image === 'null') {
+            // Handle removal of cover image
+            Log::info('Removing cover image request received');
+             if ($product->cover_image && Storage::disk('public')->exists($product->cover_image)) {
+                Storage::disk('public')->delete($product->cover_image);
+            }
+            $product->cover_image = null;
+            $product->save();
         }
 
         // Handle images: existing images to keep, new image URLs, and new image file uploads

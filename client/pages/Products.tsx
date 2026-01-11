@@ -690,7 +690,14 @@ const Products = () => {
           product.rawImages?.[0] ??
           (Array.isArray(product.images) ? product.images[0] : undefined);
 
-        if (firstImageSource) {
+        if (product.cover_image) {
+          const normalizedPath = String(product.cover_image)
+            .replace(/^\/?storage\//, '')
+            .replace(/^\//, '');
+          imageUrl = product.cover_image.startsWith('http')
+            ? product.cover_image
+            : `${STORAGE_BASE_URL}/${normalizedPath}`;
+        } else if (firstImageSource) {
           if (typeof firstImageSource === 'string') {
             imageUrl = firstImageSource;
           } else if (typeof firstImageSource === 'object') {
