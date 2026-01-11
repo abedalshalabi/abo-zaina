@@ -697,8 +697,11 @@ const AdminProductEdit: React.FC = () => {
       }
 
       // Add cover image if selected
+      // Add cover image if selected, or 'null' if removed
       if (coverImageFile) {
         uploadFormData.append('cover_image', coverImageFile);
+      } else if (formData.cover_image === null) {
+        uploadFormData.append('cover_image', 'null');
       }
 
       // Add new image files
