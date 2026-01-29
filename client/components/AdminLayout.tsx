@@ -146,6 +146,7 @@ function AdminLayout({ children }: AdminLayoutProps) {
     { title: 'الشحن والتوصيل', tab: 'shipping' },
     { title: 'الإرجاع والاستبدال', tab: 'returns' },
     { title: 'الضمان', tab: 'warranty' },
+    { title: 'الإحصائيات والعدادات', tab: 'analytics' },
   ];
 
   const isActive = (path: string) => {
@@ -170,75 +171,72 @@ function AdminLayout({ children }: AdminLayoutProps) {
           </Link>
         </div>
 
-            {/* Navigation */}
-            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-              {menuItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive(item.path)
-                      ? 'bg-blue-50 text-blue-600 font-medium'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <item.icon className="w-5 h-5" />
-                    <span>{item.title}</span>
-                  </div>
-                  {item.path === '/admin/contact-messages' && newMessagesCount > 0 && (
-                    <span className="bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                      {newMessagesCount > 99 ? '99+' : newMessagesCount}
-                    </span>
-                  )}
-                  {item.path === '/admin/orders' && newOrdersCount > 0 && (
-                    <span className="bg-green-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                      {newOrdersCount > 99 ? '99+' : newOrdersCount}
-                    </span>
-                  )}
-                </Link>
-              ))}
-              
-              {/* Settings Dropdown */}
-              <div>
-                <button
-                  onClick={() => setSettingsMenuOpen(!settingsMenuOpen)}
-                  className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-colors ${
-                    location.pathname === '/admin/site-settings'
-                      ? 'bg-blue-50 text-blue-600 font-medium'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Settings className="w-5 h-5" />
-                    <span>إعدادات الموقع</span>
-                  </div>
-                  {settingsMenuOpen ? (
-                    <ChevronDown className="w-4 h-4" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4" />
-                  )}
-                </button>
-                
-                {settingsMenuOpen && (
-                  <div className="mr-4 mt-1 space-y-1">
-                    {settingsSubMenu.map((subItem) => (
-                      <Link
-                        key={subItem.tab}
-                        to={`/admin/site-settings#${subItem.tab}`}
-                        className={`block px-4 py-2 rounded-lg text-sm transition-colors ${
-                          location.hash === `#${subItem.tab}`
-                            ? 'bg-blue-100 text-blue-700 font-medium'
-                            : 'text-gray-600 hover:bg-gray-50'
-                        }`}
-                      >
-                        {subItem.title}
-                      </Link>
-                    ))}
-                  </div>
-                )}
+        {/* Navigation */}
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          {menuItems.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-colors ${isActive(item.path)
+                ? 'bg-blue-50 text-blue-600 font-medium'
+                : 'text-gray-700 hover:bg-gray-50'
+                }`}
+            >
+              <div className="flex items-center gap-3">
+                <item.icon className="w-5 h-5" />
+                <span>{item.title}</span>
               </div>
-            </nav>
+              {item.path === '/admin/contact-messages' && newMessagesCount > 0 && (
+                <span className="bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {newMessagesCount > 99 ? '99+' : newMessagesCount}
+                </span>
+              )}
+              {item.path === '/admin/orders' && newOrdersCount > 0 && (
+                <span className="bg-green-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {newOrdersCount > 99 ? '99+' : newOrdersCount}
+                </span>
+              )}
+            </Link>
+          ))}
+
+          {/* Settings Dropdown */}
+          <div>
+            <button
+              onClick={() => setSettingsMenuOpen(!settingsMenuOpen)}
+              className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-colors ${location.pathname === '/admin/site-settings'
+                ? 'bg-blue-50 text-blue-600 font-medium'
+                : 'text-gray-700 hover:bg-gray-50'
+                }`}
+            >
+              <div className="flex items-center gap-3">
+                <Settings className="w-5 h-5" />
+                <span>إعدادات الموقع</span>
+              </div>
+              {settingsMenuOpen ? (
+                <ChevronDown className="w-4 h-4" />
+              ) : (
+                <ChevronRight className="w-4 h-4" />
+              )}
+            </button>
+
+            {settingsMenuOpen && (
+              <div className="mr-4 mt-1 space-y-1">
+                {settingsSubMenu.map((subItem) => (
+                  <Link
+                    key={subItem.tab}
+                    to={`/admin/site-settings#${subItem.tab}`}
+                    className={`block px-4 py-2 rounded-lg text-sm transition-colors ${location.hash === `#${subItem.tab}`
+                      ? 'bg-blue-100 text-blue-700 font-medium'
+                      : 'text-gray-600 hover:bg-gray-50'
+                      }`}
+                  >
+                    {subItem.title}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        </nav>
 
         {/* Logout Button */}
         <div className="p-4 border-t border-gray-200">
@@ -283,11 +281,10 @@ function AdminLayout({ children }: AdminLayoutProps) {
                   key={item.path}
                   to={item.path}
                   onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive(item.path)
-                      ? 'bg-blue-50 text-blue-600 font-medium'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
+                  className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-colors ${isActive(item.path)
+                    ? 'bg-blue-50 text-blue-600 font-medium'
+                    : 'text-gray-700 hover:bg-gray-50'
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <item.icon className="w-5 h-5" />
@@ -305,16 +302,15 @@ function AdminLayout({ children }: AdminLayoutProps) {
                   )}
                 </Link>
               ))}
-              
+
               {/* Settings Dropdown */}
               <div>
                 <button
                   onClick={() => setSettingsMenuOpen(!settingsMenuOpen)}
-                  className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-colors ${
-                    location.pathname === '/admin/site-settings'
-                      ? 'bg-blue-50 text-blue-600 font-medium'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
+                  className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-colors ${location.pathname === '/admin/site-settings'
+                    ? 'bg-blue-50 text-blue-600 font-medium'
+                    : 'text-gray-700 hover:bg-gray-50'
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <Settings className="w-5 h-5" />
@@ -326,7 +322,7 @@ function AdminLayout({ children }: AdminLayoutProps) {
                     <ChevronRight className="w-4 h-4" />
                   )}
                 </button>
-                
+
                 {settingsMenuOpen && (
                   <div className="mr-4 mt-1 space-y-1">
                     {settingsSubMenu.map((subItem) => (
@@ -334,11 +330,10 @@ function AdminLayout({ children }: AdminLayoutProps) {
                         key={subItem.tab}
                         to={`/admin/site-settings#${subItem.tab}`}
                         onClick={() => setSidebarOpen(false)}
-                        className={`block px-4 py-2 rounded-lg text-sm transition-colors ${
-                          location.hash === `#${subItem.tab}`
-                            ? 'bg-blue-100 text-blue-700 font-medium'
-                            : 'text-gray-600 hover:bg-gray-50'
-                        }`}
+                        className={`block px-4 py-2 rounded-lg text-sm transition-colors ${location.hash === `#${subItem.tab}`
+                          ? 'bg-blue-100 text-blue-700 font-medium'
+                          : 'text-gray-600 hover:bg-gray-50'
+                          }`}
                       >
                         {subItem.title}
                       </Link>
@@ -394,7 +389,7 @@ function AdminLayout({ children }: AdminLayoutProps) {
               <ExternalLink className="w-4 h-4" />
               <span className="hidden sm:inline">الموقع</span>
             </a>
-            
+
             <div className="hidden sm:block text-left">
               <p className="text-sm font-medium text-gray-800">المسؤول</p>
               <p className="text-xs text-gray-600">admin@abozaina.com</p>

@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment } from "react";
+import { useState, useMemo, useEffect, useRef, Fragment } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import {
   Star,
@@ -50,6 +50,7 @@ interface ProductDetail {
   sku: string;
   dimensions?: string;
   weight?: number;
+  viewsCount: number;
 }
 
 interface BreadcrumbCategory {
@@ -163,163 +164,142 @@ const Product = () => {
   const [headerSettings, setHeaderSettings] = useState<any>({});
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showProductViews, setShowProductViews] = useState(true);
+  const lastFetchedId = useRef<string | null>(null);
 
   useEffect(() => {
+    // If we're already loading this product or have no ID, skip
+    if (!id || id === lastFetchedId.current) return;
+
+    // Mark as being fetched
+    lastFetchedId.current = id;
+
+    // Reset UI for the new product
+    setLoading(true);
+    setProduct(null);
+    setBreadcrumbCategories({});
+
     const loadProduct = async () => {
-      if (id) {
-        try {
-          setLoading(true);
-          const [productResponse, categoriesResponse, settingsResponse] = await Promise.all([
-            productsAPI.getProduct(Number(id)),
-            categoriesAPI.getCategories().catch((error) => {
-              console.error("Error loading categories for breadcrumb:", error);
-              return { data: [] };
-            }),
-            settingsAPI.getSettings('header').catch((error) => {
-              console.error("Error loading settings:", error);
-              return { data: {} };
-            }),
-          ]);
+      try {
+        const [productResponse, categoriesResponse, headerSettingsResponse, analyticsSettingsResponse] = await Promise.all([
+          productsAPI.getProduct(Number(id), sessionStorage.getItem(`viewed_product_${id}`) === "true"),
+          categoriesAPI.getCategories().catch(() => ({ data: [] })),
+          settingsAPI.getSettings('header').catch(() => ({ data: {} })),
+          settingsAPI.getSettings('analytics').catch(() => ({ data: {} })),
+        ]);
 
-          // Set WhatsApp number and header settings from settings
-          if (settingsResponse.data) {
-            if (settingsResponse.data.whatsapp_number) {
-              setWhatsappNumber(settingsResponse.data.whatsapp_number);
-            }
-            setHeaderSettings(settingsResponse.data);
-          }
+        // Guard: if user navigated away while we were fetching, ignore result
+        if (id !== lastFetchedId.current) return;
 
-          const apiProduct = productResponse.data;
-          const categoriesData = categoriesResponse?.data || [];
-
-          const categoriesMap = new Map<number, BreadcrumbCategory>();
-          if (Array.isArray(categoriesData)) {
-            const addCategoryToMap = (cat: any) => {
-              if (!cat) return;
-              const categoryId = Number(cat.id);
-              if (!Number.isNaN(categoryId)) {
-                categoriesMap.set(categoryId, {
-                  id: categoryId,
-                  name: cat.name,
-                  parent_id:
-                    cat.parent_id !== undefined && cat.parent_id !== null
-                      ? Number(cat.parent_id)
-                      : null,
-                  slug: cat.slug,
-                });
-              }
-
-              if (Array.isArray(cat.children)) {
-                cat.children.forEach(addCategoryToMap);
-              }
-            };
-
-            categoriesData.forEach(addCategoryToMap);
-          }
-
-          console.log('Product from API:', apiProduct);
-          console.log('Images from API:', apiProduct.images);
-
-          // Transform images array from objects to URLs
-          const transformedImages: string[] = [];
-
-
-          if (apiProduct.images && Array.isArray(apiProduct.images)) {
-            apiProduct.images.forEach((img: any) => {
-              if (typeof img === 'string') {
-                const normalizedPath = String(img)
-                  .replace(/^\/?storage\//, '')
-                  .replace(/^\//, '');
-                transformedImages.push(
-                  img.startsWith('http')
-                    ? img
-                    : `${STORAGE_BASE_URL}/${normalizedPath}`
-                );
-              } else if (img && typeof img === 'object') {
-                if (img.image_url) {
-                  transformedImages.push(img.image_url);
-                } else if (img.image_path) {
-                  const normalizedPath = String(img.image_path)
-                    .replace(/^\/?storage\//, '')
-                    .replace(/^\//, '');
-                  const imageUrl = img.image_path.startsWith('http')
-                    ? img.image_path
-                    : `${STORAGE_BASE_URL}/${normalizedPath}`;
-                  transformedImages.push(imageUrl);
-                }
-              }
-            });
-          }
-
-          console.log('Original images from API:', apiProduct.images);
-          console.log('Transformed images URLs:', transformedImages);
-
-          // Transform API data to match ProductDetail interface
-          const transformedProduct: ProductDetail = {
-            id: apiProduct.id,
-            name: apiProduct.name,
-            price: apiProduct.price,
-            originalPrice: apiProduct.original_price,
-            comparePrice: apiProduct.compare_price,
-            images: transformedImages.length > 0 ? transformedImages : ['/placeholder.svg'],
-            rating: apiProduct.rating || 0,
-            reviews: apiProduct.reviews_count || 0,
-            category: apiProduct.category?.name || '',
-            brand: apiProduct.brand?.name || '',
-            discount: (function () {
-              const referencePrice = apiProduct.compare_price || apiProduct.original_price;
-              if (referencePrice && apiProduct.price) {
-                return Math.max(0, referencePrice - apiProduct.price);
-              }
-              return 0;
-            })(),
-            inStock: apiProduct.stock_status === 'stock_based'
-              ? (apiProduct.stock_quantity || 0) > 0
-              : (apiProduct.stock_status === 'in_stock' || (apiProduct.in_stock && apiProduct.stock_status !== 'out_of_stock')),
-            stockStatus: apiProduct.stock_status || 'in_stock',
-            stockCount: apiProduct.stock_quantity || 0,
-            description: apiProduct.description || '',
-            features: apiProduct.features || [],
-            specifications: apiProduct.specifications || {},
-            warranty: apiProduct.warranty || 'ضمان شامل',
-            deliveryTime: apiProduct.delivery_time || '2-3 أيام عمل',
-            sku: apiProduct.sku || '',
-            dimensions: apiProduct.dimensions,
-            weight: apiProduct.weight
-          };
-
-          console.log('Transformed product:', transformedProduct);
-          console.log('Transformed images count:', transformedProduct.images.length);
-
-          if (categoriesMap.size > 0) {
-            setBreadcrumbCategories(deriveBreadcrumbCategories(apiProduct, categoriesMap));
-          } else {
-            setBreadcrumbCategories({});
-          }
-
-          setProduct(transformedProduct);
-          setQuantity(1); // Set initial quantity to 1
-
-          // Track ViewContent event
-          trackEvent('ViewContent', {
-            content_name: transformedProduct.name,
-            content_ids: [transformedProduct.id],
-            content_type: 'product',
-            value: transformedProduct.price,
-            currency: 'ILS'
-          });
-
-        } catch (err) {
-          console.error('Error loading product from API:', err);
-          navigate('/products');
-        } finally {
-          setLoading(false);
+        // Set Analytics settings
+        if (analyticsSettingsResponse?.data) {
+          setShowProductViews(analyticsSettingsResponse.data.show_product_views === "1" || analyticsSettingsResponse.data.show_product_views === true);
         }
+
+        if (headerSettingsResponse?.data) {
+          if (headerSettingsResponse.data.whatsapp_number) {
+            setWhatsappNumber(headerSettingsResponse.data.whatsapp_number);
+          }
+          setHeaderSettings(headerSettingsResponse.data);
+        }
+
+        const apiProduct = productResponse.data;
+        if (!apiProduct) {
+          throw new Error("Product data is missing");
+        }
+
+        const categoriesData = categoriesResponse?.data || [];
+        const categoriesMap = new Map<number, BreadcrumbCategory>();
+        if (Array.isArray(categoriesData)) {
+          const addCategoryToMap = (cat: any) => {
+            if (!cat) return;
+            const categoryId = Number(cat.id);
+            if (!Number.isNaN(categoryId)) {
+              categoriesMap.set(categoryId, {
+                id: categoryId,
+                name: cat.name,
+                parent_id: cat.parent_id !== undefined && cat.parent_id !== null ? Number(cat.parent_id) : null,
+                slug: cat.slug,
+              });
+            }
+            if (Array.isArray(cat.children)) {
+              cat.children.forEach(addCategoryToMap);
+            }
+          };
+          categoriesData.forEach(addCategoryToMap);
+        }
+
+        // Transform images
+        const transformedImages: string[] = [];
+        if (apiProduct.images && Array.isArray(apiProduct.images)) {
+          apiProduct.images.forEach((img: any) => {
+            if (typeof img === 'string') {
+              const normalizedPath = img.replace(/^\/?storage\//, '').replace(/^\//, '');
+              transformedImages.push(img.startsWith('http') ? img : `${STORAGE_BASE_URL}/${normalizedPath}`);
+            } else if (img && typeof img === 'object') {
+              const path = img.image_url || img.image_path;
+              if (path) {
+                const normalizedPath = path.replace(/^\/?storage\//, '').replace(/^\//, '');
+                transformedImages.push(path.startsWith('http') ? path : `${STORAGE_BASE_URL}/${normalizedPath}`);
+              }
+            }
+          });
+        }
+
+        const transformedProduct: ProductDetail = {
+          id: apiProduct.id,
+          name: apiProduct.name,
+          price: apiProduct.price,
+          originalPrice: apiProduct.original_price,
+          comparePrice: apiProduct.compare_price,
+          images: transformedImages.length > 0 ? transformedImages : ['/placeholder.svg'],
+          rating: apiProduct.rating || 0,
+          reviews: apiProduct.reviews_count || 0,
+          category: apiProduct.category?.name || '',
+          brand: apiProduct.brand?.name || '',
+          discount: Math.max(0, (apiProduct.compare_price || apiProduct.original_price || 0) - apiProduct.price),
+          inStock: apiProduct.stock_status === 'stock_based'
+            ? (apiProduct.stock_quantity || 0) > 0
+            : (apiProduct.stock_status === 'in_stock' || (apiProduct.in_stock && apiProduct.stock_status !== 'out_of_stock')),
+          stockStatus: apiProduct.stock_status || 'in_stock',
+          stockCount: apiProduct.stock_quantity || 0,
+          description: apiProduct.description || '',
+          features: apiProduct.features || [],
+          specifications: apiProduct.specifications || {},
+          warranty: apiProduct.warranty || 'ضمان شامل',
+          deliveryTime: apiProduct.delivery_time || '2-3 أيام عمل',
+          sku: apiProduct.sku || '',
+          dimensions: apiProduct.dimensions,
+          weight: apiProduct.weight,
+          viewsCount: apiProduct.views_count || 0
+        };
+
+        if (categoriesMap.size > 0) {
+          setBreadcrumbCategories(deriveBreadcrumbCategories(apiProduct, categoriesMap));
+        }
+
+        setProduct(transformedProduct);
+        setQuantity(1);
+
+        trackEvent('ViewContent', {
+          content_name: transformedProduct.name,
+          content_ids: [transformedProduct.id],
+          content_type: 'product',
+          value: transformedProduct.price,
+          currency: 'ILS'
+        });
+
+        sessionStorage.setItem(`viewed_product_${id}`, "true");
+        setLoading(false); // Success - stop loading
+      } catch (err) {
+        if (id !== lastFetchedId.current) return;
+        console.error('Error loading product:', err);
+        setLoading(false); // Error - stop loading to show "Not found" or error UI
       }
     };
 
     loadProduct();
-  }, [id, navigate]);
+  }, [id]);
 
   const handleAddToCart = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (product) {
@@ -789,6 +769,15 @@ const Product = () => {
                     product.stockStatus === 'out_of_stock' ? 'غير متوفر' :
                       'طلب مسبق')}
               </span>
+              {showProductViews && (
+                <>
+                  <div className="h-4 w-px bg-gray-300 mx-2"></div>
+                  <div className="flex items-center gap-1.5 text-gray-500 text-sm">
+                    <Clock className="w-4 h-4" />
+                    <span>شوهد {product.viewsCount} مرة</span>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Main Features */}

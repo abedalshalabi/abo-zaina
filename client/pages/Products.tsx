@@ -7,13 +7,14 @@ import {
   List,
   Star,
   Heart,
+  Eye,
   SlidersHorizontal
 } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useAnimation } from "../context/AnimationContext";
 import Header from "../components/Header";
 import SEO from "../components/SEO";
-import { productsAPI, categoriesAPI, brandsAPI, wishlistAPI } from "../services/api";
+import { productsAPI, categoriesAPI, brandsAPI, wishlistAPI, settingsAPI } from "../services/api";
 import { STORAGE_BASE_URL } from "../config/env";
 
 interface Product {
@@ -34,6 +35,7 @@ interface Product {
   categoryId?: number;
   categoryIds?: number[];
   filterValues?: Record<string, any>;
+  viewsCount?: number;
 }
 
 // Helper function to format price without trailing zeros
@@ -84,6 +86,7 @@ const Products = () => {
   const [error, setError] = useState("");
   const [wishlistIds, setWishlistIds] = useState<number[]>([]);
   const [wishlistProcessing, setWishlistProcessing] = useState<Record<number, boolean>>({});
+  const [showProductViews, setShowProductViews] = useState(true);
 
   const selectedParentCategory = useMemo(() => {
     if (selectedCategoryId === null) {
@@ -272,10 +275,11 @@ const Products = () => {
         setError("");
 
         // Load main categories, all categories, and all brands
-        const [categoriesResponse, allCategoriesResponse, brandsResponse] = await Promise.all([
+        const [categoriesResponse, allCategoriesResponse, brandsResponse, analyticsSettingsResponse] = await Promise.all([
           categoriesAPI.getMainCategories(),
           categoriesAPI.getCategories(),
-          brandsAPI.getBrands()
+          brandsAPI.getBrands(),
+          settingsAPI.getSettings('analytics').catch(() => ({ data: {} })),
         ]);
 
         const mainCategories = categoriesResponse.data || [];
@@ -297,6 +301,10 @@ const Products = () => {
         const allBrandsData = brandsResponse.data || [];
         setAllBrands(allBrandsData);
         setBrands(allBrandsData);
+
+        if (analyticsSettingsResponse?.data) {
+          setShowProductViews(analyticsSettingsResponse.data.show_product_views === "1" || analyticsSettingsResponse.data.show_product_views === true);
+        }
 
       } catch (err) {
         setError("حدث خطأ في تحميل البيانات");
@@ -767,7 +775,8 @@ const Products = () => {
               ? normalizedPrimaryCategoryId
               : undefined,
           categoryIds: mappedCategoryIds,
-          filterValues: product.filter_values || {}
+          filterValues: product.filter_values || {},
+          viewsCount: product.views_count || 0
         };
       });
 
@@ -1008,6 +1017,12 @@ const Products = () => {
             ))}
           </div>
           <span className="text-xs md:text-sm text-gray-600">({product.reviews})</span>
+          {showProductViews && (
+            <div className="flex items-center gap-1 text-[10px] md:text-xs text-gray-500">
+              <Eye className="w-3 h-3 md:w-3.5 md:h-3.5" />
+              <span>{product.viewsCount || 0}</span>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2 mb-2 md:mb-4">

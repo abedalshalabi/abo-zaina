@@ -182,8 +182,7 @@ const AdminProducts = () => {
         stock_status: filters.stockStatus !== 'all' ? filters.stockStatus : undefined,
         status: filters.status !== 'all' ? filters.status : undefined,
         featured: filters.featured !== 'all' ? filters.featured : undefined,
-        sort: filters.sortBy,
-        order: filters.sortOrder,
+        sort: filters.sortOrder === 'desc' ? `-${filters.sortBy}` : filters.sortBy,
         page: currentPage,
         per_page: perPage
       };
@@ -555,6 +554,7 @@ const AdminProducts = () => {
                 <option value="name">الاسم</option>
                 <option value="price">السعر</option>
                 <option value="sales_count">المبيعات</option>
+                <option value="views_count">المشاهدات</option>
                 <option value="rating">التقييم</option>
                 <option value="stock_quantity">المخزون</option>
               </select>
@@ -785,6 +785,9 @@ const AdminProducts = () => {
                             المبيعات
                           </th>
                           <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            المشاهدات
+                          </th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                             التقييم
                           </th>
                           <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -970,13 +973,22 @@ const AdminProducts = () => {
                                 </div>
                               </td>
 
-                              {/* Sales */}
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm font-medium text-gray-900">
                                   {product.sales_count}
                                 </div>
                                 <div className="text-xs text-gray-500">
                                   مبيع
+                                </div>
+                              </td>
+
+                              {/* Views */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {product.views_count || 0}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  مشاهدة
                                 </div>
                               </td>
 
@@ -1176,13 +1188,21 @@ const AdminProducts = () => {
                           </div>
 
                           {/* Stats Grid */}
-                          <div className="grid grid-cols-2 gap-3 mb-4">
+                          <div className="grid grid-cols-2 gap-2 mb-4">
                             <div className="text-center p-2 bg-gray-50 rounded-lg">
                               <div className="flex items-center justify-center mb-1">
                                 <ShoppingCart className="w-4 h-4 text-blue-600 ml-1" />
                                 <span className="text-sm font-medium text-gray-900">{product.sales_count}</span>
                               </div>
                               <div className="text-xs text-gray-500">مبيع</div>
+                            </div>
+
+                            <div className="text-center p-2 bg-gray-50 rounded-lg">
+                              <div className="flex items-center justify-center mb-1">
+                                <Eye className="w-4 h-4 text-purple-600 ml-1" />
+                                <span className="text-sm font-medium text-gray-900">{product.views_count || 0}</span>
+                              </div>
+                              <div className="text-xs text-gray-500">مشاهدة</div>
                             </div>
 
                             <div className="text-center p-2 bg-gray-50 rounded-lg">
@@ -1202,45 +1222,37 @@ const AdminProducts = () => {
                               </div>
                               <div className="text-xs text-gray-500">مخزون</div>
                             </div>
+                          </div>
+                        </div>
 
-                            <div className="text-center p-2 bg-gray-50 rounded-lg">
-                              <div className="flex items-center justify-center mb-1">
-                                <Eye className="w-4 h-4 text-purple-600 ml-1" />
-                                <span className="text-sm font-medium text-gray-900">{product.views_count}</span>
-                              </div>
-                              <div className="text-xs text-gray-500">مشاهدة</div>
-                            </div>
+                        {/* Actions */}
+                        <div className="p-4 border-t border-gray-100 flex items-center justify-between mt-auto">
+                          <div className="flex items-center space-x-1 space-x-reverse">
+                            <button
+                              onClick={() => navigate(`/admin/products/${product.id}`)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="عرض التفاصيل"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => navigate(`/admin/products/${product.id}/edit`)}
+                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                              title="تعديل"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteProduct(product.id)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="حذف"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
 
-                          {/* Actions */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-1 space-x-reverse">
-                              <button
-                                onClick={() => navigate(`/admin/products/${product.id}`)}
-                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                title="عرض التفاصيل"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => navigate(`/admin/products/${product.id}/edit`)}
-                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                                title="تعديل"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteProduct(product.id)}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                title="حذف"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-
-                            <div className="text-xs text-gray-400">
-                              {new Date(product.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                            </div>
+                          <div className="text-xs text-gray-400">
+                            {new Date(product.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                           </div>
                         </div>
                       </div>

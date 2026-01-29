@@ -45,6 +45,7 @@ import Offers from "./pages/Offers";
 import CategoriesPage from "./pages/Categories";
 import BrandsPage from "./pages/Brands";
 import Product from "./pages/Product";
+import VisitorCounter from "./components/VisitorCounter";
 import { CartProvider } from "./context/CartContext";
 import { AnimationProvider } from "./context/AnimationContext";
 import { AuthProvider } from "./context/AuthContext";
@@ -63,6 +64,14 @@ const PixelTracker = () => {
   return null;
 };
 
+const VisitorCounterWrapper = () => {
+  const location = useLocation();
+  const isAdmin = location.pathname.startsWith('/admin');
+
+  if (isAdmin) return null;
+  return <VisitorCounter />;
+};
+
 function App() {
   return (
     <AuthProvider>
@@ -70,6 +79,7 @@ function App() {
         <AnimationProvider>
           <BrowserRouter>
             <PixelTracker />
+            <VisitorCounterWrapper />
             <Routes>
               <Route path="/" element={<Index />} />
 

@@ -32,17 +32,17 @@ const ArrayItemEditor = ({ settingKey, item, itemIndex, keys, onItemChange, onRe
         </button>
       </div>
       {keys.map((key) => {
-        const isImageField = key.toLowerCase().includes('image') || 
-                            key.toLowerCase().includes('photo') || 
-                            key.toLowerCase().includes('picture') ||
-                            key.toLowerCase().includes('avatar') ||
-                            (typeof item[key] === 'string' && (
-                              item[key].startsWith('http://') || 
-                              item[key].startsWith('https://') ||
-                              item[key].startsWith('/storage/') ||
-                              item[key].match(/\.(jpg|jpeg|png|gif|webp)$/i)
-                            ));
-        
+        const isImageField = key.toLowerCase().includes('image') ||
+          key.toLowerCase().includes('photo') ||
+          key.toLowerCase().includes('picture') ||
+          key.toLowerCase().includes('avatar') ||
+          (typeof item[key] === 'string' && (
+            item[key].startsWith('http://') ||
+            item[key].startsWith('https://') ||
+            item[key].startsWith('/storage/') ||
+            item[key].match(/\.(jpg|jpeg|png|gif|webp)$/i)
+          ));
+
         return (
           <div key={key}>
             <Label className="text-xs text-gray-600 capitalize">{key}</Label>
@@ -208,9 +208,8 @@ const ImageUploadInput = ({ setting, value, onChange, onFileUpload }: ImageUploa
           />
           <label
             htmlFor={`file-upload-${setting.key}`}
-            className={`flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
-              uploading ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
+            className={`flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${uploading ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
           >
             <Upload className="w-4 h-4" />
             <span className="text-sm">{uploading ? 'جاري الرفع...' : 'اختر صورة'}</span>
@@ -221,9 +220,9 @@ const ImageUploadInput = ({ setting, value, onChange, onFileUpload }: ImageUploa
       {/* Preview */}
       {(preview || value) && (
         <div className="relative inline-block">
-          <img 
-            src={preview || value} 
-            alt="Preview" 
+          <img
+            src={preview || value}
+            alt="Preview"
             className="h-32 w-auto border rounded-lg shadow-sm max-w-full"
             onError={(e) => {
               e.currentTarget.style.display = 'none';
@@ -263,6 +262,7 @@ const tabs: Tab[] = [
   { id: 'shipping', label: 'الشحن والتوصيل', group: 'shipping' },
   { id: 'returns', label: 'الإرجاع والاستبدال', group: 'returns' },
   { id: 'warranty', label: 'الضمان', group: 'warranty' },
+  { id: 'analytics', label: 'الإحصائيات والعدادات', group: 'analytics' },
 ];
 
 const AdminSiteSettings = () => {
@@ -307,7 +307,7 @@ const AdminSiteSettings = () => {
   };
 
   const handleSettingChange = (key: string, value: any) => {
-    setSettings(prev => prev.map(setting => 
+    setSettings(prev => prev.map(setting =>
       setting.key === key ? { ...setting, value } : setting
     ));
   };
@@ -366,7 +366,7 @@ const AdminSiteSettings = () => {
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || "فشل في حفظ الإعدادات";
       setError(errorMessage);
-      
+
       Swal.fire({
         icon: 'error',
         title: 'خطأ!',
@@ -388,7 +388,7 @@ const AdminSiteSettings = () => {
         // Special handling for header_menu_items (object with nested arrays)
         if (setting.key === 'header_menu_items' && setting.value && typeof setting.value === 'object' && !Array.isArray(setting.value)) {
           const menuItems = setting.value as { main_pages?: Array<{ title: string; link: string }>, customer_service?: Array<{ title: string; link: string }>, account?: Array<{ title: string; link: string }> };
-          
+
           const updateMenuSection = (section: string, index: number, field: string, value: string) => {
             const currentValue = setting.value as any;
             const sectionArray = currentValue[section] || [];
@@ -400,18 +400,18 @@ const AdminSiteSettings = () => {
           const addMenuSectionItem = (section: string) => {
             const currentValue = setting.value as any;
             const sectionArray = currentValue[section] || [];
-            handleSettingChange(setting.key, { 
-              ...currentValue, 
-              [section]: [...sectionArray, { title: '', link: '' }] 
+            handleSettingChange(setting.key, {
+              ...currentValue,
+              [section]: [...sectionArray, { title: '', link: '' }]
             });
           };
 
           const removeMenuSectionItem = (section: string, index: number) => {
             const currentValue = setting.value as any;
             const sectionArray = currentValue[section] || [];
-            handleSettingChange(setting.key, { 
-              ...currentValue, 
-              [section]: sectionArray.filter((_: any, i: number) => i !== index) 
+            handleSettingChange(setting.key, {
+              ...currentValue,
+              [section]: sectionArray.filter((_: any, i: number) => i !== index)
             });
           };
 
@@ -546,7 +546,7 @@ const AdminSiteSettings = () => {
         if (Array.isArray(setting.value)) {
           // Check if it's an array of strings (like contact_subjects)
           const isStringArray = setting.value.length > 0 && typeof setting.value[0] === 'string';
-          
+
           if (isStringArray) {
             // Render array of strings with simple input fields
             return (
@@ -585,11 +585,11 @@ const AdminSiteSettings = () => {
               </div>
             );
           }
-          
+
           // It's an array of objects - use ArrayItemEditor
           const firstItem = setting.value[0] || {};
           const keys = Object.keys(firstItem);
-          
+
           return (
             <div className="space-y-4">
               {setting.value.map((item: any, index: number) => (
@@ -614,7 +614,7 @@ const AdminSiteSettings = () => {
             </div>
           );
         }
-        
+
         return (
           <Textarea
             value={typeof setting.value === 'string' ? setting.value : JSON.stringify(setting.value, null, 2)}
@@ -630,6 +630,35 @@ const AdminSiteSettings = () => {
             className="font-mono text-sm"
             placeholder="JSON format"
           />
+        );
+      case 'toggle':
+        const isEnabled = setting.value === '1' || setting.value === 1 || setting.value === 'true' || setting.value === true;
+        return (
+          <div className="flex items-center gap-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
+            <div className="flex bg-white rounded-md border border-gray-300 p-1">
+              <button
+                type="button"
+                onClick={() => handleSettingChange(setting.key, '1')}
+                className={`px-4 py-1.5 rounded text-sm font-medium transition-all ${isEnabled
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-gray-600 hover:bg-gray-100'}`}
+              >
+                إظهار
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSettingChange(setting.key, '0')}
+                className={`px-4 py-1.5 rounded text-sm font-medium transition-all ${!isEnabled
+                  ? 'bg-red-600 text-white shadow-sm'
+                  : 'text-gray-600 hover:bg-gray-100'}`}
+              >
+                إخفاء
+              </button>
+            </div>
+            <span className={`text-sm font-medium ${isEnabled ? 'text-green-600' : 'text-red-600'}`}>
+              {isEnabled ? 'مفعل حالياً' : 'معطل حالياً'}
+            </span>
+          </div>
         );
       case 'image':
         return (
@@ -698,11 +727,10 @@ const AdminSiteSettings = () => {
                   setActiveTab(tab.id);
                   window.location.hash = tab.id;
                 }}
-                className={`px-6 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
+                className={`px-6 py-3 text-sm font-medium transition-colors whitespace-nowrap ${activeTab === tab.id
+                  ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
               >
                 {tab.label}
               </button>
@@ -740,13 +768,13 @@ const AdminSiteSettings = () => {
                 ) : (
                   (() => {
                     // Separate settings into groups for better organization
-                    const contactSettings = settings.filter(s => 
+                    const contactSettings = settings.filter(s =>
                       s.key === 'header_phone' || s.key === 'header_email'
                     );
-                    const socialSettings = settings.filter(s => 
+                    const socialSettings = settings.filter(s =>
                       s.key.startsWith('social_media_') || s.key === 'whatsapp_number'
                     );
-                    const otherSettings = settings.filter(s => 
+                    const otherSettings = settings.filter(s =>
                       !contactSettings.includes(s) && !socialSettings.includes(s)
                     );
 
@@ -769,7 +797,7 @@ const AdminSiteSettings = () => {
                                 {renderSettingInput(setting)}
                               </div>
                             ))}
-                            
+
                             {/* Contact Info at the bottom of social media section */}
                             {contactSettings.length > 0 && (
                               <>

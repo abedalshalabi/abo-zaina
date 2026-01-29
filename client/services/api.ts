@@ -20,6 +20,23 @@ export const settingsAPI = {
   },
 };
 
+// Analytics API
+export const analyticsAPI = {
+  trackVisit: async (noIncrement: boolean = false) => {
+    try {
+      const url = `${API_BASE_URL}/analytics/visit${noIncrement ? '?no_increment=1' : ''}`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("Error tracking visit:", error);
+      return { count: 0 };
+    }
+  },
+};
+
 // Types
 interface User {
   id: number;
@@ -179,8 +196,8 @@ export const productsAPI = {
   },
 
   // Get single product
-  getProduct: async (id: number) => {
-    const response = await fetch(`${API_BASE_URL}/products/${id}`);
+  getProduct: async (id: number, noIncrement: boolean = false) => {
+    const response = await fetch(`${API_BASE_URL}/products/${id}${noIncrement ? '?no_increment=1' : ''}`);
     return response.json();
   },
 

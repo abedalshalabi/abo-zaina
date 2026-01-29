@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\Category;
 use App\Models\Brand;
 use App\Models\Admin;
+use App\Models\SiteSetting;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -30,6 +31,7 @@ class AdminDashboardController extends Controller
                 'total_categories' => Category::count(),
                 'total_brands' => Brand::count(),
                 'total_admins' => Admin::count(),
+                'total_visits' => (int) (SiteSetting::where('key', 'total_visits')->value('value') ?? 0),
             ];
 
             // Revenue statistics

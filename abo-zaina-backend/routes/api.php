@@ -72,6 +72,7 @@ Route::prefix('v1')->group(function () {
     
     // Public site settings (for frontend)
     Route::get('/settings', [SiteSettingController::class, 'public']);
+    Route::get('/analytics/visit', [SiteSettingController::class, 'trackVisit']);
     
     // Public slider route (for frontend)
     Route::get('/slider', function () {

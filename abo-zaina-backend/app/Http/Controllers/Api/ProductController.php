@@ -452,10 +452,16 @@ class ProductController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Product $product): JsonResponse
+    public function show(Request $request, Product $product): JsonResponse
     {
-        // Increment view count
-        $product->increment('views_count');
+        // Prevent double increment in same session/refresh
+        $viewedProducts = session()->get('viewed_products', []);
+        
+        if (!in_array($product->id, $viewedProducts) && !$request->has('no_increment')) {
+            $product->increment('views_count');
+            $viewedProducts[] = $product->id;
+            session()->put('viewed_products', $viewedProducts);
+        }
 
         return response()->json([
             'data' => new ProductResource($product->load(['category', 'categories', 'brand', 'reviews.user']))
@@ -887,7 +893,7 @@ class ProductController extends Controller
                 AllowedFilter::exact('brand_id'),
                 AllowedFilter::scope('price_range'),
             ])
-            ->allowedSorts(['name', 'price', 'created_at', 'rating', 'sales_count'])
+            ->allowedSorts(['name', 'price', 'created_at', 'rating', 'sales_count', 'views_count'])
             ->defaultSort('-created_at');
 
         // Apply category filter - include products from this category and all its subcategories

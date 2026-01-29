@@ -43,6 +43,8 @@ class SiteSettingController extends Controller
                 $value = $setting->value;
                 if ($setting->type === 'json') {
                     $value = json_decode($setting->value, true);
+                } elseif ($setting->type === 'boolean' || $setting->type === 'toggle') {
+                    $value = ($setting->value === '1' || $setting->value === 1 || $setting->value === 'true' || $setting->value === true);
                 }
                 return [$setting->key => $value];
             });
@@ -85,7 +87,7 @@ class SiteSettingController extends Controller
 
         $validator = Validator::make($request->all(), [
             'value' => 'required',
-            'type' => 'nullable|in:text,image,json',
+            'type' => 'nullable|in:text,image,json,boolean,toggle',
             'group' => 'nullable|string',
             'description' => 'nullable|string',
         ]);
@@ -274,6 +276,34 @@ class SiteSettingController extends Controller
                 'value' => $imageUrl,
                 'path' => $path,
             ],
+        ]);
+    }
+
+    /**
+     * Track and return total site visits
+     */
+    public function trackVisit(Request $request): JsonResponse
+    {
+        $setting = SiteSetting::firstOrCreate(
+            ['key' => 'total_visits'],
+            [
+                'value' => '1000', // Start with a reasonable number
+                'type' => 'text',
+                'group' => 'analytics',
+                'description' => 'إجمالي زيارات الموقع'
+            ]
+        );
+
+        $count = (int)$setting->value;
+        
+        // Only increment if not requested otherwise
+        if (!$request->has('no_increment')) {
+            $count++;
+            $setting->update(['value' => (string)$count]);
+        }
+
+        return response()->json([
+            'count' => $count,
         ]);
     }
 }
